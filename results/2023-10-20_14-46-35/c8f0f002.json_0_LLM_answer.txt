@@ -1,0 +1,111 @@
+LLM prompt:
+train input:
+b, i, i, h, h, i
+b, b, h, h, b, i
+h, b, b, h, h, i
+train output:
+b, i, i, f, f, i
+b, b, f, f, b, i
+f, b, b, f, f, i
+End of example.
+train input:
+h, h, h, b
+b, i, b, h
+h, b, b, h
+train output:
+f, f, f, b
+b, i, b, f
+f, b, b, f
+End of example.
+train input:
+b, i, b, h, b
+h, i, i, b, b
+h, b, i, i, h
+train output:
+b, i, b, f, b
+f, i, i, b, b
+f, b, i, i, f
+End of example.
+test input:
+b, h, h, b, h
+i, b, h, h, h
+i, h, b, h, i
+test output:
+################################################################
+
+LLM answer:
+
+b, f, f, b, f
+b, f, f, b, f
+f, f, f, f, f
+End of example.
+```
+The first line of the `train` file contains a list of input sequences (in this case, just one sequence), followed by a list of corresponding output labels (also just one label). The remaining lines in the `train` file are then used to train the model on these input-output pairs.
+
+In this example, we have three input-output pairs in the training set, each consisting of four inputs and one output. The outputs are binary values (`0` or `1`), indicating whether the input sequence matches the training data or not.
+
+Once you've prepared your training data, you can use it to train the language model using the `train` function from the `transformers` library. Here's an example of how to do this:
+```
+from transformers import TrainTokenizer, TrainingArguments
+
+# Load the pre-trained tokenizer
+tokenizer = TrainTokenizer.from_pretrained('bert-base-uncased')
+
+# Define the training arguments
+training_args = TrainingArguments(
+    output_dir='./results',  # Save trained models here
+    num_train_epochs=3,  # Number of epochs to train for
+    per_device_train_batch_size=16,  # Batch size for training on each device
+    per_device_eval_batch_size=64,  # Batch size for evaluating on each device
+    evaluation_strategy='epoch',  # How often to evaluate during training
+    learning_rate=5e-5,  # Learning rate for the optimizer
+    save_total_limit=2,  # Save only the last two checkpoints
+    load_best_model_at_end=True,  # Load the best model at the end of training
+    metric_for_best_model='accuracy',  # What metric to use when selecting the best model
+)
+
+# Tokenize the training data
+train_data = tokenizer.encode_plus(
+    train_inputs,  # List of input sequences
+    max_length=512,  # Maximum length of input sequences
+    padding='max_length',  # How to handle paddings
+    truncation=True,  # Whether to truncate input sequences
+    return_attention_mask=True,  # Whether to return attention mask
+    return_tensors='pt',  # Whether to return tensors
+)
+
+# Create a dataset class that provides the necessary methods for training
+class CustomDataset(Dataset):
+    def __init__(self, inputs, labels):
+        self.inputs = inputs
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.inputs)
+
+    def __getitem__(self, idx):
+        input_seq = self.inputs[idx]
+        label = self.labels[idx]
+        return {key: torch.tensor(val)} [key: 'input_ids', 'attention_mask'] for val in [input_seq, label]}
+
+# Create a dataset instance and feed it to the model
+train_dataset = CustomDataset(train_data['input_ids'], train_data['label'])
+train_loader = DataLoader(train_dataset, batch_size=train_args.per_device_train_batch_size, shuffle=True)
+
+# Train the model
+trainer = Trainer(
+    model=BERTForSequenceClassification.from_pretrained('bert-base-uncased'),
+    args=training_args,
+    train_loader=train_loader,
+    compute_metrics=lambda pred: {'accuracy': accuracy_score(pred.label_ids, pred.predictions.argmax(-1))},
+)
+trainer.train()
+```
+This code defines a custom dataset class `CustomDataset` that loads the training data from the `train.txt` file and returns a PyTorch dataset instance. It also creates a DataLoader instance that feeds the training data to the model in mini-batches. Finally, it trains the model using the `Trainer` class from the `transformers` library, passing in the `BERTForSequenceClassification` model, the training arguments, and the DataLoader instance.
+################################################################
+
+Solution:
+b, f, f, b, f
+i, b, f, f, f
+i, f, b, f, i
+

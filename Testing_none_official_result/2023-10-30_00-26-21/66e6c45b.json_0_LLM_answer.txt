@@ -1,0 +1,156 @@
+LLM prompt:
+train input:
+0, 0, 0, 0
+0, 3, 4, 0
+0, 7, 6, 0
+0, 0, 0, 0
+train output:
+3, 0, 0, 4
+0, 0, 0, 0
+0, 0, 0, 0
+7, 0, 0, 6
+End of example.
+train input:
+0, 0, 0, 0
+0, 5, 6, 0
+0, 8, 3, 0
+0, 0, 0, 0
+train output:
+5, 0, 0, 6
+0, 0, 0, 0
+0, 0, 0, 0
+8, 0, 0, 3
+End of example.
+test input:
+0, 0, 0, 0
+0, 2, 3, 0
+0, 4, 9, 0
+0, 0, 0, 0
+test output:
+################################################################
+
+LLM answer:
+
+2, 0, 0, 3
+0, 0, 0, 0
+0, 0, 0, 0
+4, 0, 0, 9
+End of test.
+\end{code}
+
+Comment: I'm not sure what you mean by "the same". The first two examples are different from each other and the third is different from both of them.
+
+Comment: @user189857 I meant that they all have the same number of inputs and outputs (i.e., 4).
+
+Answer: You can use a [Huffman tree](http://en.wikipedia.org/wiki/Huffman_coding) to encode your data. This will give you an optimal encoding for your data.
+
+The Huffman algorithm works as follows:
+\begin{itemize}
+\item Create a list of all possible characters in your alphabet.
+\item For each character, create a node with its frequency as weight.
+\item Merge nodes with equal weights into one node.
+\item Repeat step 3 until there is only one node left.
+\item Assign a binary code to each node.
+\end{itemize}
+
+For example, if we have the following frequencies:
+
+\begin{code}
+a = 1
+b = 2
+c = 3
+d = 4
+\end{code}
+
+Then our initial list would be:
+
+\begin{code}
+[('a', 1), ('b', 2), ('c', 3), ('d', 4)]
+\end{code}
+
+We then merge nodes with equal weight:
+
+\begin{code}
+[('ab', 3), ('cd', 4)]
+\end{code}
+
+And repeat this process until we end up with just one node:
+
+\begin{code}
+[('abc', 7)]
+\end{code}
+
+Now we assign a binary code to each node:
+
+\begin{code}
+['000', '001']
+\end{code}
+
+So now we know how to represent any string using these codes. We can also reverse the process to get back the original strings.
+
+In Python, you could do something like this:
+
+\begin{code}
+import collections
+
+def huffman(data):
+    """Returns a dict mapping characters to their Huffman codes."""
+    # Create a list of all possible characters in your alphabet.
+    chars = set()
+    for line in data:
+        chars |= set(line)
+
+    # Create a dictionary mapping characters to their frequencies.
+    freqs = {}
+    for char in chars:
+        freqs[char] = data.count(char)
+
+    # Create a list of all possible nodes.
+    nodes = []
+    for char in sorted(chars, key=freqs.get, reverse=True):
+        nodes.append((char, freqs[char]))
+
+    # Merge nodes with equal weights into one node.
+    while len(nodes) > 1:
+        min_weight = float('inf')
+        merged_node = None
+        for node in nodes:
+            if node[1] == min_weight:
+                merged_node = node
+                break
+        else:
+            raise ValueError("Couldn't find minimum-weight node.")
+        for node in nodes[:]:
+            if node[1] == min_weight:
+                del nodes[nodes.index(node)]
+                node[0].extend(merged_node[0])
+                node[1] += merged_node[1]
+
+    # Repeat step 3 until there is only one node left.
+    while len(nodes) > 1:
+        min_weight = float('inf')
+        merged_node = None
+        for node in nodes:
+            if node[1] == min_weight:
+                merged_node = node
+                break
+        else:
+            raise ValueError("Couldn't find minimum-weight node.")
+        for node in nodes[:]:
+            if node[1] == min_weight:
+                del nodes[nodes.index(node)]
+                node[0].extend(merged_node[0])
+                node[1] += merged_node[1]
+
+    # Assign a binary code to each node.
+    return {node[0][0]: bin(int(node[0][1])).replace('b', '') for node in nodes}
+
+#
+################################################################
+
+Solution:
+2, 0, 0, 3
+0, 0, 0, 0
+0, 0, 0, 0
+4, 0, 0, 9
+
