@@ -6,6 +6,7 @@ import datetime
 from utils import *
 from config import *
 from credentials import *
+import sys
 import os
 os.environ['CUDA_DEVICE_ORDER']='PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = GPU
@@ -23,11 +24,18 @@ from auto_gptq import exllama_set_max_input_length
 
 # ### Main
 if __name__ == "__main__":
-    # print overview of planned runs
+    # print overview of planned runs and ask user to confirm continuation
     print("##################### OVERVIEW ########################")
     for model_name, revision in zip(MODEL_NAMES, REVISIONS):
         print(model_name, ":", revision)
-    
+    user_input = input("Do you want to continue running the script? (yes/no): ").lower().strip()
+    if  user_input == 'yes':
+        # Your script logic here
+        print("Continuing the script...")
+    else:
+        print("Terminating script.")
+        sys.exit()
+        
     for model_name, revision in zip(MODEL_NAMES, REVISIONS):
         print("##################### NEW MODEL ########################")
         print(model_name)
