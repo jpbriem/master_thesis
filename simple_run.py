@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import datetime
 from utils import *
 from config import *
+from credentials import *
 import os
 os.environ['CUDA_DEVICE_ORDER']='PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = GPU

@@ -2,9 +2,6 @@ from langchain.prompts import PromptTemplate
 
 #################### General ####################
 GPU = '6,5'
-HF_TOKEN = "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"
-HF_TOKEN = "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" # LLAMA ACCESS TOKEN
-
 
 #################### OPEN SOURCE ###############
 MAX_TOKEN = 4096
