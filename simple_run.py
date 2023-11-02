@@ -44,10 +44,10 @@ if __name__ == "__main__":
         # Load Model and Tokenizer
         if "gpt" in model_name:
             llm = load_gpt
-            tokenizer = None # TODO
+            tokenizer = None
         else:
             tokenizer, model, llm = load_llama(model_name, revision, MAX_TOKEN, MODEL_CONFIG_LLAMA)
-                  
+              
         # create data generator
         ds = Dataset.from_generator(data_generator, gen_kwargs={"model_name": model_name, "directory_train": TASK_DIR_TRAIN, "directory_eval": TASK_DIR_EVAL, "pre_context": PRE_CONTEXT, "post_context": POST_CONTEXT, "tokenizer": tokenizer, "delimiter": DELIMITER, "prompt_template": TEMPLATE, "sys": SYSTEM_MESSAGE, "output_format": OUTPUT_FORMAT, "instruction_end": INSTRUCTION_END, "change_representation": CHANGE_REPRESENTATION, "new_representation": NEW_REPRESENTATION})
 
@@ -64,6 +64,8 @@ if __name__ == "__main__":
         task_counter = 1
         success = {}
         failure_log = "\n"
+        total_input_tokens = 0
+        total_output_tokens = 0
         for row in ds:
             # print progress in terms of task counter
             if row["test_case_index"] == 0:
@@ -73,9 +75,17 @@ if __name__ == "__main__":
             # call LLM 
             try:
                 if "gpt" in model_name:
-                    output = llm(row["prompt_gpt"].strip(), **MODEL_CONFIG_GPT)
+                    response = llm(row["prompt_gpt"], **MODEL_CONFIG_GPT)
+                    output = response['choices'][0]['message']['content']
+                    input_tokens = response["usage"]["prompt_tokens"]
+                    output_tokens = response["usage"]["completion_tokens"]
+
                 else:
-                    output = llm(row["prompt_llama"].strip())
+                    output = llm(row["prompt_llama"])
+                    input_tokens = row["prompt_llama_tokens"]
+                    output_tokens = count_tokens(output, model_name, tokenizer)[0]
+                total_input_tokens += input_tokens
+                total_output_tokens += output_tokens
             except Exception as e:
                 error = f"Failed to run LLM for task {row['task_name']}. Error:\n{e}"
                 failure_log += error+"\n\n################################################################\n\n"
@@ -101,7 +111,14 @@ if __name__ == "__main__":
             
             # save LLM result as txt file
             try:
-                LLM_answer = f"LLM prompt:\n{row['prompt_llama']}\n################################################################\n\n"
+                if len(row['prompt_gpt']) > 0:
+                    prompt_gpt = ""
+                    for message in row['prompt_gpt']:
+                        prompt_gpt += message['content']+"\n"
+                else:
+                    prompt_gpt = ""
+                LLM_answer = f"Input token: {input_tokens}\nOutput token: {output_tokens}\n################################################################\n\n"
+                LLM_answer += f"LLM prompt:\n{row['prompt_llama']}{prompt_gpt}\n################################################################\n\n"
                 LLM_answer += f"LLM answer:\n{output}\n################################################################\n\n"
                 LLM_answer += f"Solution:\n{row['solution']}\n"
                 with open(directory+"/"+row["task_name"]+"_"+str(row["test_case_index"])+"_LLM_answer.txt", "w") as text_file:
@@ -134,9 +151,12 @@ if __name__ == "__main__":
         duration = end_time - current_datetime
 
         # save log result as txt file
-        revision =  ':'+revision
+        if "gpt" in model_name:
+            revision = ""
+        else:
+            revision =  ':'+revision
         try:
-            log =  f"{model_name+revision}\nDuration: {duration}\nTotal: {success_count} / {len(success)}\nToo long prompts: {promp_oversize_counter}\nSuccess log: {success_log}\nFailure log: {failure_log}"
+            log =  f"{model_name+revision}\nDuration: {duration}\nTotal: {success_count} / {len(success)}\nToo long prompts: {promp_oversize_counter}\nTotal input token: {total_input_tokens}\nTotal output token: {total_output_tokens}\nSuccess log: {success_log}\nFailure log: {failure_log}"
             with open(directory+"/log.txt", "w") as text_file:
                 text_file.write(log)
         except Exception as e:

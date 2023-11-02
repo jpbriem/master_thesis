@@ -1,5 +1,6 @@
 
 from config import *
+from credentials import *
 import numpy as np
 import json
 import re
@@ -10,6 +11,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = GPU
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
 from copy import deepcopy
 import torch
+import tiktoken
 from datasets import load_dataset, Dataset
 from transformers.pipelines.pt_utils import KeyDataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig, pipeline
@@ -21,19 +23,18 @@ import openai
 
 
 
-##################### Load Model and Tokenizer #####################
+##################### Load Model and Tokenizer + count Tokens #####################
 
 def load_llama(model_name, revision, max_token, model_config):
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
     if tokenizer.model_max_length is None or tokenizer.model_max_length > 9999999999:
         tokenizer.model_max_length = max_token
-
     model = AutoModelForCausalLM.from_pretrained(
         model_name, trust_remote_code=True, device_map="auto", torch_dtype=torch.float16, revision=revision
     )
 
-    # fix bug for 70b model
-    if model_name in ["TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ"]:
+    # fix bug for certain models 
+    if model_name in ["TheBloke/Camel-Platypus2-70B-GPTQ", "TheBloke/Platypus2-70B-GPTQ", "TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ", "TheBloke/Llama-2-70B-GPTQ"]:
         model = exllama_set_max_input_length(model, 4096)
 
 
@@ -67,7 +68,33 @@ def load_gpt(messages, model_name, temperature):
         model=model_name,
         messages=messages
     )
-    return response['choices'][0]['message']['content']
+    return response
+
+def count_tokens(prompt, model_name, tokenizer):
+    try:
+        encoding = tiktoken.encoding_for_model(model_name)
+    except KeyError:
+        print("Warning: model not found. Using cl100k_base encoding.")
+        encoding = tiktoken.get_encoding("cl100k_base")
+    if "gpt" in model_name:
+        num_tokens = 0
+        tokens_per_message = 3 # for model gpt-3.5-turbo-0613 & gpt-4-0613
+        tokens_per_name = 1
+        for message in prompt:
+            num_tokens += tokens_per_message
+            for key, value in message.items():
+                num_tokens += len(encoding.encode(value))
+                if key == "name":
+                    num_tokens += tokens_per_name
+        num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
+        if "gpt-3.5" in model_name:
+            token_limit = 4096
+        elif "gpt-4" in model_name:
+            token_limit = 8192
+    else: 
+        num_tokens = len(tokenizer.encode(prompt, add_special_tokens=True))
+        token_limit = tokenizer.model_max_length
+    return num_tokens, token_limit
 
     
 
@@ -242,8 +269,15 @@ def data_generator(model_name, directory_train, directory_eval, pre_context, pos
         test_cases, solutions = get_tasks(task_json, delimiter)
         # check if prompt of longest task is too long
         index_of_longest_prompt = max(enumerate(test_cases), key=lambda x: len(x[1]))[0]
-        token_limit = tokenizer.model_max_length
-        if  len(tokenizer.encode(sys+str(output_format)+context+test_cases[index_of_longest_prompt]+instruction_end, add_special_tokens=True)) > token_limit:
+        if "gpt" in model_name:
+            prompt = [
+                    {"role": "system", "content": prompt_template[0].format(sys=sys, output_format=output_format)},
+                    {"role": "user", "content": prompt_template[1].format(task=context+test_cases[index_of_longest_prompt])}
+                ]
+        else:
+            prompt = sys+str(output_format)+context+test_cases[index_of_longest_prompt]+instruction_end
+        num_tokens, token_limit = count_tokens(prompt, model_name, tokenizer)
+        if  num_tokens > token_limit:
             print(task_file, "Prompt too long.")
             promp_oversize_counter += 1
             continue
@@ -254,8 +288,8 @@ def data_generator(model_name, directory_train, directory_eval, pre_context, pos
             if "gpt" in model_name:
                 prompt_llama = ""
                 prompt_gpt = [
-                    {"role": "system", "content": prompt_template[0].format(sys=sys, output_format=output_format)},
-                    {"role": "user", "content": prompt_template[1].format(task=context+test_case)}
+                    {"role": "system", "content": prompt_template[0].format(sys=sys, output_format=output_format).strip()},
+                    {"role": "user", "content": prompt_template[1].format(task=context+test_case).strip()}
                 ]
             else:
                 prompt_llama = prompt_template.format(sys=sys, output_format=output_format, task=context+test_case, instruction_end=instruction_end)
@@ -266,7 +300,8 @@ def data_generator(model_name, directory_train, directory_eval, pre_context, pos
                 "total_test_cases": len(test_cases),
                 "test_case": test_case,
                 "context": context,
-                "prompt_llama": prompt_llama,
+                "prompt_llama": prompt_llama.strip(),
+                "prompt_llama_tokens": count_tokens(prompt_llama, model_name, tokenizer)[0],
                 "prompt_gpt": prompt_gpt,
                 "solution": solution,
                 "directory": directory,
