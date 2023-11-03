@@ -71,12 +71,12 @@ def load_gpt(messages, model_name, temperature):
     return response
 
 def count_tokens(prompt, model_name, tokenizer):
-    try:
-        encoding = tiktoken.encoding_for_model(model_name)
-    except KeyError:
-        print("Warning: model not found. Using cl100k_base encoding.")
-        encoding = tiktoken.get_encoding("cl100k_base")
     if "gpt" in model_name:
+        try:
+            encoding = tiktoken.encoding_for_model(model_name)
+        except KeyError:
+            print("Warning: model not found. Using cl100k_base encoding.")
+            encoding = tiktoken.get_encoding("cl100k_base")
         num_tokens = 0
         tokens_per_message = 3 # for model gpt-3.5-turbo-0613 & gpt-4-0613
         tokens_per_name = 1
@@ -96,8 +96,7 @@ def count_tokens(prompt, model_name, tokenizer):
         token_limit = tokenizer.model_max_length
     return num_tokens, token_limit
 
-    
-
+   
 ##################### Prompt Helper #####################
 
 # get context out of json

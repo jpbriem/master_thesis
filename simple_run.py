@@ -41,24 +41,32 @@ if __name__ == "__main__":
         print(model_name)
         print("##################### NEW MODEL ########################")
         
-        # Load Model and Tokenizer
-        if "gpt" in model_name:
-            llm = load_gpt
-            tokenizer = None
-        else:
-            tokenizer, model, llm = load_llama(model_name, revision, MAX_TOKEN, MODEL_CONFIG_LLAMA)
-              
-        # create data generator
-        ds = Dataset.from_generator(data_generator, gen_kwargs={"model_name": model_name, "directory_train": TASK_DIR_TRAIN, "directory_eval": TASK_DIR_EVAL, "pre_context": PRE_CONTEXT, "post_context": POST_CONTEXT, "tokenizer": tokenizer, "delimiter": DELIMITER, "prompt_template": TEMPLATE, "sys": SYSTEM_MESSAGE, "output_format": OUTPUT_FORMAT, "instruction_end": INSTRUCTION_END, "change_representation": CHANGE_REPRESENTATION, "new_representation": NEW_REPRESENTATION})
-
         ###### TODO: Change FOLDER ######
         # Get the current date and time
         current_datetime = datetime.datetime.now()
         # Format the date and time as a string 
         # directory = "results/"+current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
         directory = "Testing_none_official_result/"+current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
-
         os.makedirs(directory, exist_ok=True)
+        
+        # Load Model and Tokenizer
+        try:
+            # reset variable
+            llm = None
+            if "gpt" in model_name:
+                llm = load_gpt
+                tokenizer = None
+            else:
+                tokenizer, _, llm = load_llama(model_name, revision, MAX_TOKEN, MODEL_CONFIG_LLAMA)
+        except Exception as e:
+                error = f"Failed to load LLM: {model_name}. Error:\n{e}"
+                print(error)
+                with open(directory+"/log.txt", "w") as text_file:
+                    text_file.write(error)
+                continue 
+                                
+        # create data generator
+        ds = Dataset.from_generator(data_generator, gen_kwargs={"model_name": model_name, "directory_train": TASK_DIR_TRAIN, "directory_eval": TASK_DIR_EVAL, "pre_context": PRE_CONTEXT, "post_context": POST_CONTEXT, "tokenizer": tokenizer, "delimiter": DELIMITER, "prompt_template": TEMPLATE, "sys": SYSTEM_MESSAGE, "output_format": OUTPUT_FORMAT, "instruction_end": INSTRUCTION_END, "change_representation": CHANGE_REPRESENTATION, "new_representation": NEW_REPRESENTATION})
 
         # My Approach: 
         task_counter = 1

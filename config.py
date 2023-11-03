@@ -20,8 +20,8 @@ REVISIONS = []
 # MODEL_NAMES.append("TheBloke/Llama-2-7B-32K-Instruct-GPTQ") # TODO: Run all tests)
 
 #### Llama pre-trained ####
-MODEL_NAMES.append("TheBloke/Llama-2-70B-GPTQ") # TODO: Run all tests )
-REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-70B-GPTQ") # TODO: Run all tests )
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Llama-2-13B-GPTQ") # TODO: Run all tests )
 # REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Llama-2-7B-GPTQ") # TODO: Run all tests )
@@ -63,11 +63,11 @@ MODEL_CONFIG_LLAMA = {
 #################### CLOSED SOURCE #############
 # MODEL_NAMES.append('gpt-3.5-turbo')
 # MODEL_NAMES.append('gpt-4')
-
+# REVISIONS.append("")
 #################### CONFIG ####################
 MODEL_CONFIG_GPT = {
     'model_name': MODEL_NAMES[0],
-    'temperature': 0.00001,
+    'temperature': 0.001,
 }
 
 #################### Prompt ####################
