@@ -5,6 +5,7 @@ import numpy as np
 import json
 import re
 import matplotlib.pyplot as plt
+import shutil
 import os
 os.environ['CUDA_DEVICE_ORDER']='PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = GPU
@@ -14,11 +15,12 @@ import torch
 import tiktoken
 from datasets import load_dataset, Dataset
 from transformers.pipelines.pt_utils import KeyDataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig, pipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig, pipeline, logging
 from langchain.llms import HuggingFacePipeline
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate 
-from auto_gptq import exllama_set_max_input_length
+from auto_gptq import exllama_set_max_input_length, AutoGPTQForCausalLM, BaseQuantizeConfig
+import argparse
 import openai
 
 
@@ -69,6 +71,25 @@ def load_gpt(messages, model_name, temperature):
         messages=messages
     )
     return response
+
+def load_falcon(model_name, revision):
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    model = AutoGPTQForCausalLM.from_quantized(model_name,
+            model_basename=revision,
+            use_safetensors=True,
+            trust_remote_code=True,
+            #device="cuda:0",
+            use_triton=False,
+            quantize_config=None)
+    # fix bug for certain models 
+    if model_name in ["TheBloke/Falcon-40B-Instruct-GPTQ"]:
+        model = exllama_set_max_input_length(model, 4096)
+    return model, tokenizer
+
+def run_falcon(tokenizer, model, prompt, max_new_tokens, temperature):
+    input_ids = tokenizer(prompt, return_tensors='pt').input_ids.cuda()
+    output = model.generate(inputs=input_ids, temperature=temperature, max_new_tokens=max_new_tokens)
+    return tokenizer.decode(output[0])
 
 def count_tokens(prompt, model_name, tokenizer):
     if "gpt" in model_name:
@@ -243,7 +264,6 @@ def get_LLM_result_as_json(tasks, results):
     })
     return llm_task_results
 
-
 # create data generator for efficient loading of data
 def data_generator(model_name, directory_train, directory_eval, pre_context, post_context, delimiter, prompt_template, sys, output_format, instruction_end, tokenizer, change_representation=False, new_representation= None):
     # get list of files and respective directories
@@ -292,7 +312,8 @@ def data_generator(model_name, directory_train, directory_eval, pre_context, pos
                 ]
             else:
                 prompt_llama = prompt_template.format(sys=sys, output_format=output_format, task=context+test_case, instruction_end=instruction_end)
-                prompt_gpt = ""      
+                prompt_gpt = ""
+            num_tokens, _ = count_tokens(prompt_llama, model_name, tokenizer)     
             yield {
                 "task_name": task_file,
                 "test_case_index": i,
@@ -300,13 +321,12 @@ def data_generator(model_name, directory_train, directory_eval, pre_context, pos
                 "test_case": test_case,
                 "context": context,
                 "prompt_llama": prompt_llama.strip(),
-                "prompt_llama_tokens": count_tokens(prompt_llama, model_name, tokenizer)[0],
+                "prompt_llama_tokens": num_tokens,
                 "prompt_gpt": prompt_gpt,
                 "solution": solution,
                 "directory": directory,
                 "prompt_oversize_counter": promp_oversize_counter}
-            
-
+        
 def change_color_representation(task_original, new_representation):
     task = deepcopy(task_original)
     for test_train in task:
@@ -345,3 +365,62 @@ def grid_to_img(grid):
     new_img[0::10, :, :] = np.uint8(np.round((0.7 * np.float32(img[0::10, :, :]) + 0.3 * 255)))
     new_img[:, 0::10, :] = np.uint8(np.round((0.7 * np.float32(img[:, 0::10, :]) + 0.3 * 255)))
     return new_img
+
+
+##################### Other #####################
+
+def copy_solved_tasks(result_dir, task_training_dir, task_evaluation_dir, target_dir):
+    # check if directories exist
+    if not os.path.isdir(result_dir):
+        return "Error, result_dir is not a directory"
+    elif not os.path.isdir(task_training_dir):
+        return "Error, task_training_dir is not a directory"
+    elif not os.path.isdir(task_evaluation_dir):
+        return "Error, task_evaluation_dir is not a directory"
+       
+    solved_tasks = set()
+
+    # This regex matches date format in the format YYYY-MM-DD_HH-MM-SS
+    date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$')
+    # This regex matches tuples in the format ('string', float)
+    tuple_pattern = re.compile(r"\('([\w.]+)',\s*([\d.]+)\)")
+
+    # get all solved tasks so far from the log files of result_dir
+    for directory in os.listdir(result_dir):
+        if not date_pattern.match(directory):
+            continue
+        log_file_path = os.path.join(result_dir, directory)
+        with open(os.path.join(log_file_path, "log.txt")) as fid:
+            content = fid.read()
+        # Find all matches of the tuple pattern
+        matches = tuple_pattern.findall(content)
+        # Convert string matches to actual tuples (string, float)
+        parsed_list = [(str(filename), float(score)) for filename, score in matches]
+        for filename, score in parsed_list:
+            solved_tasks.add(filename)
+   
+    # Ensure the target directory exists
+    os.makedirs(target_dir, exist_ok=True) 
+    os.makedirs(os.path.join(target_dir, "training/"), exist_ok=True)
+    os.makedirs(os.path.join(target_dir, "evaluation/"), exist_ok=True)
+    
+    # Iterate over the file names
+    counter = 0
+    for task in solved_tasks:
+        # Check if the file is in the training directory
+        training_path = os.path.join(task_training_dir, task)
+        evaluation_path = os.path.join(task_evaluation_dir, task)
+        
+        if os.path.isfile(training_path):
+            # File found in training, copy it to the target directory
+            shutil.copy(training_path, os.path.join(target_dir, "training/", task))
+            counter += 1
+        elif os.path.isfile(evaluation_path):
+            # File found in evaluation, copy it to the target directory
+            shutil.copy(evaluation_path, os.path.join(target_dir, "evaluation/", task))
+            counter += 1
+        else:
+            # File is not found in either of the source directories
+            print(f"File '{task}' not found in both training and evaluation directories.")
+    
+    print(f"Copied {counter} / {len(solved_tasks)} files to '{target_dir}'.")

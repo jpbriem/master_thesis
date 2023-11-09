@@ -56,14 +56,17 @@ if __name__ == "__main__":
             if "gpt" in model_name:
                 llm = load_gpt
                 tokenizer = None
+            elif model_name in ["TheBloke/Falcon-7B-Instruct-GPTQ", "TheBloke/Falcon-40B-Instruct-GPTQ"]:
+                falcon_model, tokenizer = load_falcon(model_name, revision)
+                llm = run_falcon
             else:
                 tokenizer, _, llm = load_llama(model_name, revision, MAX_TOKEN, MODEL_CONFIG_LLAMA)
         except Exception as e:
-                error = f"Failed to load LLM: {model_name}. Error:\n{e}"
-                print(error)
-                with open(directory+"/log.txt", "w") as text_file:
-                    text_file.write(error)
-                continue 
+            error = f"Failed to load LLM: {model_name}. Error:\n{e}"
+            print(error)
+            with open(directory+"/log.txt", "w") as text_file:
+                text_file.write(error)
+            continue 
                                 
         # create data generator
         ds = Dataset.from_generator(data_generator, gen_kwargs={"model_name": model_name, "directory_train": TASK_DIR_TRAIN, "directory_eval": TASK_DIR_EVAL, "pre_context": PRE_CONTEXT, "post_context": POST_CONTEXT, "tokenizer": tokenizer, "delimiter": DELIMITER, "prompt_template": TEMPLATE, "sys": SYSTEM_MESSAGE, "output_format": OUTPUT_FORMAT, "instruction_end": INSTRUCTION_END, "change_representation": CHANGE_REPRESENTATION, "new_representation": NEW_REPRESENTATION})
@@ -79,7 +82,7 @@ if __name__ == "__main__":
             if row["test_case_index"] == 0:
                 print(task_counter, "/", len(ds), "prompts")
                 task_counter += 1
-                
+            
             # call LLM 
             try:
                 if "gpt" in model_name:
@@ -87,9 +90,13 @@ if __name__ == "__main__":
                     output = response['choices'][0]['message']['content']
                     input_tokens = response["usage"]["prompt_tokens"]
                     output_tokens = response["usage"]["completion_tokens"]
-
+                elif model_name in ["TheBloke/Falcon-7B-Instruct-GPTQ", "TheBloke/Falcon-40B-Instruct-GPTQ"]:
+                    output = llm(tokenizer, falcon_model, row["prompt_llama"], **MODEL_CONFIG_FALCON)
+                    input_tokens = row["prompt_llama_tokens"]
+                    output_tokens = count_tokens(output, model_name, tokenizer)[0]
                 else:
                     output = llm(row["prompt_llama"])
+                    print(row["prompt_llama_tokens"])
                     input_tokens = row["prompt_llama_tokens"]
                     output_tokens = count_tokens(output, model_name, tokenizer)[0]
                 total_input_tokens += input_tokens
