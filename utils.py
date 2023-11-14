@@ -6,6 +6,7 @@ import json
 import re
 import matplotlib.pyplot as plt
 import shutil
+import sys
 import os
 os.environ['CUDA_DEVICE_ORDER']='PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = GPU
@@ -68,9 +69,10 @@ def load_gpt(messages, model_name, temperature):
     response = openai.ChatCompletion.create(
         temperature = temperature,
         model=model_name,
-        messages=messages
+        messages=messages,
+        response_format={ "type": "json_object" } # forces gpt to output JSON
     )
-    return response
+    return response    
 
 def load_falcon(model_name, revision):
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
@@ -172,9 +174,8 @@ def get_tasks(task_json, delimiter):
         task += delimiter["output_test"]
         task += delimiter["task_end"]
 
-        solution = ""
+        solution = delimiter["grid_start"]
         for i, row in enumerate(sample["output"]):
-            solution += delimiter["grid_start"]
             solution += delimiter["row_start"]
             for j, value in enumerate(row):
                 solution += str(value)
@@ -186,6 +187,19 @@ def get_tasks(task_json, delimiter):
         tasks.append(task)
         solutions.append(solution)
     return tasks, solutions
+
+# get LARC descriptions and tasks
+def get_successful_descriptions(task_json):
+    descriptions = []
+    task = {
+        'train': task_json["train"],
+        'test': task_json["test"]
+    }
+    for _, description in task_json["descriptions"].items():
+        for _, build in description["builds"].items():
+            if build["success"]:
+                descriptions.append(f'{description["see_description"].replace("...", " ")}\n{description["do_description"].replace("...", " ")}\n{description["grid_description"].replace("...", " ")}')
+    return descriptions, task
 
 # transform string to integer array
 def string_to_integer_array(input_string):
@@ -265,7 +279,7 @@ def get_LLM_result_as_json(tasks, results):
     return llm_task_results
 
 # create data generator for efficient loading of data
-def data_generator(model_name, directory_train, directory_eval, pre_context, post_context, delimiter, prompt_template, sys, output_format, instruction_end, tokenizer, change_representation=False, new_representation= None):
+def data_generator(model_name, directory_train, directory_eval, delimiter, prompt_template, sys, output_format, pre_test_case, post_test_case, instruction_end, tokenizer, change_representation=False, new_representation=None, LARC=False):
     # get list of files and respective directories
     directories = [directory_train]*len(os.listdir(directory_train)) + [directory_eval]*len(os.listdir(directory_eval))
     task_files =  sorted(os.listdir(directory_train))+sorted(os.listdir(directory_eval))
@@ -275,57 +289,80 @@ def data_generator(model_name, directory_train, directory_eval, pre_context, pos
     for directory, task_file in zip(directories, task_files):
         with open(os.path.join(directory, task_file)) as fid:
             task_json = json.load(fid)
+        
+        # if we load LARC data, we need to check if the task has been solved by humans
+        if LARC:
+            descriptions, task_json = get_successful_descriptions(task_json)
+            if len(descriptions) == 0:
+                continue
             
+        else:
+            descriptions = [""]       
+    
         # change numbers to other representation if wanted
         if change_representation:
+            
             task_json = change_color_representation(task_json, new_representation)
 
         # create context
-        context = pre_context
-        context += get_context(task_json, delimiter)
-        context += post_context
+        if LARC:
+            context = ""
+        else:
+            context = get_context(task_json, delimiter)
+        
         # get test cases + solutions
         test_cases, solutions = get_tasks(task_json, delimiter)
-        # check if prompt of longest task is too long
+        
+        # get index of longest test case to check if prompt is too long
         index_of_longest_prompt = max(enumerate(test_cases), key=lambda x: len(x[1]))[0]
-        if "gpt" in model_name:
-            prompt = [
-                    {"role": "system", "content": prompt_template[0].format(sys=sys, output_format=output_format)},
-                    {"role": "user", "content": prompt_template[1].format(task=context+test_cases[index_of_longest_prompt])}
-                ]
-        else:
-            prompt = sys+str(output_format)+context+test_cases[index_of_longest_prompt]+instruction_end
-        num_tokens, token_limit = count_tokens(prompt, model_name, tokenizer)
-        if  num_tokens > token_limit:
-            print(task_file, "Prompt too long.")
-            promp_oversize_counter += 1
-            continue
-          
-        # yield prompts
-        for (i, test_case), solution in zip(enumerate(test_cases), solutions):
-            # distinguish between llama and gpt model prompt
+        index_of_shortest_description = min(enumerate(descriptions), key=lambda x: len(x[1]))[0]
+        
+        for i, LARC_description in enumerate(descriptions):
+            # check if prompt of longest task is too long
             if "gpt" in model_name:
-                prompt_llama = ""
-                prompt_gpt = [
-                    {"role": "system", "content": prompt_template[0].format(sys=sys, output_format=output_format).strip()},
-                    {"role": "user", "content": prompt_template[1].format(task=context+test_case).strip()}
-                ]
+                prompt = [
+                        {"role": "system", "content": prompt_template[0].format(sys=sys, output_format=output_format)},
+                        {"role": "user", "content": prompt_template[1].format(pre_task=pre_test_case, task=context+test_cases[index_of_longest_prompt], post_task=post_test_case+LARC_description)}
+                    ]
             else:
-                prompt_llama = prompt_template.format(sys=sys, output_format=output_format, task=context+test_case, instruction_end=instruction_end)
-                prompt_gpt = ""
-            num_tokens, _ = count_tokens(prompt_llama, model_name, tokenizer)     
-            yield {
-                "task_name": task_file,
-                "test_case_index": i,
-                "total_test_cases": len(test_cases),
-                "test_case": test_case,
-                "context": context,
-                "prompt_llama": prompt_llama.strip(),
-                "prompt_llama_tokens": num_tokens,
-                "prompt_gpt": prompt_gpt,
-                "solution": solution,
-                "directory": directory,
-                "prompt_oversize_counter": promp_oversize_counter}
+                prompt = prompt_template.format(sys=sys, output_format=output_format, pre_task=pre_test_case, task=context+test_cases[index_of_longest_prompt], post_task=post_test_case+LARC_description, instruction_end=instruction_end)
+            num_tokens, token_limit = count_tokens(prompt, model_name, tokenizer)
+            if  num_tokens > token_limit:
+                if i == index_of_shortest_description: # only count, if all descriptions for this task are too long! (for non-LARC this is always True: 0 == 0)
+                    promp_oversize_counter += 1
+                if "LARC" in directory:
+                    description_id = "-"+str(i)
+                else:
+                    description_id = ""
+                print(task_file+description_id, "Prompt too long.")
+                
+                continue
+          
+            # yield prompts
+            for (j, test_case), solution in zip(enumerate(test_cases), solutions):
+                # distinguish between llama and gpt model prompt
+                if "gpt" in model_name:
+                    prompt_llama = ""
+                    prompt_gpt = [
+                        {"role": "system", "content": prompt_template[0].format(sys=sys, output_format=output_format).strip()},
+                        {"role": "user", "content": prompt_template[1].format(pre_task=pre_test_case, task=context+test_case, post_task=post_test_case+LARC_description).strip()}
+                    ]
+                else:
+                    prompt_llama = prompt_template.format(sys=sys, output_format=output_format, pre_task=pre_test_case, task=context+test_case, post_task=post_test_case+LARC_description, instruction_end=instruction_end)
+                    prompt_gpt = ""      
+                yield {
+                    "task_name": task_file,
+                    "descriptions_index": i,
+                    "test_case_index": j,
+                    "total_test_cases": len(test_cases),
+                    "test_case": test_case,
+                    "context": context,
+                    "prompt_llama": prompt_llama.strip(),
+                    "prompt_llama_tokens": count_tokens(prompt_llama, model_name, tokenizer)[0],
+                    "prompt_gpt": prompt_gpt,
+                    "solution": solution,
+                    "directory": directory,
+                    "prompt_oversize_counter": promp_oversize_counter}
         
 def change_color_representation(task_original, new_representation):
     task = deepcopy(task_original)
@@ -424,3 +461,15 @@ def copy_solved_tasks(result_dir, task_training_dir, task_evaluation_dir, target
             print(f"File '{task}' not found in both training and evaluation directories.")
     
     print(f"Copied {counter} / {len(solved_tasks)} files to '{target_dir}'.")
+
+
+def check_model_selection(MODEL_NAMES, REVISIONS):
+    for model_name, revision in zip(MODEL_NAMES, REVISIONS):
+        print(model_name + ":" + revision)
+    user_input = input("Do you want to continue running the script? (yes/no): ").lower().strip()
+    if  user_input == 'yes':
+        # Your script logic here
+        print("Continuing the script...")
+    else:
+        print("Terminating script.")
+        sys.exit(0)

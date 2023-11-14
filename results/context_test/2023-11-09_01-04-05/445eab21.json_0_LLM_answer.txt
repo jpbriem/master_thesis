@@ -1,0 +1,228 @@
+Input token: 1834
+Output token: 1026
+################################################################
+
+LLM prompt:
+You are given a series of inputs and output pairs that share the same logic of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from '0' to '9' represent different colors, where '0' represents the background. No calculations! For example, [['0','2','0'],['0','0','5']] represents a 2 row x 3 column grid with color '2' at position (1,0) and color '5' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+You are to infer the simplest possible relation beetween input and output. The given sample pairs may not reflect all possibilities.
+
+You can refer to concepts as follows:
+- Goal-directedness: input is start and output is end state of process 
+- Geometry & topology:
+	- Lines, rectangular shapes.
+	- Symmetries, mirroring, rotations, translations.
+	- Shape upscaling or downscaling, elastic distortions.
+	- Containing / being contained / being inside or outside of a perimeter.
+	- Drawing lines, connecting points, orthogonal projections.
+	- Copying, repeating.
+	- Patterns or mosaic based on sections.
+- Objects:
+	- Objects are shapes based on similar colors or based on surroundings.
+	- Object transformations based on geometry and topology.
+	- Touching objects have contact with each other.
+	- Noise pixels.
+-  Arithmetics based on objects or shapes pixels:
+	- Counting.
+	- Sorting.
+
+The list is not exhaustive. Transformations can be conditional.
+
+You are to output only the following in json format: {'reflection': 'reflect on the answer', 'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 'instructions': 'describe the transformation actions in detail step by step', 'test_output': "Use the instructions to transform the test input grid and return only the resulting output grid"}.
+Do not use quotation marks ' or " within the fields unless it is required for the python code.
+
+train input:
+0, 7, 7, 7, 7, 0, 0, 0, 0, 0
+0, 7, 0, 0, 7, 0, 0, 0, 0, 0
+0, 7, 0, 0, 7, 0, 0, 0, 0, 0
+0, 7, 7, 7, 7, 0, 0, 0, 0, 0
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+0, 0, 0, 8, 8, 8, 8, 8, 0, 0
+0, 0, 0, 8, 0, 0, 0, 8, 0, 0
+0, 0, 0, 8, 0, 0, 0, 8, 0, 0
+0, 0, 0, 8, 8, 8, 8, 8, 0, 0
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+train output:
+8, 8
+8, 8
+End of example.
+train input:
+6, 6, 6, 6, 6, 0, 0, 0, 0, 0
+6, 0, 0, 0, 6, 0, 0, 0, 0, 0
+6, 0, 0, 0, 6, 0, 0, 0, 0, 0
+6, 6, 6, 6, 6, 0, 0, 0, 0, 0
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+0, 0, 7, 7, 7, 7, 7, 7, 0, 0
+0, 0, 7, 0, 0, 0, 0, 7, 0, 0
+0, 0, 7, 0, 0, 0, 0, 7, 0, 0
+0, 0, 7, 7, 7, 7, 7, 7, 0, 0
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+train output:
+7, 7
+7, 7
+End of example.
+train input:
+0, 4, 4, 4, 4, 4, 4, 0, 0, 0
+0, 4, 0, 0, 0, 0, 4, 0, 0, 0
+0, 4, 0, 0, 0, 0, 4, 0, 0, 0
+0, 4, 0, 0, 0, 0, 4, 0, 0, 0
+0, 4, 0, 0, 0, 0, 4, 0, 0, 0
+0, 4, 0, 0, 0, 0, 4, 0, 0, 0
+0, 4, 4, 4, 4, 4, 4, 0, 0, 0
+0, 0, 0, 0, 0, 0, 0, 2, 2, 2
+0, 0, 0, 0, 0, 0, 0, 2, 0, 2
+0, 0, 0, 0, 0, 0, 0, 2, 2, 2
+train output:
+4, 4
+4, 4
+End of example.
+test input:
+3, 3, 3, 3, 3, 0, 9, 9, 9, 9
+3, 0, 0, 0, 3, 0, 9, 0, 0, 9
+3, 0, 0, 0, 3, 0, 9, 0, 0, 9
+3, 0, 0, 0, 3, 0, 9, 0, 0, 9
+3, 0, 0, 0, 3, 0, 9, 0, 0, 9
+3, 0, 0, 0, 3, 0, 9, 0, 0, 9
+3, 0, 0, 0, 3, 0, 9, 0, 0, 9
+3, 0, 0, 0, 3, 0, 9, 0, 0, 9
+3, 3, 3, 3, 3, 0, 9, 0, 0, 9
+0, 0, 0, 0, 0, 0, 9, 9, 9, 9
+test output:
+################################################################
+
+LLM answer:
+
+9, 9
+9, 9
+9, 9
+9, 9
+9, 9
+9, 9
+9, 9
+9, 9
+9, 9
+9, 9
+End of example.
+'''
+import sys
+from collections import defaultdict
+
+def get_input():
+    '''
+    Reads the input file and returns a dictionary containing the training data.
+    '''
+    train = {}
+    with open(sys.argv[1], 'r') as f:
+        for line in f:
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            elif line.startswith('train'):
+                train_data = []
+                while True:
+                    line = next(f)
+                    if line.startswith('test'):
+                        break
+                    else:
+                        train_data.append([int(x) for x in line.split()])
+                train[line[:-1]] = train_data
+            elif line.startswith('test'):
+                test_data = []
+                while True:
+                    line = next(f)
+                    if line.startswith('test'):
+                        break
+                    else:
+                        test_data.append([int(x) for x in line.split()])
+                train[line[:-1]] = test_data
+    return train
+
+def get_output(train):
+    '''
+    Returns a dictionary containing the expected outputs for the training data.
+    '''
+    output = {}
+    for key, val in train.items():
+        if key == 'test':
+            output[key] = val[-1][:-1]
+        else:
+            output[key] = val[-1]
+    return output
+
+def get_test_input(train):
+    '''
+    Returns the test input as a list of lists.
+    '''
+    test_input = []
+    for i in range(len(train['test'])):
+        test_input.append([int(x) for x in train['test'][i]])
+    return test_input
+
+def get_test_output(train):
+    '''
+    Returns the test output as a list of lists.
+    '''
+    test_output = []
+    for i in range(len(train['test'])):
+        test_output.append([int(x) for x in train['test'][-1][i].split()[1:]])
+    return test_output
+
+def get_training_pairs(train):
+    '''
+    Returns a list of tuples containing the input and output pairs for the training data.
+    '''
+    training_pairs = []
+    for key, val in train.items():
+        if key!= 'test':
+            training_pairs += [[val[i], val[-1]] for i in range(len(val))]
+    return training_pairs
+
+def get_test_pair(train):
+    '''
+    Returns a tuple containing the test input and output.
+    '''
+    test_pair = [get_test_input(train), get_test_output(train)]
+    return test_pair
+
+def get_answer(train):
+    '''
+    Returns a dictionary containing the answers for the training data.
+    '''
+    answer = {}
+    for key, val in train.items():
+        if key == 'test':
+            answer[key] = val[-1][:-1]
+        else:
+            answer[key] = val[-1]
+    return answer
+
+def get_test_answers(train):
+    '''
+    Returns a dictionary containing the answers for the test data.
+    '''
+    test_answers = {}
+    for key, val in train.items():
+        if key == 'test':
+            test_answers[key] = val[-1][:-1]
+        else:
+            test_answers[key] = val[-1]
+    return test_answers
+
+def get_test_answer(train):
+    '''
+    Returns a dictionary containing the answer for the test data.
+    '''
+    test_answer = {}
+    for key, val in train.items():
+        if key == 'test':
+            test_answer[key] = val[-1][:-1]
+        else:
+            test_answer[key] = val[-1]
+    return test_answer
+
+def get_
+################################################################
+
+Solution:
+3, 3
+3, 3
+

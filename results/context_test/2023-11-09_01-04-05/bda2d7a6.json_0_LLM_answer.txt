@@ -1,0 +1,206 @@
+Input token: 1522
+Output token: 1026
+################################################################
+
+LLM prompt:
+You are given a series of inputs and output pairs that share the same logic of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from '0' to '9' represent different colors, where '0' represents the background. No calculations! For example, [['0','2','0'],['0','0','5']] represents a 2 row x 3 column grid with color '2' at position (1,0) and color '5' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+You are to infer the simplest possible relation beetween input and output. The given sample pairs may not reflect all possibilities.
+
+You can refer to concepts as follows:
+- Goal-directedness: input is start and output is end state of process 
+- Geometry & topology:
+	- Lines, rectangular shapes.
+	- Symmetries, mirroring, rotations, translations.
+	- Shape upscaling or downscaling, elastic distortions.
+	- Containing / being contained / being inside or outside of a perimeter.
+	- Drawing lines, connecting points, orthogonal projections.
+	- Copying, repeating.
+	- Patterns or mosaic based on sections.
+- Objects:
+	- Objects are shapes based on similar colors or based on surroundings.
+	- Object transformations based on geometry and topology.
+	- Touching objects have contact with each other.
+	- Noise pixels.
+-  Arithmetics based on objects or shapes pixels:
+	- Counting.
+	- Sorting.
+
+The list is not exhaustive. Transformations can be conditional.
+
+You are to output only the following in json format: {'reflection': 'reflect on the answer', 'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 'instructions': 'describe the transformation actions in detail step by step', 'test_output': "Use the instructions to transform the test input grid and return only the resulting output grid"}.
+Do not use quotation marks ' or " within the fields unless it is required for the python code.
+
+train input:
+3, 3, 3, 3, 3, 3
+3, 2, 2, 2, 2, 3
+3, 2, 0, 0, 2, 3
+3, 2, 0, 0, 2, 3
+3, 2, 2, 2, 2, 3
+3, 3, 3, 3, 3, 3
+train output:
+0, 0, 0, 0, 0, 0
+0, 3, 3, 3, 3, 0
+0, 3, 2, 2, 3, 0
+0, 3, 2, 2, 3, 0
+0, 3, 3, 3, 3, 0
+0, 0, 0, 0, 0, 0
+End of example.
+train input:
+0, 0, 0, 0, 0, 0
+0, 7, 7, 7, 7, 0
+0, 7, 6, 6, 7, 0
+0, 7, 6, 6, 7, 0
+0, 7, 7, 7, 7, 0
+0, 0, 0, 0, 0, 0
+train output:
+6, 6, 6, 6, 6, 6
+6, 0, 0, 0, 0, 6
+6, 0, 7, 7, 0, 6
+6, 0, 7, 7, 0, 6
+6, 0, 0, 0, 0, 6
+6, 6, 6, 6, 6, 6
+End of example.
+train input:
+8, 8, 8, 8, 8, 8, 8, 8
+8, 0, 0, 0, 0, 0, 0, 8
+8, 0, 5, 5, 5, 5, 0, 8
+8, 0, 5, 8, 8, 5, 0, 8
+8, 0, 5, 8, 8, 5, 0, 8
+8, 0, 5, 5, 5, 5, 0, 8
+8, 0, 0, 0, 0, 0, 0, 8
+8, 8, 8, 8, 8, 8, 8, 8
+train output:
+5, 5, 5, 5, 5, 5, 5, 5
+5, 8, 8, 8, 8, 8, 8, 5
+5, 8, 0, 0, 0, 0, 8, 5
+5, 8, 0, 5, 5, 0, 8, 5
+5, 8, 0, 5, 5, 0, 8, 5
+5, 8, 0, 0, 0, 0, 8, 5
+5, 8, 8, 8, 8, 8, 8, 5
+5, 5, 5, 5, 5, 5, 5, 5
+End of example.
+test input:
+9, 9, 9, 9, 9, 9
+9, 0, 0, 0, 0, 9
+9, 0, 1, 1, 0, 9
+9, 0, 1, 1, 0, 9
+9, 0, 0, 0, 0, 9
+9, 9, 9, 9, 9, 9
+test output:
+################################################################
+
+LLM answer:
+
+1, 1, 1, 1, 1, 1
+1, 9, 9, 9, 9, 1
+1, 9, 0, 0, 9, 1
+1, 9, 0, 0, 9, 1
+1, 9, 9, 9, 9, 1
+1, 1, 1, 1, 1, 1
+End of example.
+'''
+import sys
+from collections import defaultdict
+
+def get_input():
+    '''Gets the input data.'''
+    # Get the input file name.
+    try:
+        filename = sys.argv[1]
+    except IndexError:
+        print('Usage: python3 train.py <filename>')
+        exit(1)
+    # Open the file.
+    with open(filename, 'r') as f:
+        # Read the first line.
+        n, m, k, l = map(int, f.readline().split())
+        # Read the rest of the lines.
+        data = []
+        for i in range(k):
+            data.append([list(map(int, line.strip())) for line in f])
+        # Return the data.
+        return n, m, k, l, data
+
+def get_output():
+    '''Gets the output data.'''
+    # Get the output file name.
+    try:
+        filename = sys.argv[2]
+    except IndexError:
+        print('Usage: python3 train.py <filename>')
+        exit(1)
+    # Open the file.
+    with open(filename, 'r') as f:
+        # Read the first line.
+        n, m, k, l = map(int, f.readline().split())
+        # Read the rest of the lines.
+        data = []
+        for i in range(l):
+            data.append([list(map(int, line.strip())) for line in f])
+        # Return the data.
+        return n, m, k, l, data
+
+def main():
+    '''Main function.'''
+    # Get the input data.
+    n, m, k, l, data = get_input()
+    # Get the output data.
+    n, m, k, l, data_out = get_output()
+    # Check if the dimensions match.
+    assert n == n and m == m and k == k and l == l
+    # Initialize the dictionary.
+    d = defaultdict(lambda: defaultdict(str))
+    # Iterate over the input data.
+    for i in range(k):
+        # Get the input and output.
+        input = data[i]
+        output = data_out[i]
+        # Get the reflection.
+        reflections = ['reflect on the answer']
+        # Get the grid changes.
+        grid_changes = ''
+        # Get the pixel changes.
+        pixel_changes = ''
+        # Get the object changes.
+        object_changes = ''
+        # Get the overall pattern.
+        overall_pattern = ''
+        # Get the instructions.
+        instructions = ''
+        # Get the test output.
+        test_output = ''
+        # Iterate over the input.
+        for j in range(n):
+            # Iterate over the columns.
+            for c in range(m):
+                # Get the current value.
+                v = input[j][c]
+                # If the value is not equal to the corresponding value in the output.
+                if v!= output[j][c]:
+                    # Add the reflection.
+                    reflections += ','+ str(v)
+                    # Add the grid changes.
+                    grid_changes += ','+ str((j, c))
+                    # Add the pixel changes.
+                    pixel_changes += ','+ str((j, c))
+                    # Add the object changes.
+                    object_changes += ','+ str((j, c))
+                    # Add the overall pattern.
+                    overall_pattern += ','+ str((j, c))
+                    # Add the instructions.
+                    instructions += ','+ str((j, c))
+                    # Add the test output.
+                    test_output += ','+ str((j, c))
+        # Remove the commas.
+        reflections = reflections[2:]
+        grid_changes = grid_changes[2:
+################################################################
+
+Solution:
+1, 1, 1, 1, 1, 1
+1, 9, 9, 9, 9, 1
+1, 9, 0, 0, 9, 1
+1, 9, 0, 0, 9, 1
+1, 9, 9, 9, 9, 1
+1, 1, 1, 1, 1, 1
+

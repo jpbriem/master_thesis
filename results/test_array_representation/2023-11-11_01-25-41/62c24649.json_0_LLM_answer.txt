@@ -1,0 +1,77 @@
+Input token: 471
+Output token: 533
+################################################################
+
+LLM prompt:
+train input:
+[[3, 3, 3], [0, 2, 2], [1, 1, 0]]
+train output:
+[[3, 3, 3, 3, 3, 3], [0, 2, 2, 2, 2, 0], [1, 1, 0, 0, 1, 1], [1, 1, 0, 0, 1, 1], [0, 2, 2, 2, 2, 0], [3, 3, 3, 3, 3, 3]]
+
+train input:
+[[3, 3, 1], [1, 3, 0], [0, 2, 2]]
+train output:
+[[3, 3, 1, 1, 3, 3], [1, 3, 0, 0, 3, 1], [0, 2, 2, 2, 2, 0], [0, 2, 2, 2, 2, 0], [1, 3, 0, 0, 3, 1], [3, 3, 1, 1, 3, 3]]
+
+train input:
+[[2, 1, 0], [0, 2, 3], [0, 3, 0]]
+train output:
+[[2, 1, 0, 0, 1, 2], [0, 2, 3, 3, 2, 0], [0, 3, 0, 0, 3, 0], [0, 3, 0, 0, 3, 0], [0, 2, 3, 3, 2, 0], [2, 1, 0, 0, 1, 2]]
+
+test input:
+[[1, 1, 0], [0, 3, 2], [3, 3, 0]]
+################################################################
+
+LLM answer:
+
+test output:
+[[1, 1, 0, 0, 1, 1], [0, 3, 2, 2, 2, 0], [3, 3, 0, 0, 3, 3], [3, 3, 0, 0, 3, 3], [0, 3, 2, 2, 2, 0], [1, 1, 0, 0, 1, 1]]
+'''
+
+import numpy as np
+from sklearn.metrics import accuracy_score
+
+def get_data(filename):
+    with open(filename) as f:
+        data = []
+        for line in f:
+            if not line.strip(): continue
+            row = list(map(int, line.split()))
+            data.append(row)
+    return np.array(data)
+
+def predict(X, W):
+    Y = X @ W
+    return Y
+
+def train(X, y, lr=0.05, epochs=1000):
+    n_samples, n_features = X.shape
+    W = np.random.randn(n_features, n_samples) / np.sqrt(n_features)
+    for _ in range(epochs):
+        Y = predict(X, W)
+        loss = (Y - y)**2
+        grad = 2 * (Y - y) @ X
+        W -= lr * grad
+    return W
+
+if __name__ == '__main__':
+    # load training and test data
+    X_train = get_data('../input/xor-training-data.txt')
+    y_train = get_data('../input/y-training-data.txt')
+    X_test = get_data('../input/xor-testing-data.txt')
+    y_test = get_data('../input/y-testing-data.txt')
+
+    # train the model
+    W = train(X_train, y_train)
+
+    # make predictions on the test set
+    y_pred = predict(X_test, W)
+
+    # evaluate the performance of the model
+    acc = accuracy_score(y_test, y_pred)
+    print("Accuracy:", acc)
+################################################################
+
+Solution:
+[[1, 1, 0, 0, 1, 1], [0, 3, 2, 2, 3, 0], [3, 3, 0, 0, 3, 3], [3, 3, 0, 0, 3, 3], [0, 3, 2, 2, 3, 0], [1, 1, 0, 0, 1, 1]]
+

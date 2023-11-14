@@ -1,0 +1,116 @@
+Input token: 743
+Output token: 1026
+################################################################
+
+LLM prompt:
+train input:
+[[0, 0, 0], [0, 2, 0], [0, 0, 0]]
+train output:
+[[2, 2, 2], [2, 0, 2], [2, 2, 2]]
+
+train input:
+[[0, 0, 0], [0, 0, 0], [0, 3, 0], [0, 0, 0], [0, 0, 0]]
+train output:
+[[3, 3, 3], [3, 0, 3], [3, 0, 3], [3, 0, 3], [3, 3, 3]]
+
+train input:
+[[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]
+train output:
+[[1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1]]
+
+train input:
+[[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 6, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+train output:
+[[6, 6, 6, 6, 6], [6, 0, 0, 0, 6], [6, 0, 0, 0, 6], [6, 0, 0, 0, 6], [6, 6, 6, 6, 6]]
+
+test input:
+[[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 8, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]
+################################################################
+
+LLM answer:
+
+test output:
+[[8, 8, 8, 8, 8, 8, 8], [8, 0, 0, 0, 0, 0, 8], [8, 0, 0, 0, 0, 0, 8], [8, 0, 0, 0, 0, 0, 8], [8, 8, 8, 8, 8, 8, 8], [8, 0, 0, 0, 0, 0, 8], [8, 0, 0, 0, 0, 0, 8], [8, 0, 0, 0, 0, 0, 8], [8, 8, 8, 8, 8, 8, 8]]
+'''
+
+import numpy as np
+from sklearn.metrics import accuracy_score
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+class NeuralNetwork():
+    def __init__(self, n_inputs, n_hidden, n_outputs):
+        self.n_inputs = n_inputs
+        self.n_hidden = n_hidden
+        self.n_outputs = n_outputs
+
+        # initialize weights and biases
+        self.weights_ih = np.random.randn(self.n_hidden, self.n_inputs) * 0.01
+        self.biases_h = np.zeros((self.n_hidden, 1))
+        self.weights_ho = np.random.randn(self.n_outputs, self.n_hidden) * 0.01
+        self.biases_o = np.zeros((self.n_outputs, 1))
+
+    def forward(self, inputs):
+        # calculate hidden layer outputs
+        zs_h = np.dot(self.weights_ih, inputs) + self.biases_h
+        a_h = sigmoid(zs_h)
+
+        # calculate output layer outputs
+        zs_o = np.dot(self.weights_ho, a_h) + self.biases_o
+        a_o = sigmoid(zs_o)
+
+        return a_o
+
+    def backward(self, inputs, targets):
+        # calculate delta for the output layer
+        delta_o = a_o - targets
+
+        # calculate delta for the hidden layer
+        delta_h = np.dot(self.weights_ho.T, delta_o) * sigmoid(zs_h) * (1 - sigmoid(zs_h))
+
+        # update weights and biases using gradient descent
+        self.weights_ho += np.dot(delta_o, a_h.T)
+        self.biases_o += np.sum(delta_o, axis=0, keepdims=True)
+        self.weights_ih += np.dot(delta_h, inputs.T)
+        self.biases_h += np.sum(delta_h, axis=0, keepdims=True)
+
+    def predict(self, inputs):
+        return self.forward(inputs)
+
+    def evaluate(self, X, y):
+        predictions = []
+        for i in range(len(X)):
+            prediction = self.predict(X[i])
+            predictions.append(prediction)
+        acc = accuracy_score(y, predictions)
+        print("Accuracy:", acc)
+
+if __name__ == "__main__":
+    # load data
+    with open('data/mnist-small.csv', 'r') as f:
+        lines = f.readlines()
+
+    X = []
+    y = []
+    for line in lines:
+        values = line.split(',')
+        x = list(map(int, values[:784]))
+        y.append(int(values[-1]))
+        X.append(x)
+
+    # split into training and test sets
+    X_train = X[:500]
+    y_train = y[:500]
+    X_test = X[500:]
+    y_test = y[500:]
+
+    # create neural network model
+    nn = NeuralNetwork(n_inputs=784, n_hidden=100, n_outputs=10)
+
+    #
+################################################################
+
+Solution:
+[[8, 8, 8, 8, 8, 8, 8], [8, 0, 0, 0, 0, 0, 8], [8, 0, 0, 0, 0, 0, 8], [8, 0, 0, 0, 0, 0, 8], [8, 0, 0, 0, 0, 0, 8], [8, 0, 0, 0, 0, 0, 8], [8, 0, 0, 0, 0, 0, 8], [8, 0, 0, 0, 0, 0, 8], [8, 8, 8, 8, 8, 8, 8]]
+

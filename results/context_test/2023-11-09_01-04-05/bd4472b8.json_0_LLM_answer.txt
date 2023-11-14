@@ -1,0 +1,228 @@
+Input token: 1220
+Output token: 1026
+################################################################
+
+LLM prompt:
+You are given a series of inputs and output pairs that share the same logic of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from '0' to '9' represent different colors, where '0' represents the background. No calculations! For example, [['0','2','0'],['0','0','5']] represents a 2 row x 3 column grid with color '2' at position (1,0) and color '5' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+You are to infer the simplest possible relation beetween input and output. The given sample pairs may not reflect all possibilities.
+
+You can refer to concepts as follows:
+- Goal-directedness: input is start and output is end state of process 
+- Geometry & topology:
+	- Lines, rectangular shapes.
+	- Symmetries, mirroring, rotations, translations.
+	- Shape upscaling or downscaling, elastic distortions.
+	- Containing / being contained / being inside or outside of a perimeter.
+	- Drawing lines, connecting points, orthogonal projections.
+	- Copying, repeating.
+	- Patterns or mosaic based on sections.
+- Objects:
+	- Objects are shapes based on similar colors or based on surroundings.
+	- Object transformations based on geometry and topology.
+	- Touching objects have contact with each other.
+	- Noise pixels.
+-  Arithmetics based on objects or shapes pixels:
+	- Counting.
+	- Sorting.
+
+The list is not exhaustive. Transformations can be conditional.
+
+You are to output only the following in json format: {'reflection': 'reflect on the answer', 'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 'instructions': 'describe the transformation actions in detail step by step', 'test_output': "Use the instructions to transform the test input grid and return only the resulting output grid"}.
+Do not use quotation marks ' or " within the fields unless it is required for the python code.
+
+train input:
+2, 1, 4
+5, 5, 5
+0, 0, 0
+0, 0, 0
+0, 0, 0
+0, 0, 0
+0, 0, 0
+0, 0, 0
+train output:
+2, 1, 4
+5, 5, 5
+2, 2, 2
+1, 1, 1
+4, 4, 4
+2, 2, 2
+1, 1, 1
+4, 4, 4
+End of example.
+train input:
+3, 2, 1, 4
+5, 5, 5, 5
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+train output:
+3, 2, 1, 4
+5, 5, 5, 5
+3, 3, 3, 3
+2, 2, 2, 2
+1, 1, 1, 1
+4, 4, 4, 4
+3, 3, 3, 3
+2, 2, 2, 2
+1, 1, 1, 1
+4, 4, 4, 4
+End of example.
+train input:
+8, 3
+5, 5
+0, 0
+0, 0
+0, 0
+0, 0
+train output:
+8, 3
+5, 5
+8, 8
+3, 3
+8, 8
+3, 3
+End of example.
+test input:
+1, 2, 3, 4, 8
+5, 5, 5, 5, 5
+0, 0, 0, 0, 0
+0, 0, 0, 0, 0
+0, 0, 0, 0, 0
+0, 0, 0, 0, 0
+0, 0, 0, 0, 0
+0, 0, 0, 0, 0
+0, 0, 0, 0, 0
+0, 0, 0, 0, 0
+0, 0, 0, 0, 0
+0, 0, 0, 0, 0
+test output:
+################################################################
+
+LLM answer:
+
+1, 2, 3, 4, 8
+5, 5, 5, 5, 5
+1, 1, 1, 1, 1
+2, 2, 2, 2, 2
+3, 3, 3, 3, 3
+4, 4, 4, 4, 4
+8, 8, 8, 8, 8
+1, 1, 1, 1, 1
+2, 2, 2, 2, 2
+3, 3, 3, 3, 3
+4, 4, 4, 4, 4
+8, 8, 8, 8, 8
+End of example.
+'''
+import numpy as np
+from collections import defaultdict
+import random
+import copy
+import time
+import math
+import sys
+sys.path.append('../')
+from utils import *
+
+def get_input():
+    train = []
+    test = []
+    with open("data/pixels_to_numbers.txt", "r") as f:
+        for line in f:
+            line = line.strip()
+            if len(line) == 0: continue
+            if line[0] == '#': continue
+            if line[0] == 't':
+                train.append([int(x) for x in line.split()[1:]])
+            elif line[0] == 'T':
+                test.append([int(x) for x in line.split()[1:]])
+    return train, test
+
+def get_output(train):
+    out = {}
+    for i in range(len(train)):
+        out[i] = train[i][:-1]
+    return out
+
+def get_dimensions(train):
+    dim = None
+    for i in range(len(train)):
+        if dim is None:
+            dim = train[i].shape
+        else:
+            assert train[i].shape == dim
+    return dim
+
+def get_max_value(train):
+    max_val = -1
+    for i in range(len(train)):
+        val = np.amax(train[i])
+        if val > max_val:
+            max_val = val
+    return max_val + 1
+
+def get_min_value(train):
+    min_val = 10
+    for i in range(len(train)):
+        val = np.amin(train[i])
+        if val < min_val:
+            min_val = val
+    return min_val
+
+def get_values(train):
+    values = set()
+    for i in range(len(train)):
+        values |= set(np.unique(train[i]))
+    return sorted(list(values))
+
+def get_colors(train):
+    colors = defaultdict(lambda : 0)
+    for i in range(len(train)):
+        for j in range(train[i].shape[0]):
+            for k in range(train[i].shape[1]):
+                colors[train[i][j][k]] += 1
+    return {key: value for key, value in colors.items()}
+
+def get_color_counts(train):
+    counts = defaultdict(lambda : 0)
+    for i in range(len(train)):
+        for j in range(train[i].shape[0]):
+            for k in range(train[i].shape[1]):
+                counts[train[i][j][k]] += 1
+    return {key: value for key, value in counts.items()}
+
+def get_color_distribution(train):
+    distribution = defaultdict(lambda : 0)
+    for i in range(len(train)):
+        for j in range(train[i].shape[0]):
+            for k in range(train[i].shape[1]):
+                distribution[train[i][j][k]] += 1
+    total = sum(distribution.values())
+    return {key: round((value / total) * 100, 2) for key, value in distribution.items()}
+
+def get_color_histogram(train):
+    histogram = defaultdict(lambda : 0)
+    for i in range(len(train)):
+        for j in range(train[i].shape[0]):
+            for k in
+################################################################
+
+Solution:
+1, 2, 3, 4, 8
+5, 5, 5, 5, 5
+1, 1, 1, 1, 1
+2, 2, 2, 2, 2
+3, 3, 3, 3, 3
+4, 4, 4, 4, 4
+8, 8, 8, 8, 8
+1, 1, 1, 1, 1
+2, 2, 2, 2, 2
+3, 3, 3, 3, 3
+4, 4, 4, 4, 4
+8, 8, 8, 8, 8
+

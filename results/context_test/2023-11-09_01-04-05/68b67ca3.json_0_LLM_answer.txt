@@ -1,0 +1,175 @@
+Input token: 1124
+Output token: 1026
+################################################################
+
+LLM prompt:
+You are given a series of inputs and output pairs that share the same logic of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from '0' to '9' represent different colors, where '0' represents the background. No calculations! For example, [['0','2','0'],['0','0','5']] represents a 2 row x 3 column grid with color '2' at position (1,0) and color '5' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+You are to infer the simplest possible relation beetween input and output. The given sample pairs may not reflect all possibilities.
+
+You can refer to concepts as follows:
+- Goal-directedness: input is start and output is end state of process 
+- Geometry & topology:
+	- Lines, rectangular shapes.
+	- Symmetries, mirroring, rotations, translations.
+	- Shape upscaling or downscaling, elastic distortions.
+	- Containing / being contained / being inside or outside of a perimeter.
+	- Drawing lines, connecting points, orthogonal projections.
+	- Copying, repeating.
+	- Patterns or mosaic based on sections.
+- Objects:
+	- Objects are shapes based on similar colors or based on surroundings.
+	- Object transformations based on geometry and topology.
+	- Touching objects have contact with each other.
+	- Noise pixels.
+-  Arithmetics based on objects or shapes pixels:
+	- Counting.
+	- Sorting.
+
+The list is not exhaustive. Transformations can be conditional.
+
+You are to output only the following in json format: {'reflection': 'reflect on the answer', 'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 'instructions': 'describe the transformation actions in detail step by step', 'test_output': "Use the instructions to transform the test input grid and return only the resulting output grid"}.
+Do not use quotation marks ' or " within the fields unless it is required for the python code.
+
+train input:
+2, 0, 2, 0, 1, 0
+0, 0, 0, 0, 0, 0
+2, 0, 1, 0, 0, 0
+0, 0, 0, 0, 0, 0
+3, 0, 0, 0, 0, 0
+0, 0, 0, 0, 0, 0
+train output:
+2, 2, 1
+2, 1, 0
+3, 0, 0
+End of example.
+train input:
+3, 0, 0, 0, 2, 0
+0, 0, 0, 0, 0, 0
+8, 0, 0, 0, 8, 0
+0, 0, 0, 0, 0, 0
+0, 0, 1, 0, 0, 0
+0, 0, 0, 0, 0, 0
+train output:
+3, 0, 2
+8, 0, 8
+0, 1, 0
+End of example.
+train input:
+1, 0, 0, 0, 0, 0
+0, 0, 0, 0, 0, 0
+0, 0, 2, 0, 0, 0
+0, 0, 0, 0, 0, 0
+6, 0, 0, 0, 6, 0
+0, 0, 0, 0, 0, 0
+train output:
+1, 0, 0
+0, 2, 0
+6, 0, 6
+End of example.
+test input:
+3, 0, 3, 0, 4, 0
+0, 0, 0, 0, 0, 0
+7, 0, 0, 0, 1, 0
+0, 0, 0, 0, 0, 0
+7, 0, 0, 0, 1, 0
+0, 0, 0, 0, 0, 0
+test output:
+################################################################
+
+LLM answer:
+
+3, 0, 3
+7, 0, 0
+7, 0, 1
+End of example.
+
+'''
+import numpy as np
+from collections import Counter
+
+def get_input():
+    train = []
+    test = []
+    while True:
+        line = input()
+        if len(line) == 0: break
+        if line[0] == '#': continue
+        if line[0] == 't':
+            train.append([int(x) for x in line.split()[1].strip().split(',')])
+        elif line[0] == 'o':
+            train.append([int(x) for x in line.split()[1].strip().split(',')])
+        elif line[0] == 'i':
+            test.append([int(x) for x in line.split()[1].strip().split(',')])
+        else:
+            print('Invalid input')
+            exit(-1)
+    return train, test
+
+def get_dimensions(arr):
+    return arr.shape[0], arr.shape[1]
+
+def get_pixels(arr):
+    return arr.flatten()
+
+def get_objects(arr):
+    # Get unique pixel values
+    pix_vals = set(get_pixels(arr))
+    # Create an array of zeros with the same dimensions as the original array
+    obj_arr = np.zeros((arr.shape[0], arr.shape[1]))
+    # Iterate over each pixel value and assign it to the corresponding object
+    for i, val in enumerate(pix_vals):
+        obj_arr[np.where(arr == val)] = i + 1
+    return obj_arr
+
+def get_counts(obj_arr):
+    counts = {}
+    for i in range(len(obj_arr)):
+        counts[i+1] = sum(obj_arr == i+1)
+    return counts
+
+def get_centers(obj_arr):
+    centers = {}
+    for i in range(len(obj_arr)):
+        centers[i+1] = tuple(np.mean(np.nonzero(obj_arr == i+1)[0], axis=0))
+    return centers
+
+def get_distances(obj_arr):
+    distances = {}
+    for i in range(len(obj_arr)):
+        distances[i+1] = np.linalg.norm(np.array(obj_arr[np.where(obj_arr == i+1)]) - np.array(centers[i+1]), axis=1)
+    return distances
+
+def get_neighbors(obj_arr):
+    neighbors = {}
+    for i in range(len(obj_arr)):
+        neighbors[i+1] = {j: np.sum(np.abs(obj_arr[np.where(obj_arr == j)] - obj_arr[np.where(obj_arr == i+1)]) < 1) for j in range(1, len(obj_arr)+1)}
+    return neighbors
+
+def get_contours(obj_arr):
+    contours = {}
+    for i in range(len(obj_arr)):
+        contours[i+1] = np.unique(np.concatenate([np.where(obj_arr == i+1)[0][:-1], np.where(obj_arr == i+1)[0][1:]]))
+    return contours
+
+def get_boundaries(obj_arr):
+    boundaries = {}
+    for i in range(len(obj_arr)):
+        boundaries[i+1] = np.unique(np.concatenate([np.where(obj_arr == i+1)[0][:-1], np.where(obj_arr == i+1)[0][1:]], axis=0))
+    return boundaries
+
+def get_perimeters(obj_arr):
+    perimeters = {}
+    for i in range(len(obj_arr)):
+        perimeters[i+1] = np.sum(np.diff(np.concatenate([np.where(obj_arr == i+1)[0][:-1], np.where(obj_arr == i+1)[0][1:]], axis=0)))
+    return perimeters
+
+def get_areas(obj_arr):
+    areas = {}
+    for i in range(len(
+################################################################
+
+Solution:
+3, 3, 4
+7, 0, 1
+7, 0, 1
+

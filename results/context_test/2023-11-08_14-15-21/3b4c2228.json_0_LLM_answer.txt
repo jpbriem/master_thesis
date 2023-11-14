@@ -1,0 +1,211 @@
+Input token: 1445
+Output token: 1026
+################################################################
+
+LLM prompt:
+You are given a series of inputs and output pairs that share the same logic of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from '0' to '9' represent different colors, where '0' represents the background. No calculations! For example, [['0','2','0'],['0','0','5']] represents a 2 row x 3 column grid with color '2' at position (1,0) and color '5' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+You are to infer the simplest possible relation beetween input and output. The given sample pairs may not reflect all possibilities.
+
+You can refer to concepts as follows:
+- Goal-directedness: input is start and output is end state of process 
+- Geometry & topology:
+	- Lines, rectangular shapes.
+	- Symmetries, mirroring, rotations, translations.
+	- Shape upscaling or downscaling, elastic distortions.
+	- Containing / being contained / being inside or outside of a perimeter.
+	- Drawing lines, connecting points, orthogonal projections.
+	- Copying, repeating.
+	- Patterns or mosaic based on sections.
+- Objects:
+	- Objects are shapes based on similar colors or based on surroundings.
+	- Object transformations based on geometry and topology.
+	- Touching objects have contact with each other.
+	- Noise pixels.
+-  Arithmetics based on objects or shapes pixels:
+	- Counting.
+	- Sorting.
+
+The list is not exhaustive. Transformations can be conditional.
+
+You are to output only the following in json format: {'reflection': 'reflect on the answer', 'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 'instructions': 'describe the transformation actions in detail step by step', 'test_output': "Use the instructions to transform the test input grid and return only the resulting output grid"}.
+Do not use quotation marks ' or " within the fields unless it is required for the python code.
+
+train input:
+2, 2, 0, 3, 0, 0, 3
+2, 2, 0, 2, 2, 0, 0
+0, 0, 0, 2, 2, 0, 0
+2, 3, 3, 0, 0, 2, 2
+0, 3, 3, 0, 0, 2, 2
+0, 0, 0, 0, 3, 3, 0
+3, 0, 2, 0, 3, 3, 0
+train output:
+1, 0, 0
+0, 1, 0
+0, 0, 0
+End of example.
+train input:
+0, 3, 3, 0, 0
+0, 3, 3, 0, 0
+0, 0, 0, 0, 0
+2, 2, 0, 0, 2
+2, 2, 0, 0, 0
+0, 0, 0, 2, 2
+0, 0, 0, 2, 2
+train output:
+1, 0, 0
+0, 0, 0
+0, 0, 0
+End of example.
+train input:
+0, 0, 3, 3, 0, 0, 0
+2, 0, 3, 3, 0, 3, 0
+0, 0, 0, 0, 0, 0, 0
+3, 3, 0, 0, 2, 2, 0
+3, 3, 0, 0, 2, 2, 0
+0, 0, 3, 3, 0, 0, 0
+0, 0, 3, 3, 0, 0, 0
+train output:
+1, 0, 0
+0, 1, 0
+0, 0, 1
+End of example.
+train input:
+0, 3, 3, 0, 0, 0, 3
+0, 3, 3, 0, 0, 0, 0
+0, 0, 0, 0, 2, 0, 0
+3, 0, 0, 0, 3, 3, 0
+0, 0, 3, 0, 3, 3, 0
+train output:
+1, 0, 0
+0, 1, 0
+0, 0, 0
+End of example.
+train input:
+0, 0, 0, 2, 2
+3, 3, 0, 2, 2
+3, 3, 0, 0, 0
+0, 0, 2, 2, 0
+3, 0, 2, 2, 0
+train output:
+1, 0, 0
+0, 0, 0
+0, 0, 0
+End of example.
+test input:
+0, 0, 0, 0, 0
+0, 3, 3, 0, 0
+0, 3, 3, 0, 0
+2, 0, 0, 0, 0
+0, 0, 0, 0, 3
+3, 3, 0, 0, 0
+3, 3, 0, 2, 2
+0, 0, 0, 2, 2
+test output:
+################################################################
+
+LLM answer:
+
+"""
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import sys
+import re
+import math
+import random
+import copy
+import pickle
+import time
+import datetime
+import shutil
+import glob
+import multiprocessing
+import subprocess
+import argparse
+import itertools
+import collections
+import pprint
+import string
+import operator
+import functools
+import warnings
+warnings.filterwarnings("ignore")
+
+# ------------------------------------------------
+# Global variables
+# ------------------------------------------------
+
+# Input data path
+input_data = ''
+
+# Output data path
+output_data = ''
+
+# Number of cores used
+num_cores = 48
+
+# Maximum memory usage
+max_memory = 67108864 # 64 GB
+
+# ------------------------------------------------
+# Function definitions
+# ------------------------------------------------
+def get_arguments():
+    """
+        Get command line arguments
+        
+        Returns:
+            args (Namespace): parsed argument
+    """
+    
+    parser = argparse.ArgumentParser(description='Script for training')
+    parser.add_argument('--input_path', type=str, default="", help='Path to input data folder')
+    parser.add_argument('--output_path', type=str, default="", help='Path to output data folder')
+    parser.add_argument('--gpu', type=int, default=-1, help='GPU ID (negative value means CPU)')
+    parser.add_argument('--seed', type=int, default=None, help='Random seed')
+    parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
+    parser.add_argument('--batch_size', type=int, default=128, help='Batch size')
+    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
+    parser.add_argument('--momentum', type=float, default=0.9, help='Momentum')
+    parser.add_argument('--weight_decay', type=float, default=0., help='Weight decay (L2 loss on parameters)')
+    parser.add_argument('--hidden_units', nargs='+', type=int, default=[], help='List of hidden units per layer')
+    parser.add_argument('--dropout', type=float, default=0.5, help='Dropout probability')
+    parser.add_argument('--augment', action='store_true', help='Augment images')
+    parser.add_argument('--resume', type=str, default="", help='Resume checkpoint')
+    parser.add_argument('--evaluate', action='store_true', help='Evaluate model')
+    parser.add_argument('--multiprocessing', action='store_true', help='Multiprocessing')
+    parser.add_argument('--debug', action='store_true', help='Debug mode')
+    parser.add_argument('--verbose', action='store_true', help='Verbose mode')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    args = parser.parse_args()
+    return args
+
+def set_random_seeds(seed):
+    """
+        Set random seeds
+    """
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+def load_checkpoint(model, optimizer, scheduler, out_dir, filename='checkpoint'):
+    """
+        Load checkpoint
+    """
+    print('\nLoading checkpoint...\n')
+    if os.path.isfile(os.path.join(out_dir, filename + '.pth')):
+        checkpoint = torch.load(os.path.join(out_dir, filename + '.pth'), map_location='cpu')
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint
+################################################################
+
+Solution:
+1, 0, 0
+0, 1, 0
+0, 0, 0
+

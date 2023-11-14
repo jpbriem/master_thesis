@@ -21,8 +21,8 @@ REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Llama-2-7B-32K-Instruct-GPTQ") # TODO: Run all tests)
 
 #### Llama pre-trained ####
-# MODEL_NAMES.append("TheBloke/Llama-2-70B-GPTQ") # TODO: Run all tests )
-# REVISIONS.append("main")
+MODEL_NAMES.append("TheBloke/Llama-2-70B-GPTQ") # TODO: Run all tests )
+REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Llama-2-13B-GPTQ") # TODO: Run all tests )
 # REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Llama-2-7B-GPTQ") # TODO: Run all tests )
@@ -38,10 +38,10 @@ REVISIONS.append("main")
 # REVISIONS.append("main")
 
 #### Mistral ####
-# MODEL_NAMES.append("mistralai/Mistral-7B-Instruct-v0.1")
-# REVISIONS.append("main")
-# MODEL_NAMES.append("mistralai/Mistral-7B-v0.1")
-# REVISIONS.append("main")
+MODEL_NAMES.append("mistralai/Mistral-7B-Instruct-v0.1")
+REVISIONS.append("main")
+MODEL_NAMES.append("mistralai/Mistral-7B-v0.1")
+REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
 # REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
@@ -74,6 +74,7 @@ MODEL_CONFIG_FALCON = {
 # MODEL_NAMES.append('gpt-3.5-turbo')
 # MODEL_NAMES.append('gpt-4')
 # REVISIONS.append("")
+MANUAL_GPT = False
 #################### CONFIG ####################
 MODEL_CONFIG_GPT = {
     'model_name': MODEL_NAMES[0],
@@ -81,76 +82,91 @@ MODEL_CONFIG_GPT = {
 }
 
 #################### Prompt ####################
-CHANGE_REPRESENTATION = False
+CHANGE_REPRESENTATION = True
 NEW_REPRESENTATION = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
 
-PRE_CONTEXT = ""
-POST_CONTEXT = ""
+POST_TEST_CASE = ""
 DELIMITER = {
     "item": ", ",
-    "grid_start": "",
-    "grid_end": "\n", # include end of last row
-    "row_start": "",
-    "row_end": "\n", # except for last row
+    "grid_start": "[",
+    "grid_end": "]]\n", # include end of last row
+    "row_start": "[",
+    "row_end": "], ", # except for last row
     "example_start": "",
-    "example_end": "End of example.\n",
+    "example_end": "\n",
     "task_start": "",
     "task_end": "",
     "input_train": "train input:\n",
     "output_train": "train output:\n",    
-    "input_test": "test input:\n",
-    "output_test": "test output:", 
+    "input_test": "",
+    "output_test": "", 
 }
 
-template_string = """{sys}{output_format}{task}{instruction_end}"""
+#initialize template
+template = """{sys}{output_format}{pre_task}{task}{post_task}{instruction_end}"""
 TEMPLATE = PromptTemplate(
-    input_variables=["sys", "output_format", "task", "instruction_end"],
-    template=template_string,
+    input_variables=["sys", "output_format", "pre_task", "task", "post_task", "instruction_end"],
+    template=template,
 )
 
-SYSTEM_MESSAGE = "[INST] <<SYS>>\nYou are given a puzzle with a series of train input and train output pairs as examples. Your task is to identify the step-by-step pattern to get the output from its input. Then, apply the pattern to the final test input to get the test output. The inputs and outputs are all in the form of rows of letters, representing a 2D grid.\n<</SYS>>\n\n"
-SYSTEM_MESSAGE = """[INST] <<SYS>>\nYou are given a series of inputs and output pairs that share the same logic of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from '0' to '9' represent different colors, where '0' represents the background. No calculations! For example, [['0','2','0'],['0','0','5']] represents a 2 row x 3 column grid with color '2' at position (1,0) and color '5' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
-You are to infer the simplest possible relation beetween input and output. The given sample pairs may not reflect all possibilities.
+# SYSTEM_MESSAGE = "[INST] <<SYS>>\nYou are given a puzzle with a series of train input and train output pairs as examples. Your task is to identify the step-by-step pattern to get the output from its input. Then, apply the pattern to the final test input to get the test output. The inputs and outputs are all in the form of rows of letters, representing a 2D grid.\n<</SYS>>\n\n"
+# SYSTEM_MESSAGE = """[INST] <<SYS>>\nYou are to output only the following in json format: {'reflection': 'reflect on the answer', 'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 'instructions': 'describe the transformation actions in detail step by step', 'test_output': "Use the instructions to transform the test input grid and return only the resulting output grid"}.
+# Do not use quotation marks ' or " within the fields unless it is required for the python code.\n<</SYS>>\n\nYou are given a series of inputs and output pairs that share the same logic of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from '0' to '9' represent different colors, where '0' represents the background. No calculations! For example, [['0','2','0'],['0','0','5']] represents a 2 row x 3 column grid with color '2' at position (1,0) and color '5' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+# You are to infer the simplest possible relation beetween input and output. The given sample pairs may not reflect all possibilities.
 
-You can refer to concepts as follows:
-- Goal-directedness: input is start and output is end state of process 
-- Geometry & topology:
-	- Lines, rectangular shapes.
-	- Symmetries, mirroring, rotations, translations.
-	- Shape upscaling or downscaling, elastic distortions.
-	- Containing / being contained / being inside or outside of a perimeter.
-	- Drawing lines, connecting points, orthogonal projections.
-	- Copying, repeating.
-	- Patterns or mosaic based on sections.
-- Objects:
-	- Objects are shapes based on similar colors or based on surroundings.
-	- Object transformations based on geometry and topology.
-	- Touching objects have contact with each other.
-	- Noise pixels.
--  Arithmetics based on objects or shapes pixels:
-	- Counting.
-	- Sorting.
+# You can refer to concepts as follows:
+# - Goal-directedness: input is start and output is end state of process 
+# - Geometry & topology:
+# 	- Lines, rectangular shapes.
+# 	- Symmetries, mirroring, rotations, translations.
+# 	- Shape upscaling or downscaling, elastic distortions.
+# 	- Containing / being contained / being inside or outside of a perimeter.
+# 	- Drawing lines, connecting points, orthogonal projections.
+# 	- Copying, repeating.
+# 	- Patterns or mosaic based on sections.
+# - Objects:
+# 	- Objects are shapes based on similar colors or based on surroundings.
+# 	- Object transformations based on geometry and topology.
+# 	- Touching objects have contact with each other.
+# 	- Noise pixels.
+# -  Arithmetics based on objects or shapes pixels:
+# 	- Counting.
+# 	- Sorting.
 
-The list is not exhaustive. Transformations can be conditional.
+# The list is not exhaustive. Transformations can be conditional.\n
+# """
+SYSTEM_MESSAGE = """You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
 
-You are to output only the following in json format: {'reflection': 'reflect on the answer', 'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 'instructions': 'describe the transformation actions in detail step by step', 'test_output': "Use the instructions to transform the test input grid and return only the resulting output grid"}.
-Do not use quotation marks ' or " within the fields unless it is required for the python code.\n<</SYS>>\n\n"""
-# SYSTEM_MESSAGE = ""
-OUTPUT_FORMAT = ""
-INSTRUCTION_END = "[/INST]"
-# INSTRUCTION_END = ""
+Furthermore, you are given a description to transform the input grid into its output grid.
+
+You are to output only the following in json format: 
+"""
+OUTPUT_FORMAT = {
+    'input_grid': 'describe the input grid and check if it matches the given description', 
+    'instructions': 'describe the provided transformation actions step by step', 
+    'test_output': 'transform the test input grid and return only the resulting output grid'
+    }
+
+PRE_TEST_CASE = """\nDo not use quotation marks ' or " within the fields.\n
+Test input grid:\n"""
+POST_TEST_CASE = """Please fill the json fields with content and create the corresponding output grid based on the following description:\n"""
+# INSTRUCTION_END = "[/INST]"
+INSTRUCTION_END = ""
 
 #################### Directories ####################
 
 # TASK_DIR_TRAIN = "../ARC/ARC/data/training"
 # TASK_DIR_EVAL = "../ARC/ARC/data/evaluation"
 
-TASK_DIR_TRAIN = "ARC_datasets/ARC_solved_tasks/training/"
-TASK_DIR_EVAL = "ARC_datasets/ARC_solved_tasks/evaluation/"
+# TASK_DIR_TRAIN = "ARC_datasets/ARC_solved_tasks/training/"
+# TASK_DIR_EVAL = "ARC_datasets/ARC_solved_tasks/evaluation/"
 
 # TASK_DIR_TRAIN = "ARC_datasets/ARC_only_two_tasks/training/"
 # TASK_DIR_EVAL = "ARC_datasets/ARC_only_two_tasks/evaluation/"
 
+TASK_DIR_TRAIN = "ARC_datasets/LARC/training/"
+TASK_DIR_EVAL = "ARC_datasets/LARC/evaluation/"
 
 ######## TODO: DELETE ########
 # TASK_DIR_TRAIN = "ARC_datasets/test_mistral_gptq/training/"

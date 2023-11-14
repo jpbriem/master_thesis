@@ -1,0 +1,104 @@
+Input token: 522
+Output token: 835
+################################################################
+
+LLM prompt:
+train input:
+[[0, 8, 0], [8, 0, 8], [0, 0, 0]]
+train output:
+[[8, 0, 8, 8, 0, 8], [0, 8, 0, 0, 8, 0], [8, 8, 8, 8, 8, 8], [8, 0, 8, 8, 0, 8], [0, 8, 0, 0, 8, 0], [8, 8, 8, 8, 8, 8]]
+
+train input:
+[[7, 0], [0, 7]]
+train output:
+[[0, 7, 0, 7], [7, 0, 7, 0], [0, 7, 0, 7], [7, 0, 7, 0]]
+
+train input:
+[[4, 0, 0, 0], [0, 4, 4, 4], [0, 0, 4, 0], [0, 4, 0, 0]]
+train output:
+[[0, 4, 4, 4, 0, 4, 4, 4], [4, 0, 0, 0, 4, 0, 0, 0], [4, 4, 0, 4, 4, 4, 0, 4], [4, 0, 4, 4, 4, 0, 4, 4], [0, 4, 4, 4, 0, 4, 4, 4], [4, 0, 0, 0, 4, 0, 0, 0], [4, 4, 0, 4, 4, 4, 0, 4], [4, 0, 4, 4, 4, 0, 4, 4]]
+
+test input:
+[[0, 1, 0, 1], [1, 0, 0, 1], [0, 0, 1, 0], [1, 0, 0, 0]]
+################################################################
+
+LLM answer:
+
+test output:
+[[0, 1, 0, 1, 0, 1, 0, 1], [1, 0, 0, 1, 1, 0, 0, 1], [0, 0, 1, 0, 0, 1, 1, 0], [1, 0, 0, 0, 1, 0, 0, 0]]
+'''
+
+import numpy as np
+from sklearn.metrics import accuracy_score
+
+def get_neighbors(input):
+    neighbors = []
+    for i in range(len(input)):
+        for j in range(i+1, len(input)):
+            if (np.array(input[i]) == np.array(input[j])).all():
+                continue
+            else:
+                neighbors.append([i, j])
+    return neighbors
+
+def get_output(input, neighbors):
+    output = []
+    for neighbor in neighbors:
+        output.append(input[neighbor[0]])
+        output.append(input[neighbor[1]])
+    return output
+
+def majority_vote(output):
+    counts = {}
+    for item in output:
+        if item not in counts:
+            counts[item] = 1
+        else:
+            counts[item] += 1
+    max_count = max(counts.values())
+    max_key = list(filter(lambda x: counts[x] == max_count, counts))
+    return max_key
+
+def predict(input, neighbors, test=False):
+    output = get_output(input, neighbors)
+    if test:
+        return output
+    else:
+        return majority_vote(output)
+
+def main():
+    # training data
+    train_data = [[2, 3, 5], [6, 9, 1], [1, 2, 3], [3, 4, 5], [6, 7, 8], [8, 9, 10]]
+    train_labels = ['a', 'a', 'b', 'c', 'd', 'e']
+
+    # testing data
+    test_data = [[1, 2, 3], [3, 4, 5], [6, 7, 8], [8, 9, 10]]
+    test_labels = ['b', 'c', 'd', 'e']
+
+    # convert to numpy arrays
+    train_data = np.array(train_data)
+    train_labels = np.array(train_labels)
+    test_data = np.array(test_data)
+    test_labels = np.array(test_labels)
+
+    # calculate neighbors and outputs
+    train_neighbors = get_neighbors(train_data)
+    train_outputs = get_output(train_data, train_neighbors)
+    test_neighbors = get_neighbors(test_data)
+    test_outputs = get_output(test_data, test_neighbors)
+
+    # make predictions
+    train_predictions = predict(train_data, train_neighbors)
+    test_predictions = predict(test_data, test_neighbors, True)
+
+    # evaluate accuracy
+    print("Train Accuracy:", accuracy_score(train_labels, train_predictions))
+    print("Test Accuracy:", accuracy_score(test_labels, test_predictions))
+
+if __name__ == "__main__":
+    main()
+################################################################
+
+Solution:
+[[1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 1, 0, 0, 1, 1, 0], [1, 1, 0, 1, 1, 1, 0, 1], [0, 1, 1, 1, 0, 1, 1, 1], [1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 1, 0, 0, 1, 1, 0], [1, 1, 0, 1, 1, 1, 0, 1], [0, 1, 1, 1, 0, 1, 1, 1]]
+

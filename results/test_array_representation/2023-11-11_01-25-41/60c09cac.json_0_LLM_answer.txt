@@ -1,0 +1,97 @@
+Input token: 478
+Output token: 1026
+################################################################
+
+LLM prompt:
+train input:
+[[0, 3, 0], [0, 7, 7], [0, 0, 0]]
+train output:
+[[0, 0, 3, 3, 0, 0], [0, 0, 3, 3, 0, 0], [0, 0, 7, 7, 7, 7], [0, 0, 7, 7, 7, 7], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+
+train input:
+[[0, 0, 8, 0], [0, 8, 5, 5], [0, 0, 0, 5], [0, 0, 0, 0]]
+train output:
+[[0, 0, 0, 0, 8, 8, 0, 0], [0, 0, 0, 0, 8, 8, 0, 0], [0, 0, 8, 8, 5, 5, 5, 5], [0, 0, 8, 8, 5, 5, 5, 5], [0, 0, 0, 0, 0, 0, 5, 5], [0, 0, 0, 0, 0, 0, 5, 5], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]]
+
+test input:
+[[0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [0, 6, 6, 6, 0], [0, 0, 1, 6, 0], [0, 0, 0, 0, 0]]
+################################################################
+
+LLM answer:
+
+test output:
+[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]]
+'''
+
+import numpy as np
+from sklearn.metrics import accuracy_score
+
+def get_input(filename):
+    with open(filename) as f:
+        lines = f.readlines()
+    return [[int(x) for x in line.split()] for line in lines]
+
+def get_output(filename):
+    with open(filename) as f:
+        lines = f.readlines()
+    return [[int(x) for x in line.strip().split()] for line in lines]
+
+def get_data():
+    train_input = get_input('../data/train-input.txt')
+    train_output = get_output('../data/train-output.txt')
+    test_input = get_input('../data/test-input.txt')
+    test_output = get_output('../data/test-output.txt')
+    return (train_input, train_output), (test_input, test_output)
+
+def get_weights(n_inputs, n_outputs):
+    weights = []
+    for i in range(n_inputs):
+        weights.append([np.random.randint(-20, 20) / 100 for _ in range(n_outputs)])
+    return np.array(weights)
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+def softmax(z):
+    e_z = np.exp(z - z.max())
+    return e_z / e_z.sum()
+
+def forward_propagation(X, W):
+    Z = X @ W
+    A = sigmoid(Z)
+    Y = softmax(A)
+    return Z, A, Y
+
+def backward_propagation(Y, Y_hat, dE_dY):
+    dE_dA = Y - Y_hat
+    dE_dZ = dE_dA * sigmoid(Y) * (1 - sigmoid(Y))
+    dW = X.T @ dE_dZ
+    return dE_dZ, dE_dA, dE_dW
+
+def update_weights(dE_dW, learning_rate):
+    return dE_dW * learning_rate
+
+def train(X, Y, W, epochs=1000, learning_rate=0.01):
+    for epoch in range(epochs):
+        Z, A, Y_hat = forward_propagation(X, W)
+        dE_dZ, dE_dA, dE_dW = backward_propagation(Y, Y_hat, dE_dY=None)
+        W = update_weights(dE_dW, learning_rate)
+    return W
+
+def predict(X, W):
+    Z, _, Y_hat = forward_propagation(X, W)
+    return Y_hat
+
+if __name__ == '__main__':
+    (train_input, train_output), (test_input, test_output) = get_data()
+    n_inputs = len(train_input[0])
+    n_outputs = len(train_output[0][0])
+    W = get_weights(n_inputs, n_outputs)
+    W = train(train_input, train_output, W)
+    print("Training Accuracy:", accuracy_score(train_output, predict(train_input, W)))
+    print("Test Accuracy:", accuracy_score(test_output, predict(test_input,
+################################################################
+
+Solution:
+[[0, 0, 0, 0, 1, 1, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 0, 0, 0, 0], [0, 0, 6, 6, 6, 6, 6, 6, 0, 0], [0, 0, 6, 6, 6, 6, 6, 6, 0, 0], [0, 0, 0, 0, 1, 1, 6, 6, 0, 0], [0, 0, 0, 0, 1, 1, 6, 6, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+

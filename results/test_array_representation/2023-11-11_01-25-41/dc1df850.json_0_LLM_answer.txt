@@ -1,0 +1,70 @@
+Input token: 993
+Output token: 698
+################################################################
+
+LLM prompt:
+train input:
+[[2, 0, 0, 0, 0], [0, 0, 0, 2, 0], [0, 0, 0, 0, 0], [0, 6, 0, 0, 0], [0, 0, 0, 0, 0]]
+train output:
+[[2, 1, 1, 1, 1], [1, 1, 1, 2, 1], [0, 0, 1, 1, 1], [0, 6, 0, 0, 0], [0, 0, 0, 0, 0]]
+
+train input:
+[[0, 0, 0, 0, 0, 0, 0, 2], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 3, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 8, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]]
+train output:
+[[0, 0, 0, 0, 0, 0, 1, 2], [0, 0, 0, 0, 0, 0, 1, 1], [0, 0, 0, 3, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 8, 0], [0, 1, 1, 1, 0, 0, 0, 0], [0, 1, 2, 1, 0, 0, 0, 0], [0, 1, 1, 1, 0, 0, 0, 0]]
+
+train input:
+[[0, 0, 0, 0, 0], [0, 2, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+train output:
+[[1, 1, 1, 0, 0], [1, 2, 1, 0, 0], [1, 1, 1, 0, 0], [0, 0, 0, 0, 0]]
+
+test input:
+[[0, 0, 0, 0, 0, 0, 0, 0, 7, 0], [0, 0, 2, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 2, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 7, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 2, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 5]]
+################################################################
+
+LLM answer:
+
+test output:
+[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+'''
+
+import numpy as np
+from sklearn.model_selection import train_test_split
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.optimizers import Adam
+from keras.utils import to_categorical
+
+# load data
+data = np.loadtxt('../input/data.csv', delimiter=",")
+X = data[:, :-1]
+y = data[:, -1]
+
+# split into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+# convert labels to one-hot encoding
+y_train = to_categorical(y_train)
+y_test = to_categorical(y_test)
+
+# create model
+model = Sequential()
+model.add(Dense(units=4, activation='relu', input_dim=9))
+model.add(Dense(units=4, activation='relu'))
+model.add(Dense(units=4, activation='softmax'))
+
+# compile model
+opt = Adam(lr=0.001)
+model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
+
+# fit model
+history = model.fit(x=X_train, y=y_train, epochs=100, batch_size=10, verbose=1)
+
+# evaluate model on test set
+_, accuracy = model.evaluate(x=X_test, y=y_test, batch_size=10, verbose=0)
+print("Test Accuracy:", accuracy)
+################################################################
+
+Solution:
+[[0, 1, 1, 1, 0, 0, 0, 0, 7, 0], [0, 1, 2, 1, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 0, 0, 1, 1, 1, 0], [0, 0, 0, 0, 0, 0, 1, 2, 1, 0], [0, 0, 0, 0, 0, 0, 1, 1, 1, 0], [0, 7, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 0, 0, 0], [0, 0, 0, 0, 1, 2, 1, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 5]]
+

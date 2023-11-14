@@ -1,0 +1,76 @@
+Input token: 1125
+Output token: 1026
+################################################################
+
+LLM prompt:
+train input:
+[[2, 0, 0], [0, 2, 0], [0, 0, 2]]
+train output:
+[[2, 0, 0], [0, 4, 0], [0, 0, 2]]
+
+train input:
+[[0, 0, 9, 0, 0, 0, 0, 0], [0, 0, 0, 9, 0, 0, 0, 0], [0, 0, 0, 0, 9, 0, 0, 0], [0, 0, 0, 0, 0, 9, 0, 0], [9, 0, 0, 0, 0, 0, 9, 0], [0, 9, 0, 0, 0, 0, 0, 9], [0, 0, 9, 0, 0, 0, 0, 0], [0, 0, 0, 9, 0, 0, 0, 0]]
+train output:
+[[0, 0, 9, 0, 0, 0, 0, 0], [0, 0, 0, 4, 0, 0, 0, 0], [0, 0, 0, 0, 9, 0, 0, 0], [0, 0, 0, 0, 0, 4, 0, 0], [9, 0, 0, 0, 0, 0, 9, 0], [0, 4, 0, 0, 0, 0, 0, 4], [0, 0, 9, 0, 0, 0, 0, 0], [0, 0, 0, 4, 0, 0, 0, 0]]
+
+train input:
+[[0, 0, 3, 0, 0, 0], [0, 0, 0, 3, 0, 0], [0, 0, 0, 0, 3, 0], [3, 0, 0, 0, 0, 3], [0, 3, 0, 0, 0, 0], [0, 0, 3, 0, 0, 0]]
+train output:
+[[0, 0, 3, 0, 0, 0], [0, 0, 0, 4, 0, 0], [0, 0, 0, 0, 3, 0], [3, 0, 0, 0, 0, 4], [0, 4, 0, 0, 0, 0], [0, 0, 3, 0, 0, 0]]
+
+test input:
+[[0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0], [6, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0], [0, 6, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0], [0, 0, 6, 0, 0, 0, 0, 6, 0, 0, 0, 0], [0, 0, 0, 6, 0, 0, 0, 0, 6, 0, 0, 0], [0, 0, 0, 0, 6, 0, 0, 0, 0, 6, 0, 0], [0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 6, 0], [0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 6], [6, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0], [0, 6, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0], [0, 0, 6, 0, 0, 0, 0, 0, 0, 6, 0, 0], [0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 6, 0]]
+################################################################
+
+LLM answer:
+
+test output:
+[[0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0], [6, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0], [0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0], [0, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 0], [0, 0, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0], [0, 0, 0, 0, 6, 0, 0, 0, 0, 4, 0, 0], [0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 4, 0], [0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 4], [6, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0], [0, 6, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0], [0, 0, 6, 0, 0, 0, 0, 0, 0, 4, 0, 0], [0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 4, 0]]
+'''
+
+import numpy as np
+from sklearn.metrics import accuracy_score
+
+def softmax(x):
+    """Compute softmax values for each sets of scores in x."""
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum()
+
+class NeuralNetwork():
+    def __init__(self, n_inputs, n_hidden, n_outputs):
+        self.n_inputs = n_inputs
+        self.n_hidden = n_hidden
+        self.n_outputs = n_outputs
+        # initialize weights and biases
+        self.weights1 = np.random.randn(self.n_inputs + 1, self.n_hidden) * 0.01
+        self.biases1 = np.zeros((1, self.n_hidden))
+        self.weights2 = np.random.randn(self.n_hidden + 1, self.n_outputs) * 0.01
+        self.biases2 = np.zeros((1, self.n_outputs))
+
+    def sigmoid(self, z):
+        return 1/(1+np.exp(-z))
+
+    def forward(self, inputs):
+        # add bias to the input
+        inputs = np.append(inputs, 1)
+        # calculate hidden layer outputs
+        hidden_layer_output = self.sigmoid(np.dot(inputs, self.weights1) + self.biases1)
+        # calculate output layer outputs
+        output_layer_output = self.sigmoid(np.dot(hidden_layer_output, self.weights2) + self.biases2)
+        return output_layer_output
+
+    def backward(self, inputs, targets):
+        # calculate delta for output layer
+        output_delta = (targets - self.forward(inputs)) * self.sigmoid(self.forward(inputs), derivative=True)
+        # calculate delta for hidden layer
+        hidden_delta = np.dot(output_delta, self.weights2.T) * self.sigmoid(self.forward(inputs), derivative=True)
+        # update weights and biases using gradient descent
+        self.weights2 += np.dot(hidden_delta, inputs.T)
+        self.biases2 += np.sum(hidden_delta, axis=0, keepdims=True)
+        self.weights1 += np.dot(hidden_delta, self.forward(inputs).T)
+        self.biases1 += np.sum
+################################################################
+
+Solution:
+[[0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0], [6, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0], [0, 4, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0], [0, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 0], [0, 0, 0, 4, 0, 0, 0, 0, 6, 0, 0, 0], [0, 0, 0, 0, 6, 0, 0, 0, 0, 4, 0, 0], [0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 6, 0], [0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 4], [6, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0], [0, 4, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0], [0, 0, 6, 0, 0, 0, 0, 0, 0, 4, 0, 0], [0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 6, 0]]
+

@@ -1,0 +1,73 @@
+Input token: 468
+Output token: 490
+################################################################
+
+LLM prompt:
+train input:
+[[4, 5, 4], [5, 5, 5], [4, 5, 4]]
+train output:
+[[0, 4, 0], [4, 4, 4], [0, 4, 0]]
+
+train input:
+[[5, 5, 6, 6, 6], [6, 5, 5, 6, 6], [6, 6, 5, 5, 6], [6, 6, 6, 5, 5], [5, 6, 6, 6, 5]]
+train output:
+[[6, 6, 0, 0, 0], [0, 6, 6, 0, 0], [0, 0, 6, 6, 0], [0, 0, 0, 6, 6], [6, 0, 0, 0, 6]]
+
+train input:
+[[9, 5, 9, 9, 9], [9, 9, 5, 5, 9], [9, 5, 9, 9, 9], [9, 9, 5, 9, 9], [9, 9, 9, 5, 5]]
+train output:
+[[0, 9, 0, 0, 0], [0, 0, 9, 9, 0], [0, 9, 0, 0, 0], [0, 0, 9, 0, 0], [0, 0, 0, 9, 9]]
+
+test input:
+[[3, 3, 3, 5, 3], [3, 5, 3, 3, 3], [3, 5, 5, 3, 5], [3, 3, 3, 5, 3], [5, 5, 5, 3, 3]]
+################################################################
+
+LLM answer:
+
+test output:
+[[1, 2, 1, 2, 1], [2, 1, 2, 1, 2], [2, 2, 1, 1, 2], [1, 2, 1, 2, 1], [2, 1, 2, 1, 2]]
+'''
+
+import numpy as np
+from sklearn.metrics import accuracy_score
+
+def get_data(filename):
+    with open(filename) as f:
+        data = [[int(x) for x in line.split()] for line in f]
+    return np.array(data)
+
+def predict(X, W):
+    Y = X @ W
+    return np.argmax(Y, axis=1)
+
+def train(X, y, lr, epochs):
+    W = np.random.randn(*X[0].shape) / np.sqrt(X[0].size)
+    for _ in range(epochs):
+        for i in range(len(y)):
+            y_hat = predict(X[i], W)
+            error = y - y_hat
+            W += lr * (error[:, None] @ X[i])
+    return W
+
+def test(W, X, y):
+    y_hat = predict(X, W)
+    acc = accuracy_score(y, y_hat)
+    print('Test Accuracy:', acc)
+
+if __name__ == '__main__':
+    # Load training and testing data
+    X_train = get_data('./data/mnist-train.csv')
+    y_train = get_data('./data/mnist-train-labels.csv')
+    X_test = get_data('./data/mnist-test.csv')
+    y_test = get_data('./data/mnist-test-labels.csv')
+
+    # Train the model
+    W = train(X_train, y_train, 0.01, 1000)
+
+    # Test the model
+    test(W, X_test, y_test)
+################################################################
+
+Solution:
+[[0, 0, 0, 3, 0], [0, 3, 0, 0, 0], [0, 3, 3, 0, 3], [0, 0, 0, 3, 0], [3, 3, 3, 0, 0]]
+
