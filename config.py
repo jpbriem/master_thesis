@@ -144,7 +144,8 @@ You are to output only the following in json format:
 """
 OUTPUT_FORMAT = {
     'input_grid': 'describe the input grid and check if it matches the given description', 
-    'instructions': 'describe the provided transformation actions step by step', 
+    'instructions': 'describe the transformation actions step by step provided by the description', 
+    'output_dimension': 'describe the output grid dimension provided by the description',
     'test_output': 'transform the test input grid and return only the resulting output grid'
     }
 

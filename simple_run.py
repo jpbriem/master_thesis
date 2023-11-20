@@ -89,11 +89,13 @@ if __name__ == "__main__":
                 task_is_solved = False
                 
             # check if task has been solved already, in case of multiple descriptions with LARC
+            if task_is_solved:
+                continue
             if "LARC" in TASK_DIR_TRAIN and row["test_case_index"] == 0 and row["descriptions_index"] > 0: 
                 if success[row["task_name"]+"-"+str(row["descriptions_index"]-1)] == 1:
                     task_is_solved = True
-            if task_is_solved:
-                continue
+                    continue
+            
             
             # call LLM 
             try:

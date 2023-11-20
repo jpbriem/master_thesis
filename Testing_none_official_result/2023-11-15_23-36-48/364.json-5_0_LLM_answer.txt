@@ -1,0 +1,179 @@
+Input token: 612
+Output token: 1026
+################################################################
+
+LLM prompt:
+You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+
+Furthermore, you are given a description to transform the input grid into its output grid.
+
+You are to output only the following in json format: 
+{'input_grid': 'describe the input grid and check if it matches the given description', 'instructions': 'describe the transformation actions step by step provided by the description', 'output_dimension': 'describe the output grid dimension provided by the description', 'test_output': 'transform the test input grid and return only the resulting output grid'}
+Do not use quotation marks ' or " within the fields.
+
+Test input grid:
+[[c, i, i, i, a, a, a, a, a, a], [i, i, b, i, a, a, c, i, b, a], [b, c, i, b, a, a, i, i, i, a], [i, i, i, i, a, a, c, b, i, a], [a, a, a, a, a, a, i, i, c, a], [a, a, a, a, a, a, c, i, b, a], [a, b, c, i, c, a, b, i, i, a], [a, i, i, b, i, a, a, a, a, a], [a, b, c, i, b, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a]]
+Please fill the json fields with content and create the corresponding output grid based on the following description:
+In the input, you should see several rectangular shapes with dark blue, light blue, and red
+To make the output, you have to copy the rectangular shape with the most red squares exactly
+The output grid size is the size of the rectangular shape with the most red squares
+################################################################
+
+LLM answer:
+
+The output grid will be filled with the same colors as the original grid
+'''
+import numpy as np
+from PIL import Image
+
+def get_color(pixel):
+    '''
+    Returns the color name for each pixel value
+    
+    Parameters
+    ----------
+        pixel : int
+            A single pixel value
+        
+    Returns
+    -------
+        str
+            Color name
+    '''
+    color = {
+             'a':'black',
+             'b':'blue',
+             'c':'red',
+             'd':'green',
+             'e':'yellow',
+             'f':'grey',
+             'g':'magenta',
+             'h':'orange',
+             'i':'cyan',
+             'j':'brown'
+           }[str(pixel)]
+    return color
+
+def get_shape(image):
+    '''
+    Returns the shape of an image
+    
+    Parameters
+    ----------
+        image : list
+            List containing all rows of the image
+        
+    Returns
+    -------
+        tuple
+            Shape of the image
+    '''
+    return len(image),len(image[0])
+
+def get_rectangle(image, color='red'):
+    '''
+    Finds the largest rectangle that contains the specified color
+    
+    Parameters
+    ----------
+        image : list
+            List containing all rows of the image
+        color : str
+            Color name to search for
+        
+    Returns
+    -------
+        tuple
+            Coordinates of the found rectangle
+    '''
+    # Get the shape of the image
+    height, width = get_shape(image)
+    
+    # Initialize variables
+    max_area = 0
+    max_x = 0
+    max_y = 0
+    max_w = 0
+    max_h = 0
+    max_coords = []
+    
+    # Loop through every possible starting point
+    for y in range(height):
+        for x in range(width):
+            # Check if the current pixel has the correct color
+            if get_color(image[y][x]) == color:
+                # If so, find the area of this rectangle
+                w = 0
+                h = 0
+                
+                while True:
+                    try:
+                        # Check if the next pixel also has the right color
+                        if get_color(image[y+h][x+w])!= color:
+                            break
+                        else:
+                            # Increase the width and height of the rectangle
+                            w += 1
+                            h += 1
+                    except IndexError:
+                        # Break out of loop when we reach the end of the image
+                        break
+                
+                # Calculate the area of the rectangle
+                area = w*h
+                
+                # Compare the area to the maximum area
+                if area > max_area:
+                    # Update the maximum area
+                    max_area = area
+                    # Also update the coordinates of the rectangle
+                    max_x = x
+                    max_y = y
+                    max_w = w
+                    max_h = h
+                    # And finally save these new coordinates
+                    max_coords = [(max_x, max_y), (max_x + max_w, max_y + max_h)]
+    
+    # Return the coordinates of the largest rectangle
+    return max_coords
+
+def get_largest_rectangle(image, color='red'):
+    '''
+    Finds the largest rectangle that contains the specified color
+    
+    Parameters
+    ----------
+        image : list
+            List containing all rows of the image
+        color : str
+            Color name to search for
+        
+    Returns
+    -------
+        tuple
+            Coordinates of the found rectangle
+    '''
+    # Get the shape of the image
+    height, width = get_shape(image)
+    
+    # Initialize variables
+    max_area = 0
+    max_x = 0
+    max_y = 0
+    max_w = 0
+    max_h = 0
+    max_coords = []
+    
+    # Loop through every possible starting point
+    for y in range(height):
+        for x in range(width):
+            # Check if the current pixel has the correct color
+            if get_color(image[y][x]) == color:
+                # If so, find the area of this rectangle
+               
+################################################################
+
+Solution:
+[[c, i, b], [i, i, i], [c, b, i], [i, i, c], [c, i, b], [b, i, i]]
+

@@ -1,0 +1,79 @@
+Input token: 630
+Output token: 772
+################################################################
+
+LLM prompt:
+You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+
+Furthermore, you are given a description to transform the input grid into its output grid.
+
+You are to output only the following in json format: 
+{'input_grid': 'describe the input grid and check if it matches the given description', 'instructions': 'describe the transformation actions step by step provided by the description', 'output_dimension': 'describe the output grid dimension provided by the description', 'test_output': 'transform the test input grid and return only the resulting output grid'}
+Do not use quotation marks ' or " within the fields.
+
+Test input grid:
+[[a, a, a, a, a, a, a, a, a, a], [a, a, a, f, a, a, a, a, a, a], [a, a, a, f, a, a, a, a, a, a], [a, a, a, f, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a], [a, a, a, a, f, f, f, f, f, f], [a, a, a, a, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a], [f, f, f, f, f, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a]]
+Please fill the json fields with content and create the corresponding output grid based on the following description:
+In the input, you should see three gray lines of differing lengths on a black background
+To make the output, you have to change the color of the lines. The longest line needs to be colored blue. The middle length line needs to be colored yellow. The shortest line needs to be colored red.
+The output grid size is the same as the input grid.
+################################################################
+
+LLM answer:
+
+'''
+import numpy as np
+from PIL import Image
+
+def get_image(img):
+    img = np.array(Image.open(img))
+    return img
+
+def get_color(pixel):
+    return pixel[0][0].get('name')
+
+def get_coordinates(pixels):
+    return [(x, y) for x, row in enumerate(pixels) for y, _ in enumerate(row)]
+
+def get_neighborhood(pixels, coord):
+    return set([(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]) & get_coordinates(pixels)
+
+def get_line_lengths(pixels):
+    line_lengths = {}
+    for coord in get_coordinates(pixels):
+        neighborhood = get_neighborhood(pixels, coord)
+        if len(neighborhood) == 4:
+            line_lengths[(coord[0], coord[1])] = len(set(get_color(pixels[coord[0]][coord[1]]) for c in neighborhood))
+    return sorted((k, v) for k, v in line_lengths.items())
+
+def get_longest_line(lines):
+    return max(lines, key=lambda l: l[1])
+
+def get_shortest_line(lines):
+    return min(lines, key=lambda l: l[1])
+
+def get_middle_line(lines):
+    return sorted(lines)[len(lines) // 2]
+
+def get_description():
+    return {
+        'input_grid': 'A 9x10 grid of pixels with a black background and three gray lines of varying lengths',
+        'instructions': '''Change the color of the lines. The longest line needs to be colored blue. The middle length line needs to be colored yellow. The shortest line needs to be colored red''',
+        'output_dimension': 'Same dimensions as the input grid',
+        'test_output': 'A 9x10 grid of pixels with a black background and three colored lines'
+    }
+
+if __name__ == '__main__':
+    image = get_image("./images/input.png")
+    lines = get_line_lengths(image)
+    longest_line = get_longest_line(lines)
+    middle_line = get_middle_line(lines)
+    shortest_line = get_shortest_line(lines)
+    print(get_description(), sep='\n')
+    print({**{**{"input_grid": image}, **{"instructions": "Change the color of the lines. The longest line needs to be colored blue. The middle length line needs to be colored yellow. The shortest line needs to be colored red"}}, **{"output_dimension": "Same dimensions as the input grid", **{"test_output": get_image(np.where(np.isin(image, get_neighborhood(*longest_line)), 'b', ''), np.isin(image, get_neighborhood(*middle_line)), 'y', ''), np.isin(image, get_neighborhood(*shortest_line)), 'r'))}})
+################################################################
+
+Solution:
+[[a, a, a, a, a, a, a, a, a, a], [a, a, a, c, a, a, a, a, a, a], [a, a, a, c, a, a, a, a, a, a], [a, a, a, c, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a], [a, a, a, a, b, b, b, b, b, b], [a, a, a, a, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a], [e, e, e, e, e, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a]]
+

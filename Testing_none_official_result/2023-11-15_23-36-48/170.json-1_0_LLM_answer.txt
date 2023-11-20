@@ -1,0 +1,91 @@
+Input token: 478
+Output token: 701
+################################################################
+
+LLM prompt:
+You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+
+Furthermore, you are given a description to transform the input grid into its output grid.
+
+You are to output only the following in json format: 
+{'input_grid': 'describe the input grid and check if it matches the given description', 'instructions': 'describe the transformation actions step by step provided by the description', 'output_dimension': 'describe the output grid dimension provided by the description', 'test_output': 'transform the test input grid and return only the resulting output grid'}
+Do not use quotation marks ' or " within the fields.
+
+Test input grid:
+[[a, a, a, a, a, a], [a, a, a, a, a, a], [a, a, a, a, a, a], [a, a, a, a, a, a], [a, a, a, a, a, a], [a, a, a, a, a, a], [a, a, a, a, a, a]]
+Please fill the json fields with content and create the corresponding output grid based on the following description:
+In the input, you should see black grid
+To make the output, you have to use light blue color to draw the border of the grid with only one cell as width
+The output grid size the same size
+################################################################
+
+LLM answer:
+ as the input grid
+The output grid has no color except for the border
+'''
+import numpy as np
+from PIL import Image
+
+def get_image(img):
+    img = Image.open(img)
+    img = np.array(img)
+    return img
+
+def get_color(pixel):
+    return pixel[0][0].get('name')
+
+def get_coordinates(pixels):
+    return [(x, y) for x, line in enumerate(pixels) for y, p in enumerate(line)]
+
+def get_neighborhoods(pixels, coords):
+    neighborhoods = []
+    for coord in coords:
+        nbs = set()
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                try:
+                    nbs.add((coord[0]+i, coord[1]+j))
+                except ValueError:
+                    pass
+        neighborhoods.append(nbs)
+    return neighborhoods
+
+def get_colors(pixels, coords):
+    colors = {}
+    for coord in coords:
+        colors[coord] = get_color(pixels[coord])
+    return colors
+
+def get_border(pixels, coords, colors):
+    borders = []
+    for coord in coords:
+        if len([nb for nb in coords if nb!= coord and colors[nb] == 'lightblue']) > 4:
+            continue
+        else:
+            borders.append(coord)
+    return borders
+
+def get_new_pixels(pixels, coords, colors, borders):
+    new_pixels = [[None]*len(pixels[0]) for _ in range(len(pixels))]
+    for coord in coords:
+        if coord in borders:
+            new_pixels[coord[0]][coord[1]] = 'lightblue'
+        elif colors[coord] == 'lightblue':
+            new_pixels[coord[0]][coard[1]] = None
+    return new_pixels
+
+if __name__ == '__main__':
+    image = get_image("./images/input.png")
+    pixels = list(map(list, zip(*image)))
+    coords = get_coordinates(pixels)
+    colors = get_colors(pixels, coords)
+    neighborhoods = get_neighborhoods(pixels, coords)
+    borders = get_border(pixels, coords, colors)
+    new_pixels = get_new_pixels(pixels, coords, colors, borders)
+    print({"input_grid": str(pixels), "instruction": "Use light blue color to draw the border of the grid with only one cell as width", "output_dimension": str(len(pixels)), "test_output": str(new_pixels)})
+################################################################
+
+Solution:
+[[i, i, i, i, i, i], [i, a, a, a, a, i], [i, a, a, a, a, i], [i, a, a, a, a, i], [i, a, a, a, a, i], [i, a, a, a, a, i], [i, i, i, i, i, i]]
+

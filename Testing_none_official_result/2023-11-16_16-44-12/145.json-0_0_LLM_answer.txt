@@ -1,0 +1,104 @@
+Input token: 565
+Output token: 1025
+################################################################
+
+LLM prompt:
+You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+
+Furthermore, you are given a description to transform the input grid into its output grid.
+
+You are to output only the following in json format: 
+{'input_grid': 'describe the input grid and check if it matches the given description', 'instructions': 'describe the transformation actions step by step provided by the description', 'output_dimension': 'describe the output grid dimension provided by the description', 'test_output': 'transform the test input grid and return only the resulting output grid'}
+Do not use quotation marks ' or " within the fields.
+
+Test input grid:
+[[f, e, e], [e, f, e], [e, f, e], [d, d, c], [d, d, c], [c, c, d], [b, b, b], [b, i, i], [b, i, i]]
+Please fill the json fields with content and create the corresponding output grid based on the following description:
+In the input, you should see a grid with green/red on top, a grid with grey/blue on top, a grid with light blue/yellow on top or a grid with dark red/light blue on top
+To make the output, you have to depending on which top you have you will make that 3x3 square. Green/red top, make over the blue/light blue 3x3 area. Grey/blue top, make the green/pink 3x3 area. Light blue/yellow on top, make the light blue/yellow 3x3 area. dark red/light blue top, make the yellow/green 3x3 area.
+The output grid size the output is now 3x3
+################################################################
+
+LLM answer:
+.
+
+Output grid: [[f, e, e], [e, f, e], [e, f, e], [d, d, c], [d, d, c], [c, c, d], [b, b, b], [b, i, i], [b, i, i]]
+
+
+```python
+def get_description(description):
+    instructions = []
+    for line in description.split('\n'):
+        instruction = line.strip().split(' ')
+        action = instruction[0].lower()
+        if action == 'input_grid':
+            input_grid = list(map(list, instruction[1].split(',')))
+            print("Input Grid:", input_grid)
+        elif action == 'instructions':
+            instructions += instruction[1:]
+            print("Instructions:", instructions)
+        elif action == 'output_dimension':
+            output_dimension = int(instruction[1])
+            print("Output Dimension:", output_dimension)
+        elif action == 'test_output':
+            test_input = list(map(list, instruction[1].split(',')))
+            print("Test Input:", test_input)
+            output = transform(test_input, instructions)
+            print("Test Output:", output)
+
+def transform(input_grid, instructions):
+    output_grid = [[None]*len(input_grid[0]) for _ in range(len(input_grid))]
+    for r, row in enumerate(input_grid):
+        for c, cell in enumerate(row):
+            if cell == 'a':
+                continue
+            if cell == 'b':
+                output_grid[r][c] = 'blue'
+            elif cell == 'c':
+                output_grid[r][c] ='red'
+            elif cell == 'd':
+                output_grid[r][c] = 'green'
+            elif cell == 'e':
+                output_grid[r][c] = 'yellow'
+            elif cell == 'f':
+                output_grid[r][c] = 'gray'
+            elif cell == 'g':
+                output_grid[r][c] ='magenta'
+            elif cell == 'h':
+                output_grid[r][c] = 'orange'
+            elif cell == 'i':
+                output_grid[r][c] = 'cyan'
+            elif cell == 'j':
+                output_grid[r][c] = 'brown'
+            else:
+                raise ValueError(f"Invalid cell value '{cell}'")
+    
+    # Apply instructions
+    for instruction in instructions:
+        if instruction.startswith('make_over_the_'):
+            start_row, start_col, end_row, end_col = map(int, instruction.split('_'))
+            color = instruction.split('_')[-1]
+            for r in range(start_row, end_row+1):
+                for c in range(start_col, end_col+1):
+                    output_grid[r][c] = color
+        elif instruction.startswith('make_the_'):
+            start_row, start_col, end_row, end_col = map(int, instruction.split('_'))
+            color1, color2 = instruction.split('_')[:-1]
+            for r in range(start_row, end_row+1):
+                for c in range(start_col, end_col+1):
+                    if output_grid[r][c] == color1:
+                        output_grid[r][c] = color2
+    return output_grid
+
+if __name__ == "__main__":
+    description = """\
+    In the input, you should see a grid with green/red on top, a grid with grey/blue on top, a grid with light blue/yellow on top or a grid with dark red/light blue on top
+    To make the output, you have to depending on which top you have you will make that 3x3 square. Green/red top, make over the blue/light blue 3x3 area. Grey/blue top, make the green/pink 3x3 area. Light blue/yellow on top, make the light blue/yellow 3x3 area. dark red/light blue top, make the yellow/green 3x3 area.
+    The output is now 3x3.
+
+################################################################
+
+Solution:
+[[f, e, e], [e, f, e], [e, f, e]]
+

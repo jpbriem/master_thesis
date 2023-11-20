@@ -1,0 +1,87 @@
+Input token: 611
+Output token: 593
+################################################################
+
+LLM prompt:
+You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+
+Furthermore, you are given a description to transform the input grid into its output grid.
+
+You are to output only the following in json format: 
+{'input_grid': 'describe the input grid and check if it matches the given description', 'instructions': 'describe the transformation actions step by step provided by the description', 'output_dimension': 'describe the output grid dimension provided by the description', 'test_output': 'transform the test input grid and return only the resulting output grid'}
+Do not use quotation marks ' or " within the fields.
+
+Test input grid:
+[[a, a, a, a, b, a, b, a, b, a, a, a, a, a, b, a, a, a, a, b, b, a, b, a], [b, a, a, a, b, b, b, b, a, a, a, a, b, b, a, b, b, a, b, b, b, b, b, a], [a, a, a, a, a, b, b, b, a, b, b, a, b, a, a, a, b, b, a, a, b, b, b, b], [a, a, b, b, a, a, a, a, a, b, b, b, b, b, a, b, b, a, b, b, a, a, a, b]]
+Please fill the json fields with content and create the corresponding output grid based on the following description:
+In the input, you should see a grid with black, blue and gray squares.
+To make the output, you have to find in the input the biggest square or rectangle that can be created with only black boxes. Then make that box area in the output pink instead of black.
+The output grid size is the same size as the input.
+################################################################
+
+LLM answer:
+
+'''
+#!/bin/python3
+import math
+import os
+import random
+import re
+import sys
+from collections import Counter
+
+def main():
+    # Inputs
+    n = int(input())
+    m = int(input())
+    inputGrid = []
+    for _ in range(n):
+        inputGrid.append(list(map(str, input())))
+    
+    # Processing
+    outputGrid = [[None]*m for i in range(n)]
+    maxArea = 0
+    maxRow = -1
+    maxCol = -1
+    for r in range(len(inputGrid)):
+        for c in range(len(inputGrid[r])):
+            if inputGrid[r][c] == 'a':
+                currentArea = getMaxArea(inputGrid, r, c)
+                if currentArea > maxArea:
+                    maxArea = currentArea
+                    maxRow = r
+                    maxCol = c
+    for r in range(maxRow, maxRow+maxArea):
+        for c in range(maxCol, maxCol+maxArea):
+            outputGrid[r][c] = 'k'
+        
+    # Outputs
+    print('{"input_grid": "' + str(Counter(inputGrid)) + '", "instructions": "Find the largest square or rectangle made up of only black boxes.", "output_dimension": ["' + str(n) + '","' + str(m) + '"], "test_output": [' + ','.join(['"'+x+'".join("")' for x in outputGrid]) + ']}')
+
+def getMaxArea(grid, startRow, startColumn):
+    area = 1
+    directions = [(0,-1),(0,1),(1,0),(-1,0)]
+    for direction in directions:
+        newRow = startRow + direction[0]
+        newColumn = startColumn + direction[1]
+        if newRow >= len(grid) or newColumn >= len(grid[newRow]) or grid[newRow][newColumn]!= 'a':
+            continue
+        else:
+            area += 1
+            while True:
+                newRow += direction[0]
+                newColumn += direction[1]
+                if newRow < 0 or newColumn < 0 or newRow >= len(grid) or newColumn >= len(grid[newRow]) or grid[newRow][newColumn]!= 'a':
+                    break
+                else:
+                    area += 1
+    return area
+
+if __name__ == '__main__':
+    main()
+################################################################
+
+Solution:
+[[a, g, g, g, b, a, b, a, b, a, a, a, a, a, b, a, a, a, a, b, b, a, b, a], [b, g, g, g, b, b, b, b, a, a, a, a, b, b, a, b, b, a, b, b, b, b, b, a], [a, g, g, g, a, b, b, b, a, b, b, a, b, a, a, a, b, b, a, a, b, b, b, b], [a, a, b, b, a, a, a, a, a, b, b, b, b, b, a, b, b, a, b, b, a, a, a, b]]
+

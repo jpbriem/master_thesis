@@ -1,0 +1,158 @@
+Input token: 500
+Output token: 1026
+################################################################
+
+LLM prompt:
+You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+
+Furthermore, you are given a description to transform the input grid into its output grid.
+
+You are to output only the following in json format: 
+{'input_grid': 'describe the input grid and check if it matches the given description', 'instructions': 'describe the transformation actions step by step provided by the description', 'output_dimension': 'describe the output grid dimension provided by the description', 'test_output': 'transform the test input grid and return only the resulting output grid'}
+Do not use quotation marks ' or " within the fields.
+
+Test input grid:
+[[j, j, j, j, j, j], [j, a, a, a, a, j], [j, a, b, b, a, j], [j, a, b, b, a, j], [j, a, a, a, a, j], [j, j, j, j, j, j]]
+Please fill the json fields with content and create the corresponding output grid based on the following description:
+In the input, you should see 3 different size of colored grid
+To make the output, you have to change the color of center black 2x2 grid to that of 4X4  grid color, 4X4 change to 6X6 color, and 6X6 change to old 2X2 color
+The output grid size same as input
+################################################################
+
+LLM answer:
+ grid size
+'''
+import numpy as np
+from PIL import Image
+
+def get_color(pixel):
+    '''
+    :param pixel: a single pixel value
+    :return: the color name for this pixel
+    '''
+    if pixel == 'a':
+        return 'black'
+    elif pixel == 'b':
+        return 'blue'
+    elif pixel == 'c':
+        return'red'
+    elif pixel == 'd':
+        return 'green'
+    elif pixel == 'e':
+        return 'yellow'
+    elif pixel == 'f':
+        return 'grey'
+    elif pixel == 'g':
+        return'magenta'
+    elif pixel == 'h':
+        return 'orange'
+    elif pixel == 'i':
+        return 'cyan'
+    else:
+        return 'brown'
+    
+def get_size(pixels):
+    '''
+    :param pixels: a list of pixels
+    :return: the size of the image
+    '''
+    return len(pixels[0]),len(pixels)
+
+def get_center(image):
+    '''
+    :param image: an image
+    :return: the center point of the image
+    '''
+    return int((get_size(image)[0])/2),int((get_size(image)[1])/2)
+
+def get_neighborhood(image,point):
+    '''
+    :param image: an image
+    :param point: a point in the image
+    :return: all points around the point
+    '''
+    neighborhood = []
+    for i in range(-1,2):
+        for j in range(-1,2):
+            if i!= 0 or j!=0:
+                try:
+                    neighborhood.append([point[0]+i,point[1]+j])
+                except IndexError:
+                    pass
+    return neighborhood
+
+def get_colors(image):
+    '''
+    :param image: an image
+    :return: a dictionary containing all the colors in the image
+    '''
+    colors = {}
+    for y in range(len(image)):
+        for x in range(len(image[0])):
+            colors[get_color(image[y][x])]=[]
+    for y in range(len(image)):
+        for x in range(len(image[0])):
+            colors[get_color(image[y][x]).lower()].append([x,y])
+    return colors
+
+def get_new_color(old_color,colors):
+    '''
+    :param old_color: the current color
+    :param colors: a dictionary containing all the colors in the image
+    :return: the new color
+    '''
+    if old_color=='black':
+        return 'brown'
+    elif old_color=='brown':
+        return 'cyan'
+    elif old_color=='cyan':
+        return 'orange'
+    elif old_color=='orange':
+        return'magenta'
+    elif old_color=='magenta':
+        return 'grey'
+    elif old_color=='grey':
+        return 'yellow'
+    elif old_color=='yellow':
+        return 'green'
+    elif old_color=='green':
+        return'red'
+    elif old_color=='red':
+        return 'blue'
+    elif old_color=='blue':
+        return 'black'
+
+def get_description(description):
+    '''
+    :param description: the description string
+    :return: a list of instructions
+    '''
+    instructions=[]
+    for line in description.split('\n'):
+        if line!='':
+            instructions.append(line.strip())
+    return instructions
+
+def get_output_dimensions(description):
+    '''
+    :param description: the description string
+    :return: the dimensions of the output image
+    '''
+    return int(description.split('change')[0].replace('to','').strip()),\
+           int(description.split('change')[1].replace('to','').strip().replace(',',''))
+
+def get_transformation(image,description):
+    '''
+    :param image: an image
+    :param description: the description string
+    :return: the transformed image
+    '''
+    instructions = get_description(description)
+    output_image = [[None]*len(image)]*len(image)
+    for instruction in
+################################################################
+
+Solution:
+[[b, b, b, b, b, b], [b, j, j, j, j, b], [b, j, a, a, j, b], [b, j, a, a, j, b], [b, j, j, j, j, b], [b, b, b, b, b, b]]
+

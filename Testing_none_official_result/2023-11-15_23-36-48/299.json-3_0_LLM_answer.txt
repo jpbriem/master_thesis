@@ -1,0 +1,159 @@
+Input token: 566
+Output token: 1026
+################################################################
+
+LLM prompt:
+You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+
+Furthermore, you are given a description to transform the input grid into its output grid.
+
+You are to output only the following in json format: 
+{'input_grid': 'describe the input grid and check if it matches the given description', 'instructions': 'describe the transformation actions step by step provided by the description', 'output_dimension': 'describe the output grid dimension provided by the description', 'test_output': 'transform the test input grid and return only the resulting output grid'}
+Do not use quotation marks ' or " within the fields.
+
+Test input grid:
+[[a, a, a, a, a, a, a, a, a], [e, a, a, a, a, a, a, a, a], [e, e, a, d, d, d, a, a, a], [a, e, a, d, d, d, a, a, a], [a, a, a, d, a, d, a, a, a], [a, a, a, d, a, d, a, a, a], [a, a, a, a, a, a, a, g, g], [a, f, f, f, a, a, g, g, g], [a, f, f, a, a, a, g, g, a]]
+Please fill the json fields with content and create the corresponding output grid based on the following description:
+In the input, you should see colored grids with different pattern with black background
+To make the output, you have to fully zoomed pattern of a highest color count among the gird
+The output grid size fully zoomed size of a certain pattern
+################################################################
+
+LLM answer:
+
+If there are multiple patterns with same color count, choose the one that has the most left top corner
+If there are multiple patterns with same color count and location, choose the one that has the most right bottom corner
+If there are multiple patterns with same color count and location, choose the one that has the most right top corner
+If there are multiple patterns with same color count and location, choose the one that has the most left bottom corner
+If there are multiple patterns with same color count and location, choose the one that has the most center point
+If there are multiple patterns with same color count and location, choose the first one found
+'''
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+def get_color(pixel):
+    '''
+    Returns the color name for each pixel value
+    '''
+    color = {
+        'a':'black',
+        'b':'blue',
+        'c':'red',
+        'd':'green',
+        'e':'yellow',
+        'f':'gray',
+        'g':'magenta',
+        'h':'orange',
+        'i':'cyan',
+        'j':'brown'
+    }
+    return color[str(pixel)]
+
+def get_image(img):
+    '''
+    Converts an image to a list of lists of RGB tuples
+    '''
+    img = Image.open(img)
+    width, height = img.size
+    rgb_list = []
+    for y in range(height):
+        line = []
+        for x in range(width):
+            r, g, b = img.getpixel((x,y))
+            line.append((r,g,b))
+        rgb_list.append(line)
+    return rgb_list
+
+def get_patterns(rgb_list):
+    '''
+    Finds all possible patterns in the image
+    '''
+    patterns = {}
+    for i in range(len(rgb_list)):
+        for j in range(len(rgb_list[i])):
+            pattern = []
+            for k in range(-5,-1):
+                try:
+                    pattern.append([rgb_list[i+k][j], rgb_list[i+k][j+1]])
+                except IndexError:
+                    pass
+            patterns[(i,j)] = pattern
+    return patterns
+
+def get_count(patterns):
+    '''
+    Counts the number of unique colors in each pattern
+    '''
+    counts = {}
+    for key, val in patterns.items():
+        cnt = Counter()
+        for p in val:
+            cnt.update({tuple(sorted(p))})
+        counts[key] = len(cnt)
+    return counts
+
+def get_max(counts):
+    '''
+    Gets the maximum number of unique colors in any pattern
+    '''
+    max_val = -1
+    for v in counts.values():
+        if v > max_val:
+            max_val = v
+    return max_val
+
+def get_locations(counts):
+    '''
+    Gets the locations of all patterns with the maximum number of unique colors
+    '''
+    locs = []
+    for key, val in counts.items():
+        if val == max_val:
+            locs.append(key)
+    return locs
+
+def get_zoom(patterns, locs):
+    '''
+    Zooms in on the patterns with the maximum number of unique colors
+    '''
+    zoomed = []
+    for l in locs:
+        zoomed.append(patterns[l])
+    return zoomed
+
+def get_coords(zoomed):
+    '''
+    Gets the coords of the zoomed patterns
+    '''
+    coords = []
+    for z in zoomed:
+        coords.append(z[0][0])
+    return coords
+
+def get_center(coords):
+    '''
+    Gets the center coordinate of the zoomed patterns
+    '''
+    centers = []
+    for c in coords:
+        centers.append(int(round(sum(c)/len(c))))
+    return centers
+
+def get_first(centers):
+    '''
+    Chooses the first center coordinate found
+    '''
+    first = min(set(centers))
+    return first
+
+def get_final(zoomed, first):
+    '''
+    Creates the final output grid
+    '''
+   
+################################################################
+
+Solution:
+[[d, d, d], [d, d, d], [d, a, d], [d, a, d]]
+

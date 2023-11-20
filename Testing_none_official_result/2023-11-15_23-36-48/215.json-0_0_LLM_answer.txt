@@ -1,0 +1,162 @@
+Input token: 1214
+Output token: 1026
+################################################################
+
+LLM prompt:
+You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+
+Furthermore, you are given a description to transform the input grid into its output grid.
+
+You are to output only the following in json format: 
+{'input_grid': 'describe the input grid and check if it matches the given description', 'instructions': 'describe the transformation actions step by step provided by the description', 'output_dimension': 'describe the output grid dimension provided by the description', 'test_output': 'transform the test input grid and return only the resulting output grid'}
+Do not use quotation marks ' or " within the fields.
+
+Test input grid:
+[[a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, b, b, b, b, b, a, a, a, b, b, b, b, b, b, b, b, a, a, a], [a, b, b, b, b, b, a, a, a, b, b, b, b, b, c, b, b, a, a, a], [a, b, c, b, b, b, a, a, a, b, c, b, b, b, b, b, b, a, a, a], [a, b, b, b, c, b, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, b, b, b, b, b, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, b, b, b, b, b, a, a, b, b, b, b, c, b, b, c, b, b, a, a], [a, b, b, b, b, b, a, a, b, b, b, b, b, b, b, b, b, b, a, a], [a, b, b, c, b, b, a, a, b, b, c, b, b, b, b, b, b, b, a, a], [a, b, b, b, b, b, a, a, b, b, b, b, b, c, b, b, c, b, a, a], [a, b, b, b, b, b, a, a, b, b, b, b, b, b, b, b, b, b, a, a], [a, b, c, b, b, b, a, a, b, c, b, c, b, b, b, b, b, b, a, a], [a, b, b, b, b, b, a, a, b, b, b, b, b, b, b, c, b, b, a, a], [a, b, b, b, c, b, a, a, b, b, c, b, c, b, b, b, b, b, a, a], [a, b, b, b, b, b, a, a, b, b, b, b, b, b, b, b, b, b, a, a], [a, b, b, b, b, b, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, b, b, b, b, b, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, b, c, b, b, b, a, a, a, a, a, b, b, b, b, b, b, b, b, b], [a, b, b, b, b, b, a, a, a, a, a, b, b, c, b, b, b, c, b, b], [a, a, a, a, a, a, a, a, a, a, a, b, b, b, b, c, b, b, c, b]]
+Please fill the json fields with content and create the corresponding output grid based on the following description:
+In the input, you should see 2 colors on a black background
+To make the output, you have to replicate the pattern of the chosen shape
+The output grid size choose the shape with the most red squares and make the grid that size
+################################################################
+
+LLM answer:
+
+The output grid will be filled with the same color as the chosen shape
+'''
+import numpy as np
+from PIL import Image
+
+def get_color(pixel):
+    '''
+    Returns the color name for each pixel value
+    
+    Parameters
+    ----------
+    pixel : int
+        A single pixel value
+        
+    Returns
+    -------
+    str
+        Color name
+    '''
+    color = {
+            0:'black',
+            1:'blue',
+            2:'red',
+            3:'green',
+            4:'yellow',
+            5:'gray',
+            6:'magenta',
+            7:'orange',
+            8:'cyan',
+            9:'brown'
+            }
+    return color[int(str(pixel)[1])]
+
+def get_shape(image):
+    '''
+    Finds the largest shape in an image
+    
+    Parameters
+    ----------
+    image : list
+        List containing all the rows of the image
+        
+    Returns
+    -------
+    tuple
+        Tuple containing the shape type and the amount of times it appears
+    '''
+    shapes={}
+    for i in range(len(image)):
+        for j in range(len(image[i])):
+            if image[i][j]==1:
+                if len(shapes) == 0:
+                    shapes[(get_color(image[i][j]),1)]=[]
+                else:
+                    if get_color(image[i][j]) in shapes:
+                        shapes[get_color(image[i][j]).__add__(1)]=[]
+                    else:
+                        shapes[(get_color(image[i][j]),1)]=[]
+    max_count=max([x[1] for x in shapes.items()])
+    max_key=(list(shapes.keys())[list(shapes.values()).index(max_count)])[0]
+    return max_key,max_count
+
+def get_size(image,shape):
+    '''
+    Gets the dimensions of the shape
+    
+    Parameters
+    ----------
+    image : list
+        List containing all the rows of the image
+    shape : str
+        Name of the shape
+        
+    Returns
+    -------
+    tuple
+        Tuple containing the width and height of the shape
+    '''
+    count=0
+    width=0
+    height=0
+    for i in range(len(image)):
+        for j in range(len(image[i])):
+            if image[i][j]==1:
+                if get_color(image[i][j])==shape:
+                    count+=1
+                    if j>width:
+                        width=j
+                    if i>height:
+                        height=i
+    return width+1,height+1
+
+def get_replica(image,shape,size):
+    '''
+    Creates a copy of the shape
+    
+    Parameters
+    ----------
+    image : list
+        List containing all the rows of the image
+    shape : str
+        Name of the shape
+    size : tuple
+        Tuple containing the width and height of the shape
+        
+    Returns
+    -------
+    list
+        Copy of the shape
+    '''
+    new_image=[['a' for _ in range(size[0]+1)]for __ in range(size[1]+1)]
+    for i in range(len(new_image)):
+        for j in range(len(new_image[i])):
+            if i<size[1]:
+                if j<size[0]:
+                    if image[i][j]==1:
+                        if get_color(image[i][j])==shape:
+                            new_image[i][j]=shape
+    return new_image
+
+if __name__=="__main__":
+    img=Image.open('./images/input.png')
+    img=np.array(img)
+    img=img[:,:,0].tolist()
+    print("Input Grid")
+    print(img)
+    print("\nInstructions")
+    print(get_shape(img))
+    print(get_size(img,get_shape(img)[0]))
+    print("\nOutput Dimensions")
+    print(get_size(img,get_shape(img)[0]))
+    print("\nTest Output")
+    print(get
+################################################################
+
+Solution:
+[[b, b, b, b, c, b, b, c, b, b], [b, b, b, b, b, b, b, b, b, b], [b, b, c, b, b, b, b, b, b, b], [b, b, b, b, b, c, b, b, c, b], [b, b, b, b, b, b, b, b, b, b], [b, c, b, c, b, b, b, b, b, b], [b, b, b, b, b, b, b, c, b, b], [b, b, c, b, c, b, b, b, b, b], [b, b, b, b, b, b, b, b, b, b]]
+

@@ -1,0 +1,99 @@
+Input token: 651
+Output token: 1026
+################################################################
+
+LLM prompt:
+You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+
+Furthermore, you are given a description to transform the input grid into its output grid.
+
+You are to output only the following in json format: 
+{'input_grid': 'describe the input grid and check if it matches the given description', 'instructions': 'describe the transformation actions step by step provided by the description', 'output_dimension': 'describe the output grid dimension provided by the description', 'test_output': 'transform the test input grid and return only the resulting output grid'}
+Do not use quotation marks ' or " within the fields.
+
+Test input grid:
+[[h, h, h, a, b, a, a, e, a], [a, h, h, a, b, e, e, a, e], [h, h, h, h, b, a, e, a, e], [h, a, a, a, b, e, a, e, a], [b, b, b, b, b, b, b, b, b], [a, a, a, i, b, a, g, a, g], [i, a, a, i, b, g, a, a, g], [i, a, i, a, b, g, g, g, g], [a, i, a, i, b, a, g, a, a]]
+Please fill the json fields with content and create the corresponding output grid based on the following description:
+In the input, you should see four 4x4 grids placed on with a blue   dividing them. Each 4x4 grid is their own colors.
+To make the output, you have to take the upper left 4x4 grid. Nothing will need to be changed from it.  Add the upper right grid to the 1st one.  Remember not to change any colors only add new ones to black boxes.  Next do the bottom left grid the same way. Finish with the bottom right grid.  You will not use dark blue squares at all.
+The output grid size the size of one 4x4 grid.
+################################################################
+
+LLM answer:
+
+'''
+import json
+from PIL import Image
+def get_pixel(image, x, y):
+    try:
+        pixel = image[y][x]
+    except IndexError:
+        print("Index out of range")
+        raise SystemExit()
+    else:
+        return pixel
+
+def main():
+    # Open the file containing the input data
+    f = open('data/input.txt')
+    
+    # Read the first line which contains the input grid
+    input_grid = []
+    for line in f:
+        input_grid.append([])
+        for char in line[:-1]:
+            input_grid[-1].append(char)
+        
+    # Close the file
+    f.close()
+    
+    # Create an empty list to store the instructions
+    instructions = []
+    
+    # Get the second line which contains the description
+    description = f.readline().strip('\n').split(', ')
+    
+    # Split the description into two parts - the description and the dimensions
+    descr, dims = description[0], description[1:]
+    
+    # Parse the description
+    descr = descr.replace(' ', '')
+    descr = descr.lower()
+    descr = descr.translate({ord(k): v for k,v in zip(*sorted(zip(list('abcdefghij'), list('abcefghmio'))))})
+    descr = descr.upper()
+    descr = descr.capitalize()
+    descr = descr.title()
+    descr = descr.replace('THE UPPER LEFT GRID', 'UPPER LEFT')
+    descr = descr.replace('THE UPPER RIGHT GRID', 'UPPER RIGHT')
+    descr = descr.replace('THE BOTTOM LEFT GRID', 'BOTTOM LEFT')
+    descr = descr.replace('THE BOTTOM RIGHT GRID', 'BOTTOM RIGHT')
+    descr = descr.replace('ADD THE UPPER RIGHT GRID TO THE FIRST ONE', 'ADD UPPER RIGHT TO FIRST')
+    descr = descr.replace('REMEMBER NOT TO CHANGE ANY COLORS ONLY ADD NEW ONES TO BLACK BOXES', 'REMEMBER NO CHANGES JUST ADD NEW ONES TO BLACK BOXES')
+    descr = descr.replace('NEXT DO THE BOTTOM LEFT GRID THE SAME WAY', 'DO BOTTOM LEFT THE SAME WAY')
+    descr = descr.replace('FINISH WITH THE BOTTOM RIGHT GRID', 'FINISH WITH BOTTOM RIGHT')
+    descr = descr.replace('YOU WILL NOT USE DARK BLUE SQUARES AT ALL', 'NO DARK BLUES')
+    descr = descr.replace('GRID', 'GRIDS')
+    descr = descr.replace('COLOR', 'COLOUR')
+    descr = descr.replace('BLUE', 'BLUE COLOURED')
+    descr = descr.replace('RED', 'RED COLOURED')
+    descr = descr.replace('GRAY', 'GREY COLOURED')
+    descr = descr.replace('MAGENTA', 'PURPLE COLOURED')
+    descr = descr.replace('ORANGE', 'ORANGER COLOURED')
+    descr = descr.replace('CYAN', 'TURQOISE COLOURED')
+    descr = descr.replace('BROWN', 'BRONZE COLOURED')
+    descr = descr.replace('DIVIDING', 'DIVED BY')
+    descr = descr.replace('BOXES', 'BOX')
+    descr = descr.replace('ADDED', 'ADD')
+    descr = descr.replace('CHANGING', 'CHANGE')
+    descr = descr.replace('USE', 'USING')
+    descr = descr.replace('AT ALL', 'ALL')
+    descr = descr.replace('THEM', 'IT')
+    descr = descr.replace('ONE', '1')
+    descr = descr.replace('TWO', '2')
+    descr = descr.replace('TH
+################################################################
+
+Solution:
+[[h, h, h, i], [e, h, h, e], [h, h, h, h], [h, i, e, i]]
+

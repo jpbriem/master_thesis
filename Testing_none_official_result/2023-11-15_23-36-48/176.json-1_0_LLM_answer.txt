@@ -1,0 +1,119 @@
+Input token: 990
+Output token: 1026
+################################################################
+
+LLM prompt:
+You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+
+Furthermore, you are given a description to transform the input grid into its output grid.
+
+You are to output only the following in json format: 
+{'input_grid': 'describe the input grid and check if it matches the given description', 'instructions': 'describe the transformation actions step by step provided by the description', 'output_dimension': 'describe the output grid dimension provided by the description', 'test_output': 'transform the test input grid and return only the resulting output grid'}
+Do not use quotation marks ' or " within the fields.
+
+Test input grid:
+[[a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, a, a, b, b, b, b, i, b, b, b, a, a, a, a, a, a], [a, a, a, b, b, b, b, b, i, i, b, a, a, a, a, a, a], [a, a, a, b, b, b, b, b, b, b, b, a, a, a, a, a, a], [a, a, a, i, i, i, b, b, b, b, b, a, a, a, a, a, a], [a, a, a, b, b, b, b, b, b, b, b, a, a, a, a, a, a], [a, a, a, b, b, i, i, i, b, b, b, a, a, a, a, a, a], [a, a, a, b, b, b, b, b, b, b, b, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a], [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a]]
+Please fill the json fields with content and create the corresponding output grid based on the following description:
+In the input, you should see a colored shape in a black background.
+To make the output, you have to The output is the colored shape inverted to the side.
+The output grid size The grid size is same as the colored shape.
+################################################################
+
+LLM answer:
+
+
+Expected output:
+{
+    "input_grid": {
+        "description": "A colored shape in a black background",
+        "shape": "rectangle"
+    },
+    "instruction": {
+        "step1": "invert the colored shape to the side",
+        "step2": ""
+    },
+    "output_dimension": {
+        "width": 5,
+        "height": 4
+    }
+}
+'''
+import numpy as np
+from PIL import Image
+
+def get_color(pixel):
+    '''
+    Get the color name of pixel
+    
+    Parameters
+    ----------
+    pixel : int
+        
+    Returns
+    -------
+    str
+        Color name
+    '''
+    color = ''
+    for k, v in COLOR_MAP.items():
+        if pixel == v:
+            color = k
+            break
+    return color
+
+def get_shape(img):
+    '''
+    Get the shape of image
+    
+    Parameters
+    ----------
+    img : list[list[int]]
+        
+    Returns
+    -------
+    str
+        Shape type
+    '''
+    shape = None
+    for k, v in SHAPE_MAP.keys():
+        if all([np.all(img[:, j].sum() > 0) for j in range(len(v))]) \
+                and any([np.all(img[:, j + 1] == 0) for j in range(len(v)-1)]):
+            shape = k
+            break
+    return shape
+
+def get_size(img):
+    '''
+    Get the size of image
+    
+    Parameters
+    ----------
+    img : list[list[int]]
+        
+    Returns
+    -------
+    tuple
+        Size of image
+    '''
+    width = len(SHAPE_MAP[get_shape(img)][0])
+    height = len(SHAPE_MAP[get_shape(img)])
+    return width, height
+
+if __name__ == '__main__':
+    # Test case 1
+    img = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 1, 1, 1, 1, 9, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 1, 1, 1, 1, 1, 8, 1, 1, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 7, 7, 6, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+################################################################
+
+Solution:
+[[b, b, b, i, b, b, b, b], [b, i, i, b, b, b, b, b], [b, b, b, b, b, b, b, b], [b, b, b, b, b, i, i, i], [b, b, b, b, b, b, b, b], [b, b, b, i, i, i, b, b], [b, b, b, b, b, b, b, b]]
+
