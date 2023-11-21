@@ -119,6 +119,25 @@ def count_tokens(prompt, model_name, tokenizer):
         token_limit = tokenizer.model_max_length
     return num_tokens, token_limit
 
+def extract_json_value(string, key):
+    try:
+        # Find the start and end of the JSON segment in the string
+        json_start = string.find("{")
+        json_end = string.rfind("}") + 1
+
+        # Extract the JSON-like segment
+        json_segment = string[json_start:json_end]
+
+        # Convert single quotes to double quotes for valid JSON format
+        json_segment = json_segment.replace("'", '"')
+
+        # Load the segment as a JSON object
+        data = json.loads(json_segment)
+
+        # Return the value for the given key
+        return data.get(key)
+    except Exception as e:
+        return f"Error: {e}"
    
 ##################### Prompt Helper #####################
 
