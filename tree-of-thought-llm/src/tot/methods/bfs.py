@@ -44,6 +44,8 @@ def get_samples(task, x, y, n_generate_sample, current_step, total_steps, prompt
     else:
         raise ValueError(f'prompt_sample {prompt_sample} not recognized')
     samples = gpt(prompt, n=n_generate_sample, stop=stop)
+    if task.__class__.__name__ == "ARCTask":
+        return samples
     return [y + _ for _ in samples]
 
 def solve(args, task, idx, to_print=True):

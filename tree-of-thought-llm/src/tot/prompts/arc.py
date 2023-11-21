@@ -28,15 +28,17 @@ The list is not exhaustive. Transformations can be conditional.'''
 standard_prompt = '''{context}{input}'''
 
 cot_prompt = general_explanation + '''
+
 {special_instructions}
-You are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields unless it is required for the python code.
+
+You are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.
 
 {context}{input}'''
 
 
 vote_prompt = general_explanation + '''
 {special_instructions}
-You are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields unless it is required for the python code.
+You are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.
 
 {context}{input}'''
 

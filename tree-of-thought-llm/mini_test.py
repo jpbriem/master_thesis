@@ -6,10 +6,11 @@ import argparse
 from tot.methods.bfs import solve
 from tot.tasks.game24 import Game24Task
 from tot.tasks.text import TextTask
+from tot.tasks.arc_full_plan import ARCTask
 
 ########## Game 24 ##########
 # args = argparse.Namespace(
-#     backend='gpt-3.5-turbo', 
+#     backend='gpt-3.5-turbo-1106', 
 #     temperature=0.7, 
 #     task='game24', 
 #     naive_run=False, 
@@ -26,8 +27,27 @@ from tot.tasks.text import TextTask
 # print(ys[0])
 
 ########## Text ##########
+# args = argparse.Namespace(
+#     backend='gpt-3.5-turbo-1106', 
+#     temperature=0.7, 
+#     task='text', 
+#     naive_run=False, 
+#     prompt_sample='cot', 
+#     method_generate='sample', 
+#     method_evaluate='vote', 
+#     method_select='greedy', 
+#     n_generate_sample=2, 
+#     n_evaluate_sample=2, 
+#     n_select_sample=1)
+
+# task = TextTask()
+
+# ys, infos = solve(args, task, 0)
+# print(ys[0])
+
+########## Text ##########
 args = argparse.Namespace(
-    backend='gpt-3.5-turbo', 
+    backend='gpt-3.5-turbo-1106', 
     temperature=0.7, 
     task='text', 
     naive_run=False, 
@@ -39,7 +59,7 @@ args = argparse.Namespace(
     n_evaluate_sample=2, 
     n_select_sample=1)
 
-task = TextTask()
+task = ARCTask()
 
 ys, infos = solve(args, task, 0)
 print(ys[0])

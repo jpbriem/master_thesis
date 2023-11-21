@@ -1,6 +1,6 @@
 
-from config import *
-from credentials import *
+from tot.methods.arc_config import * 
+from tot.methods.credentials import *
 import numpy as np
 import json
 import re
@@ -119,6 +119,21 @@ def count_tokens(prompt, model_name, tokenizer):
         token_limit = tokenizer.model_max_length
     return num_tokens, token_limit
 
+def replace_single_quotes_except_in_text(json_string):
+    inside_string = False
+    result = []
+
+    for i, char in enumerate(json_string):
+        if char == '"' and (i == 0 or json_string[i - 1] != '\\'):
+            inside_string = not inside_string
+        
+        if char == "'" and not inside_string:
+            result.append('"')
+        else:
+            result.append(char)
+
+    return ''.join(result)
+
 def extract_json_value(string, key):
     try:
         # Find the start and end of the JSON segment in the string
@@ -129,8 +144,7 @@ def extract_json_value(string, key):
         json_segment = string[json_start:json_end]
 
         # Convert single quotes to double quotes for valid JSON format
-        json_segment = json_segment.replace("'", '"')
-
+        json_segment = replace_single_quotes_except_in_text(json_segment)
         # Load the segment as a JSON object
         data = json.loads(json_segment)
 

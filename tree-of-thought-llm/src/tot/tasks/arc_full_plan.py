@@ -3,8 +3,8 @@ import re
 from tot.tasks.base import Task, DATA_PATH
 from tot.prompts.arc import * # TODO: use ARC prompts
 from tot.models import gpt
-from utils import *
-from arc_config import * 
+from tot.methods.arc_utils import *
+from tot.methods.arc_config import * 
 
 class ARCTask(Task):
     """
@@ -46,7 +46,7 @@ class ARCTask(Task):
             self.success[task_name] = 0
         for test_case, solution in zip(test_cases[:1], solutions[:1]): # TODO: currently just check first test case in case more exist
 
-            test_output_grid = get_content_from_llm_answer(output, "test_output") 
+            test_output_grid = extract_json_value(output, "test_output") 
             # Check answers and save success rates. # TODO: Maybe change check to np.array comparison if possible
             is_success = str(test_output_grid).strip() in solution
             self.success[task_name] += is_success / len(test_cases)
@@ -100,7 +100,7 @@ class ARCTask(Task):
             ARC-Plan - single_level -> second step: get test outputs
                 y: contains the llm aswer with the plan from the first step          
             """
-            instruct = '''Moreover, you are given a plan of transformation actions that might help you.\n\n'''
+            instruct = '''Moreover, you are given a plan of transformation actions that might help you.'''
             output_format = {
                 'reflection': 'reflect on the answer', 
                 'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 
@@ -110,7 +110,7 @@ class ARCTask(Task):
                 'instructions': 'describe the transformation actions step by step', 
                 'test_output': 'Use the instructions to transform the test input grid and return only the resulting output grid in numpy array format.'
                 }
-            y = '''Transformation actions: ''' + get_content_from_llm_answer(y, "instructions")
+            y = '''Transformation actions: ''' + extract_json_value(y, "instructions") + '''\n'''
             prompt = cot_prompt.format(context=task_context, input=task_input[0], output=output_format, special_instructions=instruct) + y 
         return prompt 
 
@@ -129,13 +129,13 @@ class ARCTask(Task):
             ARC-Plan - single_level -> first step: vote for plan
             """
             output_format = {
-                'pattern_analysis': {
+                'plan_analysis': {
                     '1': 'analyze if the first given plan correctly describes the relation between all input and output pairs',
                     '2': '...'
                     },
                 'vote': 'vote for the best choice by entering the number of the choice as integer'
                 }
-            instruct = '''Moreover, you are given a set of plans with transformation actions that might describe the relation between all input and output pairs. Evaluate the given plans and analyze which one describes the relation best.\n\n'''
+            instruct = '''Moreover, you are given a set of plans with transformation actions that might describe the relation between all input and output pairs. Evaluate the given plans and analyze which one describes the relation best.'''
             prompt = vote_prompt.format(context=task_context, input="", output=output_format, special_instructions=instruct)
             voting_object = "instructions"
         elif current_step == 1:  
@@ -143,20 +143,20 @@ class ARCTask(Task):
             ARC-Plan - single_level -> second step: vote for test output
             """
             output_format = {
-                'pattern_analysis': {
+                'test_output_analysis': {
                     '1': 'analyze if the first given test output is correct',
                     '2': '...'
                     },
                 'vote': 'vote for the best choice by entering the number of the choice as integer'
                 }
-            instruct = '''Moreover, you are given a test input and a set of potential corresponding test outputs. Evaluate the given test outputs and analyze if they share the same relation compared to the provided training input and output pairs.\n\n'''
+            instruct = '''Moreover, you are given a test input and a set of potential corresponding test outputs. Evaluate the given test outputs and analyze if they share the same relation compared to the provided training input and output pairs.'''
             prompt = vote_prompt.format(context=task_context, input=task_input[0], output=output_format, special_instructions=instruct)
             voting_object = "test_output"
             
         
         for i, y in enumerate(ys, 1):
             # get the needed information from LLM answer
-            y = get_content_from_llm_answer(y, voting_object) 
+            y = extract_json_value(y, voting_object) 
             prompt += f'\nChoice {i}: {y}'
         return prompt
     
@@ -165,7 +165,7 @@ class ARCTask(Task):
         vote_results = [0] * n_candidates
         for vote_output in vote_outputs:
             try:
-                vote = int(get_content_from_llm_answer(vote_output, "vote"))
+                vote = int(extract_json_value(vote_output, "vote"))
             except:
                 vote = -1
                 print("Vote from LLM not a single integer:", vote_output)
