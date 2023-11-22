@@ -119,39 +119,78 @@ def count_tokens(prompt, model_name, tokenizer):
         token_limit = tokenizer.model_max_length
     return num_tokens, token_limit
 
-def replace_single_quotes_except_in_text(json_string):
-    inside_string = False
-    result = []
+def replace_quotes_in_text(res, json_format):
+    # do some regex to remove unwanted single aprostrophes
+    res = res.replace("'", '"')
+    res = res.replace("\n", " ")
+    # replace any color name enclosed in double quotation marks to single quotation marks
+    pattern = r'"([^\s"]+)"'
+    res = re.sub(pattern, r"'\1'", res)
+    print(res)
+    # replace only single aprostrophe at the end of a word
+    # pattern = r'\b(?<!")(\w+)"\s'
+    # res = re.sub(pattern, r'\1 ', res)
+    # print(res)
 
-    for i, char in enumerate(json_string):
-        if char == '"' and (i == 0 or json_string[i - 1] != '\\'):
-            inside_string = not inside_string
-        
-        if char == "'" and not inside_string:
-            result.append('"')
-        else:
-            result.append(char)
+    # add back double quotes to header names
+    for key in list(json_format.keys())+["Choice"]:
+        pattern = fr"'({key}(?:_\d+)?)'"
+        res = re.sub(pattern, r'"\1"', res)
 
-    return ''.join(result)
+    # ensure that we don't replace away aprostophes in text 
+    res = re.sub(r"(\w)\"(\w)", r"\1'\2", res)
 
-def extract_json_value(string, key):
+    # add double quotes when we have a single number als field value
+    pattern = r'(": )\'(\d+)\'(,|})'
+    res = re.sub(pattern, r'\1"\2"\3', res)
+    
+    # replace any characters with a backslash away, except \n and \t
+    pattern = r"(\\[^nt])"
+    res = re.sub(pattern, "", res)
+
+    print(res)
+    # # replace newline and tabs
+    # res = res.replace("\n", "\\n").replace("\t", "\\t")
+    return res
+
+def extract_json_value(string, json_format, key):
     try:
-        # Find the start and end of the JSON segment in the string
-        json_start = string.find("{")
-        json_end = string.rfind("}") + 1
-
-        # Extract the JSON-like segment
-        json_segment = string[json_start:json_end]
-
-        # Convert single quotes to double quotes for valid JSON format
-        json_segment = replace_single_quotes_except_in_text(json_segment)
-        # Load the segment as a JSON object
+        list_of_jsons = []
+        indices = []
+        # search for json-like segment in string, including nested jsons
+        while True:
+            # Find the start and end of the JSON segment in the string
+            json_start = string.find("{")
+            json_end = string.rfind("}") + 1
+            print(json_start, json_end)
+            if any([json_start == -1, json_end == 0]):
+                break
+            
+            # Extract the JSON-like segment           
+            list_of_jsons.append(string[json_start:json_end])
+            indices.append((json_start, json_end))
+            try:
+                string = string[json_start+1:json_end-1]
+            except:
+                break
+        
+        previous_segment = None
+        for i, json_segment in reversed(list(enumerate(list_of_jsons))):
+            print(json_segment)
+            if previous_segment:
+                json_segment = json_segment[:indices[i+1][0]] + previous_segment + json_segment[indices[i+1][1]+1:]
+            json_segment = replace_quotes_in_text(json_segment, json_format)
+            print(json_segment)
+            previous_segment = json_segment
+        print(json_segment)
         data = json.loads(json_segment)
-
+        print(data[key])
         # Return the value for the given key
         return data.get(key)
+    except json.JSONDecodeError as e:
+        return f"JSON Parsing Error: {e}"
     except Exception as e:
-        return f"Error: {e}"
+        return f"General Error: {e}"
    
 ##################### Prompt Helper #####################
 

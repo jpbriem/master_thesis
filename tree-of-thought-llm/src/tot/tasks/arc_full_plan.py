@@ -38,6 +38,15 @@ class ARCTask(Task):
         return task_json
     
     def test_output(self, idx: int, output: str):      
+        output_format = {
+            'reflection': 'reflect on the answer', 
+            'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 
+            'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 
+            'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 
+            'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
+            'instructions': 'describe the transformation actions step by step', 
+            'test_output': 'Use the instructions to transform the test input grid and return only the resulting output as numpy array.'
+            }
         # get test case
         task_json = self.data[idx]
         task_name = self.names[idx]
@@ -46,7 +55,7 @@ class ARCTask(Task):
             self.success[task_name] = 0
         for test_case, solution in zip(test_cases[:1], solutions[:1]): # TODO: currently just check first test case in case more exist
 
-            test_output_grid = extract_json_value(output, "test_output") 
+            test_output_grid = extract_json_value(output, output_format, "test_output") # TODO: change that before already extrated! or just add list! 
             # Check answers and save success rates. # TODO: Maybe change check to np.array comparison if possible
             is_success = str(test_output_grid).strip() in solution
             self.success[task_name] += is_success / len(test_cases)
@@ -108,9 +117,9 @@ class ARCTask(Task):
                 'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 
                 'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
                 'instructions': 'describe the transformation actions step by step', 
-                'test_output': 'Use the instructions to transform the test input grid and return only the resulting output grid in numpy array format.'
+                'test_output': 'Use the instructions to transform the test input grid and return only the resulting output as numpy array.'
                 }
-            y = '''Transformation actions: ''' + extract_json_value(y, "instructions") + '''\n'''
+            y = '''Transformation plan: ''' + extract_json_value(y, output_format, "instructions") + '''\n'''
             prompt = cot_prompt.format(context=task_context, input=task_input[0], output=output_format, special_instructions=instruct) + y 
         return prompt 
 
@@ -130,8 +139,8 @@ class ARCTask(Task):
             """
             output_format = {
                 'plan_analysis': {
-                    '1': 'analyze if the first given plan correctly describes the relation between all input and output pairs',
-                    '2': '...'
+                    'Choice_1': 'analyze if the first given plan correctly describes the relation between all input and output pairs',
+                    'Choice_2': '...'
                     },
                 'vote': 'vote for the best choice by entering the number of the choice as integer'
                 }
@@ -144,8 +153,8 @@ class ARCTask(Task):
             """
             output_format = {
                 'test_output_analysis': {
-                    '1': 'analyze if the first given test output is correct',
-                    '2': '...'
+                    'Choice_1': 'analyze if the first given test output is correct',
+                    'Choice_2': '...'
                     },
                 'vote': 'vote for the best choice by entering the number of the choice as integer'
                 }
@@ -153,24 +162,25 @@ class ARCTask(Task):
             prompt = vote_prompt.format(context=task_context, input=task_input[0], output=output_format, special_instructions=instruct)
             voting_object = "test_output"
             
-        
+        json_keys = {'reflection': "", 'grid_changes': "", 'pixel_changes': "",  'object_changes': "", 'overall_pattern': "", 'instructions': "",'test_output': ""}
         for i, y in enumerate(ys, 1):
             # get the needed information from LLM answer
-            y = extract_json_value(y, voting_object) 
+            y = extract_json_value(y, json_keys, voting_object) 
             prompt += f'\nChoice {i}: {y}'
         return prompt
     
     @staticmethod
     def vote_outputs_unwrap(vote_outputs: list, n_candidates: int) -> list:
         vote_results = [0] * n_candidates
+        output_keys = {"test_output_analysis": "", "plan_analysis": "", "vote": ""}
         for vote_output in vote_outputs:
             try:
-                vote = int(extract_json_value(vote_output, "vote"))
+                vote = int(extract_json_value(vote_output, output_keys, "vote"))
             except:
                 vote = -1
                 print("Vote from LLM not a single integer:", vote_output)
-            if vote in range(n_candidates):
-                vote_results[vote] += 1
+            if (vote-1) in range(n_candidates): # vote -1 bc. indexing starts at 0
+                vote_results[vote-1] += 1
         return vote_results
 
     @staticmethod
