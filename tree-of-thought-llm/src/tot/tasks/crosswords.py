@@ -21,7 +21,7 @@ class MiniCrosswordsEnv:
     
     def reset(self, idx, board=None, status=None, steps=None):
         self.idx = idx
-        self.data, self.board_gt = self.file[idx]
+        self.data, self.board_gt = self.file[idx] # 'gt': ground truth
         self.board = ['_'] * 25
         self.ans = ['_____'] * 10
         self.ans_gt = self.get_ans(self.board_gt)

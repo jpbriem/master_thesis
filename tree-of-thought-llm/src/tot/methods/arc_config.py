@@ -92,7 +92,7 @@ DELIMITER = {
     "grid_end": "]]\n", # include end of last row
     "row_start": "[",
     "row_end": "], ", # except for last row
-    "example_start": "",
+    "example_start": "Example:\n",
     "example_end": "\n",
     "task_start": "",
     "task_end": "",

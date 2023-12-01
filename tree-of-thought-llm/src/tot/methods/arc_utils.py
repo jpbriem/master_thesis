@@ -6,6 +6,7 @@ import json
 import re
 import matplotlib.pyplot as plt
 import shutil
+import datetime
 import sys
 import os
 os.environ['CUDA_DEVICE_ORDER']='PCI_BUS_ID'
@@ -123,10 +124,12 @@ def replace_quotes_in_text(res, json_format):
     # do some regex to remove unwanted single aprostrophes
     res = res.replace("'", '"')
     res = res.replace("\n", " ")
-    # replace any color name enclosed in double quotation marks to single quotation marks
+    # replace any color name or other word enclosed in double quotation marks to single quotation marks, in case it is inside a string field
     pattern = r'"([^\s"]+)"'
     res = re.sub(pattern, r"'\1'", res)
-    print(res)
+    pattern = r'(\': \s*)\'(\w+)\'(, \s*\')'
+    res = re.sub(pattern, r'\1"\2"\3', res)
+
     # replace only single aprostrophe at the end of a word
     # pattern = r'\b(?<!")(\w+)"\s'
     # res = re.sub(pattern, r'\1 ', res)
@@ -148,12 +151,20 @@ def replace_quotes_in_text(res, json_format):
     pattern = r"(\\[^nt])"
     res = re.sub(pattern, "", res)
 
-    print(res)
+    # In case the test output is an array but with double quotes
+    pattern = r'(":\s*)(\[\[.*?\]\])'
+    res = re.sub(pattern, r'\1"\2"', res)
+    
     # # replace newline and tabs
     # res = res.replace("\n", "\\n").replace("\t", "\\t")
     return res
 
-def extract_json_value(string, json_format, key):
+def get_json_from_text(string, json_format):
+    try:
+        return json.loads(string)
+    except:
+        print("Wrong json format, trying to fix...")
+    input_string = string
     try:
         list_of_jsons = []
         indices = []
@@ -162,7 +173,6 @@ def extract_json_value(string, json_format, key):
             # Find the start and end of the JSON segment in the string
             json_start = string.find("{")
             json_end = string.rfind("}") + 1
-            print(json_start, json_end)
             if any([json_start == -1, json_end == 0]):
                 break
             
@@ -176,21 +186,43 @@ def extract_json_value(string, json_format, key):
         
         previous_segment = None
         for i, json_segment in reversed(list(enumerate(list_of_jsons))):
-            print(json_segment)
             if previous_segment:
-                json_segment = json_segment[:indices[i+1][0]] + previous_segment + json_segment[indices[i+1][1]+1:]
-            json_segment = replace_quotes_in_text(json_segment, json_format)
-            print(json_segment)
+                json_segment = json_segment[:indices[i+1][0]+1] + previous_segment + json_segment[indices[i+1][1]+1:]
+            try:
+                x = json.loads(json_segment)
+            except:
+                json_segment = replace_quotes_in_text(json_segment, json_format)
             previous_segment = json_segment
-        print(json_segment)
-        data = json.loads(json_segment)
-        print(data[key])
-        # Return the value for the given key
-        return data.get(key)
+        json_data = json.loads(json_segment)
+        print("JSON parsing successful.")
+        return json_data
     except json.JSONDecodeError as e:
-        return f"JSON Parsing Error: {e}"
+        error_msg = f"JSON Parsing Error: {e}\n"
     except Exception as e:
-        return f"General Error: {e}"
+        error_msg = f"General Error: {e}"
+    print(error_msg)
+    log = f'Output format:\n{json_format}\n\n\n'
+    log += f'Input string: {input_string}\n\n\n'
+    log += f'JSON parsing error: {error_msg}\n\n\n'
+    current_datetime = datetime.datetime.now()
+    path = "json_parsing_errors/"+current_datetime.strftime("%Y-%m-%d_%H-%M-%S")+".txt"
+    with open(path, "w") as text_file:
+        text_file.write(log)
+    return path+"\n\n"+log+error_msg
+
+def extract_json_value(string, json_format, key):
+    data = get_json_from_text(string, json_format)
+    if isinstance(data, str): # error in json parsing
+        # get path
+        path = data.split(".txt")[0]+".txt"
+        data = data.split(".txt")[-1]
+        data += f'Key to extract:\n{key}'
+        with open(path, "w") as text_file:
+            text_file.write(data)
+        return data
+    # Return the value for the given key
+    return data.get(key)
+
    
 ##################### Prompt Helper #####################
 
@@ -475,7 +507,27 @@ def change_color_representation(task_original, new_representation):
     
     return task
 
-
+def grid_to_nparray(grid):
+    if isinstance(grid, str):
+        # array in string
+        array_start = grid.find("[[")
+        array_end = grid.rfind("]]") + 2
+        if array_start == -1 or array_end == 1:
+            error = "No array found in final output string: " + grid
+            return error
+        try:
+            grid = grid[array_start:array_end]          
+            return np.array(eval(grid))
+        except:
+            error = "Array found in string but error while converting string to array: " + str(grid)
+            return error
+    else:
+        try: 
+            return np.array(grid)
+        except:
+            error = f"Error while converting grid of type {type(grid)} to nparray: " + str(grid)
+            return error
+        
 ##################### Evaluation Helper #####################
 
 def grid_to_img(grid):

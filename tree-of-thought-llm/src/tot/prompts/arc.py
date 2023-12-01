@@ -1,5 +1,5 @@
 ################## prompt modules ##################
-general_explanation = '''You are given a series of inputs and output pairs that share the same logic of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+general_explanation = '''You are given a series of input and output pairs that share the same logic of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
 You are to infer the simplest possible relation beetween input and output. The given sample pairs may not reflect all possibilities.
 
 You can refer to concepts as follows:
@@ -25,22 +25,25 @@ The list is not exhaustive. Transformations can be conditional.'''
 
 ################## Prompts ##################
 
-standard_prompt = '''{context}{input}'''
+standard_prompt = {
+	"user": '''{context}{test_input}'''
+}
 
-cot_prompt = general_explanation + '''
-
-{special_instructions}
-
-You are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.
-
-{context}{input}'''
+cot_prompt = {
+    "system": general_explanation + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+	"user": '''{context}{previous_thoughts}{test_input}'''
+ }
 
 
-vote_prompt = general_explanation + '''
-{special_instructions}
-You are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.
+vote_prompt = {
+    "system": general_explanation + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+	"user": '''{context}{previous_thoughts}{test_input}'''
+ }
 
-{context}{input}'''
+value_prompt = {
+    "system": general_explanation + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+	"user": '''{context}{previous_thoughts}{test_input}'''
+ }
 
 compare_prompt = '''
 
