@@ -50,17 +50,17 @@ from tot.models import gpt_usage
 ########## ARC ##########
 args = argparse.Namespace(
     backend='gpt-3.5-turbo-1106', 
-    # backend='gpt-4-1106-preview',
+    # backend='gpt-4-1106-preview', 
     temperature=0.7, 
     task='arc', 
     naive_run=False, 
     prompt_sample='cot', 
     method_generate='sample', 
-    method_evaluate='vote', 
+    method_evaluate='value', 
     method_select='greedy', 
-    n_generate_sample=3, 
-    n_evaluate_sample=3, 
-    n_select_sample=2)
+    n_generate_sample=2, 
+    n_evaluate_sample=2, 
+    n_select_sample=1)
 
 
 log, failure_log = [], ""

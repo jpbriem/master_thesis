@@ -21,11 +21,10 @@ class ARCTask(Task):
         super().__init__()
         path = os.path.join(DATA_PATH, 'arc')
         self.data, self.names = load_arc_tasks(path)
-        self.steps = 4
+        self.steps = 1
         self.stops = [None]*self.steps # TODO: adjust to prompt! 
         self.success = {} # saves success rates for each task
         self.full_success = 0 # counts completely solved tasks
-        self.value_cache = {}
 
     def __len__(self) -> int:
         return len(self.data)
@@ -36,8 +35,7 @@ class ARCTask(Task):
         # transform all grids into desired representation, e.g. numbers or letters
         if CHANGE_REPRESENTATION:
             task_json = change_color_representation(task_json, NEW_REPRESENTATION)
-            self.data[idx] = task_json
-            
+        
         return task_json
     
     def test_output(self, idx: int, output: str):      
@@ -76,8 +74,7 @@ class ARCTask(Task):
         task_input, _ = get_tasks(node.x, DELIMITER) # TODO: currently just check first test case in case more exist
         instruct, previous_thoughts = "", ""        
         prompt = cot_prompt.copy()
-        json_keys = extract_dict_keys(prompt_modules, "output_format")
-
+        
         if total_steps == 1:
             """
             No ToT, just CoT 
@@ -91,20 +88,16 @@ class ARCTask(Task):
                 'instructions': 'describe the transformation actions step by step', 
                 'test_output': 'Use the instructions to transform the test input grid and return only the resulting output grid in numpy array format.'
                 }
-            instruct = 'You are to infer the simplest possible relation beetween input and output.'
         elif node.level == 0: 
             """
             ToT first step: get description # TODO: Add object information!?   
             """
-            instruct = '''\nYour task is to give only an abstract description about how an input grid and how an output grid typically look like based on the examples.\n'''
+            instruct = '''\nYour task is to give an abstract description (valid for all example pairs) about how an input grid and an output grid typically look like.\n'''
             output_format = {
-                'grid_view': 'describe the dimensions of all input grids and of all output grids one after another.', 
-                'pixel_view': 'describe the pixels of all input grids and of all output grids one after another, focusing on positions or patterns', 
-                'object_view': 'describe the objects in all input grids and in all output grids one after another, focusing on shape, amount, size, position, values, cell count', 
-				'description': {	
-     				'input_description': 'Regarding all input grids, summarize your findings about the dimensions, pixel view and object view in an abstract description by completing the sentence: "A typical input grid has a dimension of ... and looks like...',
-					'output_description': 'Regarding all output grids, summarize your findings about the dimensions, pixel view and object view in an abstract description by completing the sentence: "A typical output grid has a dimension of ... and looks like...',
-					},
+                'grid_view': 'describe the dimensions of all input grids and of all output grids.', 
+                'pixel_view': 'describe the pixels of all input grids and of all output grids, focusing on positions or patterns', 
+                'object_view': 'describe the objects in all input grids and in all output grids, focusing on shape, amount, size, position, values, cell count', 
+                'description': 'summarize your findings in an abstract description, which is valid for all example pairs, of how an input grid and an output grid typically look like',
                 }
             # instruct = '''\nYour task is to give an abstract description (valid for all example pairs) about similarities and differences between an input and its respective output.\n'''
             # output_format = {
@@ -119,11 +112,11 @@ class ARCTask(Task):
             ToT second step: get overall pattern
             """
             instruct = '''\nMoreover, you are given an abstract description about how an input grid and an output grid typically look like.
-Your task is to infer an overall pattern that describes the simplest relation between all input and output pairs.\n'''
+Your task is to give an overall pattern that describes the relation between all input and output pairs.\n'''
             output_format = {
-                'grid_changes': 'For each example: describe if and how the dimension of the input grids is different from its output grid', 
-                'pixel_changes': 'For each example: describe the changes between the input and output pixels, focusing on movement or pattern changes', 
-                'object_changes': 'For each example: describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 
+                'grid_changes': 'describe if and how the dimension of the input grids is different from their output grids', 
+                'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 
+                'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 
                 'overall_pattern': 'summarize your findings and describe the simplest input-output relationship valid for all examples', 
                 }
 #             instruct = '''\nMoreover, you are given an abstract description for all examples about similarities and differences between the input and its respective output.
@@ -135,20 +128,20 @@ Your task is to infer an overall pattern that describes the simplest relation be
 #                 'description': 'summarize your findings in an abstract description that is valid for all example pairs',
 #                 'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
 #                 }
-            previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.LLM_answer, output_format, "input_description")) + " " + str(extract_json_value(node.LLM_answer, output_format, "output_description")) + '''\n'''
+            previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.content, output_format, "description")) + '''\n'''
             task_input = [""] # TODO: when changing to multiple test cases, change this!
         elif node.level == 2:  
             """
             ToT third step: get instructions
             """
-#             instruct = '''\nMoreover, you are given an abstract description about how an input grid and an output grid typically look like.
-# Moreover, you are given an overall pattern that might describe the relation between the input and output grids of all examples.
-# Your task is to give step-by-step instructions that are general applicable to all examples to get from the input grid to its output grid.\n'''
-            # output_format = {
-            #     'part_of_interest': 'regarding the transformation, describe the parts of interest of the input grid, e.g. the grid dimension, pixel pattern, or objects',
-            #     'conditions': 'describe if and how the transformation process is based on conditions, e.g. object characteristics (number, shape, symmetry, color, size, position) or pixel characteristics (color, position)',
-            #     'instructions': 'describe all transformation steps with potential conditions and provide step-by-step instructions that are general applicable to transform an input grid into its output grid', 
-            #     }
+            instruct = '''\nMoreover, you are given an abstract description about how an input grid and an output grid typically look like.
+Moreover, you are given an overall pattern that might describe the relation between all input and output pairs.
+Your task is to give step-by-step instructions that are general applicable to all input examples to create their outputs.\n'''
+            output_format = {
+                'part_of_interest': 'regarding the transformation, describe the parts of interest of the input grid, e.g. the grid dimension, pixel pattern, or objects',
+                'conditions': 'describe if and how the transformation process is based on conditions, e.g. object characteristics (number, shape, symmetry, color, size, position) or pixel characteristics (color, position)',
+                'instructions': 'describe the generally needed transformation actions step by step to transform an input grid into its output grid', 
+                }
 #             instruct = '''\nMoreover, you are given an abstract description for all examples about similarities and differences between the input and its respective output.
 # Moreover, you are given an overall pattern that might describe the relation between all input and output pairs.
 # Your task is to give step-by-step instructions that are general applicable to all input examples to create their outputs.\n'''
@@ -160,20 +153,20 @@ Your task is to infer an overall pattern that describes the simplest relation be
 #                 'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs',
 #                 'instructions': 'describe the transformation actions step by step', 
 #                 }
-            previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.parent.LLM_answer, output_format, "description")) + '''\n'''
-            previous_thoughts += '''\nOverall pattern: ''' + str(extract_json_value(node.LLM_answer, output_format, "overall_pattern")) + '''\n'''
+            previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.parent.content, output_format, "description")) + '''\n'''
+            previous_thoughts += '''\nOverall pattern: ''' + str(extract_json_value(node.content, output_format, "overall_pattern")) + '''\n'''
             task_input = [""] # TODO: when changing to multiple test cases, change this!
         elif node.level == 3:   
             """
             ToT fourth step: get test output
             """
             instruct = '''\nMoreover, you are given an abstract description about how an input grid and an output grid typically look like.
-Moreover, you are given an overall pattern that might describe the relation between the input and output grids of all examples.
-Moreover, you are given step-by-step instructions that are general applicable to transform an input grid into its output grid.
-Based on the provided information, your task is to apply the general instructions to a new test case and you are to transform the test input grid into its test output grid.\n'''
+Moreover, you are given an overall pattern that might describe the relation between all input and output pairs.
+Moreover, you are given step by step instructions that are general applicable to transform an input grid into its output grid.
+Based on the provided information, your task is to apply the general instructions to transform the test input grid into its test output grid.\n'''
             output_format = {
                 'description': 'describe the test input and check if it fits to the given abstract description',
-                'intermediate_results': 'apply the instructions step-by-step to the test input grid; focus on potential transformation conditions and provide all intermediate grids',
+                'intermediate_results': 'apply the instructions step by step to the test input grid with all intermediate grids',
                 'test_output': 'return only the resulting test output grid as numpy array' 
                 }
 #             instruct = '''\nMoreover, you are given an abstract description for all examples about similarities and differences between the input and its respective output.
@@ -189,9 +182,9 @@ Based on the provided information, your task is to apply the general instruction
 #                 'instructions': 'describe the transformation actions step by step',
 #                 'test_output': 'Use the instructions to transform the test input grid and return only the resulting output as numpy array.' 
 #                 }
-            previous_thoughts = f'\nDescription: {extract_json_value(node.parent.LLM_answer, json_keys, "input_description")}  {extract_json_value(node.LLM_answer, output_format, "output_description")}' 
-            previous_thoughts += '''\nOverall pattern: ''' + str(extract_json_value(node.parent.LLM_answer, output_format, "overall_pattern")) + '''\n'''
-            previous_thoughts += '''\nInstructions: ''' + str(extract_json_value(node.LLM_answer, output_format, "instructions")) + '''\n'''
+            previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.parent.parent.content, output_format, "description")) + '''\n'''
+            previous_thoughts += '''\nOverall pattern: ''' + str(extract_json_value(node.parent.content, output_format, "overall_pattern")) + '''\n'''
+            previous_thoughts += '''\nInstructions: ''' + str(extract_json_value(node.content, output_format, "instructions")) + '''\n'''
         
         prompt["system"] = cot_prompt["system"].format(output=output_format, special_instructions=instruct)
         prompt["user"] = cot_prompt["user"].format(context=task_context, test_input=task_input[0], previous_thoughts=previous_thoughts)
@@ -232,7 +225,7 @@ Evaluate the given test outputs and analyze if they share the same input to outp
                 'vote': 'vote for the best choice by entering the number of the choice as integer'
                 }
             instruct = '''\nMoreover, you are given multiple abstract descriptions about how an input grid and an output grid typically look like.
-Evaluate the given descriptions and analyze if they correctly describe the provided example input and output grids.\n'''
+Evaluate the given descriptions and analyze if they correctly describe the provided training input and output grids.\n'''
 #             instruct = '''\nMoreover, you are given multiple abstract descriptions about similarities and differences between the input and its respective output regarding all examples.
 # Evaluate the given descriptions and analyze if they correctly describe the provided training input and output pairs.\n'''   
             task_input = [""] # TODO: when changing to multiple test cases, change this!         
@@ -258,7 +251,7 @@ Evaluate the given patterns and analyze if they correctly describe the relation 
 #             instruct = '''\nMoreover, you are given an abstract description for all examples about similarities and differences between the input and its respective output.
 # Moreover, you are given multiple overall patterns describing the relation between all input and output pairs.
 # Evaluate the given patterns and analyze if they correctly describe the relation between all input and output pairs.\n'''            
-            previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.LLM_answer, json_keys, "description")) + '''\n'''
+            previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.content, json_keys, "description")) + '''\n'''
             task_input = [""] # TODO: when changing to multiple test cases, change this!   
             voting_object = "overall_pattern"
         elif node.level == 2:  
@@ -282,8 +275,8 @@ Evaluate the given sets of instructions and analyze if they correctly describe t
 # Moreover, you are given an overall pattern describing the relation between all input and output pairs.
 # Moreover, you are given multiple sets of instructions describing the transformation for all input and output pairs.
 # Evaluate the given sets of instructions and analyze if they correctly describe the transformation for all input and output pairs.\n'''            
-            previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.parent.LLM_answer, json_keys, "description")) + '''\n'''
-            previous_thoughts += '''\nOverall pattern: ''' + str(extract_json_value(node.LLM_answer, json_keys, "overall_pattern")) + '''\n'''
+            previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.parent.content, json_keys, "description")) + '''\n'''
+            previous_thoughts += '''\nOverall pattern: ''' + str(extract_json_value(node.content, json_keys, "overall_pattern")) + '''\n'''
             task_input = [""] # TODO: when changing to multiple test cases, change this!   
             voting_object = "instructions"
         elif node.level == 3:  
@@ -307,9 +300,9 @@ Evaluate the given test output grids and analyze if they fit to the given descri
 # Moreover, you are given step-by-step instructions that are general applicable to all input examples to create their outputs.
 # Moreover, you are given a test input and multiple potential test outputs.
 # Evaluate the given test outputs and analyze if they fit to the given description, overall pattern, and instructions.\n'''            
-            previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.parent.parent.LLM_answer, json_keys, "description")) + '''\n'''
-            previous_thoughts += '''\nOverall pattern: ''' + str(extract_json_value(node.parent.LLM_answer, json_keys, "overall_pattern")) + '''\n'''
-            previous_thoughts += '''\nInstructions: ''' + str(extract_json_value(node.LLM_answer, json_keys, "instructions")) + '''\n'''
+            previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.parent.parent.content, json_keys, "description")) + '''\n'''
+            previous_thoughts += '''\nOverall pattern: ''' + str(extract_json_value(node.parent.content, json_keys, "overall_pattern")) + '''\n'''
+            previous_thoughts += '''\nInstructions: ''' + str(extract_json_value(node.content, json_keys, "instructions")) + '''\n'''
             voting_object = "test_output"
                      
         prompt["system"] = vote_prompt["system"].format(output=output_format, special_instructions=instruct)
@@ -317,7 +310,7 @@ Evaluate the given test output grids and analyze if they fit to the given descri
 
         for i, child in enumerate(node.children, 1):
             # get the needed information from LLM answer
-            choice = extract_json_value(child.LLM_answer, json_keys, voting_object) 
+            choice = extract_json_value(child.content, json_keys, voting_object) 
             prompt["user"] += f'\nChoice {i}: {choice}'   
         return prompt
     
@@ -330,11 +323,7 @@ Evaluate the given test output grids and analyze if they fit to the given descri
                 vote = int(extract_json_value(vote_output, output_keys, "vote"))
             except:
                 vote = -1
-                log = "'vote' from LLM not a single integer: " + str(vote_output)
-                print(log)
-                path = "json_parsing_errors/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".txt"
-                with open(path, "w") as text_file:
-                    text_file.write(log)
+                print("Vote from LLM not a single integer:", vote_output)
             
             if (vote-1) in range(len(node.children)): # vote -1 bc. indexing starts at 0
                 values[vote-1] += 1
@@ -342,132 +331,110 @@ Evaluate the given test output grids and analyze if they fit to the given descri
     
     @staticmethod
     def value_prompt_wrap(node, current_step: int=0, total_steps: int=1) -> str:
-        # get arc examples
         task_context = get_context(node.x, DELIMITER)
-        # get test case
-        if current_step == total_steps-1:
-            task_input, _ = get_tasks(node.x, DELIMITER) # TODO: currently just check first test case in case more exist
-        else:
-            task_input = [""]
-        # get output format for current step
-        output_format = prompt_modules[str(current_step)]["evaluation"]["output_format"]
-        # get instructions for current step
-        instruct = prompt_modules[str(current_step)]["evaluation"]["instruct"]
-        # get previous thoughts
-        previous_thoughts = get_previous_thoughts(node)
-
-        # add thought to be valued 
-        thought = get_thought(node.LLM_answer, prompt_modules, current_step)
-        node.thought = thought
-        task_input[0] += thought
-        
-        # thought_key = list(prompt_modules[str(current_step)]["generation"]["output_format"].get("Example_1", output_format).keys())[0]
-        # node.thought = f'\nDescription: {extract_json_value(node.LLM_answer, json_keys, "input_description")}  {extract_json_value(node.LLM_answer, output_format, "output_description")}'
-        # task_input[0] += f'\nDescription: {extract_json_value(node.LLM_answer, json_keys, "input_description")}  {extract_json_value(node.LLM_answer, output_format, "output_description")}'  
-
-        # get prompt template and fill 
+        task_input, _ = get_tasks(node.x, DELIMITER) # TODO: currently just check first test case in case more exist
+        instruct, previous_thoughts = "", ""  
         prompt = value_prompt.copy()
-        prompt["system"] = value_prompt["system"].format(output=output_format, special_instructions=instruct)
-        prompt["user"] = value_prompt["user"].format(context=task_context, test_input=task_input[0], previous_thoughts=previous_thoughts)
-
-#         # Old:
-#         if total_steps == 1:
-#             """
-#             No ToT, just CoT 
-#             """
-#             output_format = {
-#                 'test_output_analysis': 'Analyze whether the given test output fit to the given description, overall pattern, and instructions.',
-#                 'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer.'
-#                 }
-#             instruct = '''Moreover, you are given a test input and a potential test output.
-# Evaluate the given test output and analyze if it shares the same input to output pattern as the examples.\n'''
-#             task_input[0] += f'\ntest output: {extract_json_value(node.LLM_answer, json_keys, "test_output")}'
-#         elif current_step == 0: 
-#             """
-#             ToT first step: value for description   
-#             """
-#             # output_format = {
-#             #     'Example_1': {
-#             #         'description_analysis': 'Regarding the first example, analyze if both the input and output grid fit to the given description.',
-#             #         'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the description as integer.'
-#             #         },
-#             #     'Example_2': {
-#             #         'description_analysis': '...',
-#             #         'value': '...'
-#             #         },
-#             #     }
-#             # instruct = '''\nMoreover, you are given an abstract description about how an input grid and an output grid typically look like.
-# # Evaluate the given description and analyze if it correctly describes the provided input and output grids of all examples.\n'''
-#             task_input = [""] # TODO: when changing to multiple test cases, change this!
-#             task_input[0] += f'\nDescription: {extract_json_value(node.LLM_answer, json_keys, "input_description")}  {extract_json_value(node.LLM_answer, output_format, "output_description")}'  
-#         elif current_step == 1:  
-#             """
-#             ToT second step: value for overall pattern
-#             """
-#             # output_format = {
-#             #     'Example_1': {
-#             #         'overall_pattern_analysis': 'Regarding the first example, analyze if the given overall pattern correctly describes the relation between the input and output.',
-#             #         'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the overall pattern as integer.'
-#             #         },
-#             #     'Example_2': {
-#             #         'overall_pattern_analysis': '...',
-#             #         'value': '...'
-#             #         },
-#             #     }
-# #             instruct = '''\nMoreover, you are given an abstract description about how an input grid and an output grid typically look like.
-# # Moreover, you are given an overall pattern that might describe the relation between all input and output pairs.
-# # Evaluate the given pattern and analyze if it correctly describes the relation between the inputs and outputs of all examples.\n''' 
-#             previous_thoughts = f'\nDescription: {extract_json_value(node.parent.LLM_answer, json_keys, "input_description")}  {extract_json_value(node.parent.LLM_answer, output_format, "output_description")}' 
-#             task_input = [""] # TODO: when changing to multiple test cases, change this!
-#             task_input[0] += f'\nOverall pattern: {extract_json_value(node.LLM_answer, json_keys, "overall_pattern")}'           
-#         elif current_step == 2:
-#             """
-#             ToT third step: vote for instructions
-#             """
-#             # output_format = {
-#             #     'Example_1': {
-#             #         'instruction_analysis': 'Regarding the first example, analyze if the given instructions correctly transform the input grid into its output grid. ',
-#             #         'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the instructions as integer.'
-#             #         },
-#             #     'Example_2': {
-#             #         'instruction_analysis': '...',
-#             #         'value': '...'
-#             #         },
-#             #     }
-# #             instruct = '''\nMoreover, you are given an abstract description about how an input grid and an output grid typically look like.
-# # Moreover, you are given an overall pattern that might describe the relation between all input and output pairs.
-# # Moreover, you are given a set of instructions that might be generally applicable to transform an input grid into its output grid.
-# # Evaluate the given set of instructions and analyze if it correctly describes the transformation for all examples.\n'''            
-#             previous_thoughts = f'\nDescription: {extract_json_value(node.parent.LLM_answer, json_keys, "input_description")}  {extract_json_value(node.LLM_answer, output_format, "output_description")}' 
-#             previous_thoughts += f'\nOverall pattern: {extract_json_value(node.parent.LLM_answer, json_keys, "overall_pattern")}'
-#             task_input = [""] # TODO: when changing to multiple test cases, change this!
-#             task_input[0] += f'\nInstruction: {extract_json_value(node.LLM_answer, json_keys, "instructions")}'     
-#         elif current_step == 3:
-#            """
-#            ToT fourth step: value for test output
-#            """
-#             output_format = {
-#                 'test_output_analysis': 'analyze if the given test output fits to the given description, overall pattern, and instructions.',
-#                 'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer.'
-#                 }
-#             instruct = '''\nMoreover, you are given an abstract description about how an input grid and an output grid typically look like.
-# Moreover, you are given an overall pattern that might describe the relation between all input and output pairs.
-# Moreover, you are given a set of instructions that might be generally applicable to transform an input grid into its output grid.
-# Moreover, you are given a test input grid and a potential test output grid.
-# Evaluate the given test output grid and analyze if it fits to the given description, overall pattern, and instructions.\n'''   
-            # previous_thoughts = f'\nDescription: {extract_json_value(node.parent.LLM_answer, json_keys, "input_description")}  {extract_json_value(node.LLM_answer, output_format, "output_description")}' 
-            # previous_thoughts += f'\nOverall pattern: {extract_json_value(node.parent.parent.LLM_answer, json_keys, "overall_pattern")}\n'
-            # previous_thoughts += f'\nInstruction: {extract_json_value(node.parent.LLM_answer, json_keys, "instructions")}\n\n' 
-            # task_input[0] += f'test output: {extract_json_value(node.LLM_answer, json_keys, "test_output")}'
-        # prompt["system"] = value_prompt["system"].format(output=output_format, special_instructions=instruct)
-        # prompt["user"] = value_prompt["user"].format(context=task_context, test_input=task_input[0], previous_thoughts=previous_thoughts)
+        json_keys = {'reflection': "", 'grid_changes': "", 'pixel_changes': "",  'object_changes': "", 'description': "", 'overall_pattern': "", 'instructions': "",'test_output': ""}
+        
+        if total_steps == 1:
+            """
+            TODO: stimmt glaub ich so nicht 
+            baseline experiment - no ToT -> no vote
+            """
+            output_format = {
+                'analysis': 'Analyze whether the given test output is correct. ',
+                'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer.'
+                }
+            instruct = '''Moreover, you are given a test input and a potential test output.
+Evaluate the given test output and analyze if it shares the same input to output pattern as the examples.\n'''
+            task_input[0] += f'\ntest output: {extract_json_value(node.content, json_keys, "test_output")}'
+        elif current_step == 0: 
+            """
+            ToT first step: value for description   
+            """
+            output_format = {
+                'Example_1': {
+                    'description_analysis': 'Analyze whether the given description applies to the first example. ',
+                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the description as integer.'
+                    },
+                'Example_2': {
+                    'description_analysis': '...',
+                    'value': '...'
+                    },
+                }
+            instruct = '''\nMoreover, you are given an abstract description about similarities and differences between an input and its respective output.
+Evaluate the given description and analyze if it correctly describes the provided example input and output pairs.\n'''
+            task_input = [""] # TODO: when changing to multiple test cases, change this!
+            task_input[0] += f'\nDescription: {extract_json_value(node.content, json_keys, "description")}'  
+        elif current_step == 1:  
+            """
+            ToT second step: value for overall pattern
+            """
+            output_format = {
+                'Example_1': {
+                    'overall_pattern_analysis': 'Analyze whether the given pattern applies to the first example. ',
+                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the pattern as integer.'
+                    },
+                'Example_2': {
+                    'overall_pattern_analysis': '...',
+                    'value': '...'
+                    },
+                }
+            instruct = '''\nMoreover, you are given an abstract description for all examples about similarities and differences between the input and its respective output.
+Moreover, you are given an overall pattern that might describe the relation between all input and output pairs.
+Evaluate the given pattern and analyze if it correctly describes the relation between all input and output pairs.\n''' 
+            previous_thoughts = f'\nDescription: {extract_json_value(node.parent.content, json_keys, "description")}'
+            task_input = [""] # TODO: when changing to multiple test cases, change this!
+            task_input[0] += f'\nOverall pattern: {extract_json_value(node.content, json_keys, "overall_pattern")}'           
+        elif current_step == 2:
+            """
+            ToT third step: vote for instructions
+            """
+            output_format = {
+                'Example_1': {
+                    'instruction_analysis': 'Analyze whether the given instruction is correct. ',
+                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the instruction as integer.'
+                    },
+                'Example_2': {
+                    'instruction_analysis': '...',
+                    'value': '...'
+                    },
+                }
+            instruct = '''\nMoreover, you are given an abstract description for all examples about similarities and differences between the input and its respective output.
+Moreover, you are given an overall pattern describing the relation between all input and output pairs.
+Moreover, you are given a set of instructions describing the transformation for all input and output pairs.
+Evaluate the given set of instructions and analyze if it correctly describes the transformation for all input and output pairs.\n'''            
+            previous_thoughts = f'\nDescription: {extract_json_value(node.parent.parent.content, json_keys, "description")}'
+            previous_thoughts += f'\nOverall pattern: {extract_json_value(node.parent.content, json_keys, "overall_pattern")}'
+            task_input = [""] # TODO: when changing to multiple test cases, change this!
+            task_input[0] += f'\nInstruction: {extract_json_value(node.content, json_keys, "instructions")}'     
+        elif current_step == 3:
+            """
+            ToT fourth step: value for test output
+            """
+            output_format = {
+                'analysis': 'Analyze whether the given test output is correct. ',
+                'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer.'
+                }
+            instruct = '''\nMoreover, you are given an abstract description for all examples about similarities and differences between the input and its respective output.
+Moreover, you are given an overall pattern describing the relation between all input and output pairs.
+Moreover, you are given step-by-step instructions that are general applicable to all input examples to create their outputs.
+Moreover, you are given a test input and one potential test output.
+Evaluate the given test output and analyze if it fits to the given description, overall pattern, and instructions.\n''' 
+            previous_thoughts = f'\nDescription: {extract_json_value(node.parent.parent.parent.content, json_keys, "description")}'
+            previous_thoughts += f'\nOverall pattern: {extract_json_value(node.parent.parent.content, json_keys, "overall_pattern")}'
+            previous_thoughts += f'\nInstruction: {extract_json_value(node.parent.content, json_keys, "instructions")}' 
+            task_input[0] += f'\ntest output: {extract_json_value(node.content, json_keys, "test_output")}'
+        prompt["system"] = vote_prompt["system"].format(output=output_format, special_instructions=instruct)
+        prompt["user"] = vote_prompt["user"].format(context=task_context, test_input=task_input[0], previous_thoughts=previous_thoughts)
         return prompt
 
     @staticmethod
     def value_outputs_unwrap(value_outputs: list) -> float:
         final_value = 0
         cnt_outputs = 0 # counter for number of outputs w valid value
-        output_keys = {"description_analysis": "", "overall_pattern_analysis": "", "instruction_analysis": "", "test_output_analysis": "", "value": ""}
+        output_keys = {"description_analysis": "", "overall_pattern_analysis": "", "instruction_analysis": "", "description_analysis": "", "value": ""}
         for value_output in value_outputs:
             value_output = get_json_from_text(value_output, output_keys)
             if isinstance(value_output, str):
@@ -476,22 +443,12 @@ Evaluate the given test output grids and analyze if they fit to the given descri
             cnt_examples = 0 # counter for number of examples w valid value
             value = 0 # sum up values over all examples
             example_id = 1
-            if "Example_1" in value_output:
-                while "Example_"+str(example_id) in value_output:
-                    try:
-                        value += int(value_output["Example_"+str(example_id)]["value"])
-                        cnt_examples += 1
-                    except:
-                        log = "'value' from LLM not a single integer: " + str(value_output["Example_"+str(example_id)])
-                        print(log)
-                        path = "json_parsing_errors/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".txt"
-                        with open(path, "w") as text_file:
-                            text_file.write(log)
-                    example_id += 1
-            elif "value" in value_output:
-                value += int(value_output["value"])
-                cnt_examples += 1
-
+            while "Example_"+str(example_id) in value_output:
+                try:
+                    value += int(value_output["Example_"+str(example_id)]["value"])
+                    cnt_examples += 1
+                except:
+                    print("Value from LLM not a single integer:", value_output["Example_"+str(example_id)])
             if cnt_examples > 0:
                 value /= cnt_examples
                 final_value += value

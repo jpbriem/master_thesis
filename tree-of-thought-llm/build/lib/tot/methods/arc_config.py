@@ -92,13 +92,13 @@ DELIMITER = {
     "grid_end": "]]\n", # include end of last row
     "row_start": "[",
     "row_end": "], ", # except for last row
-    "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
+    "example_start": "Example:\n",
     "example_end": "\n",
-    "task_start": "Test case:\n",
+    "task_start": "",
     "task_end": "",
-    "input_train": "input: ",
-    "output_train": "output: ",    
-    "input_test": "input: ",
+    "input_train": "train input:\n",
+    "output_train": "train output:\n",    
+    "input_test": "test input:\n",
     "output_test": "", 
 }
 

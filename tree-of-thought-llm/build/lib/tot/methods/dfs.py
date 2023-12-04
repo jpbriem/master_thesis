@@ -4,8 +4,8 @@ from functools import partial
 from tot.models import gpt
 from tot.methods.tree_nodes import Node
 
-def get_value(task, child, n_evaluate_sample, cache_value=True):
-    value_prompt = task.value_prompt_wrap(child, child.level-1, task.steps)
+def get_value(task, node, n_evaluate_sample, current_step, cache_value=True):
+    value_prompt = task.value_prompt_wrap(node, current_step, task.steps)
     if cache_value and str(value_prompt) in task.value_cache:
         return task.value_cache[str(value_prompt)], value_prompt
     value_outputs = gpt(value_prompt, n=n_evaluate_sample, stop=None)
@@ -13,27 +13,29 @@ def get_value(task, child, n_evaluate_sample, cache_value=True):
     if cache_value:
         task.value_cache[str(value_prompt)] = value
     delimiter = "\n#############################\n"
-    prompt_log = delimiter.join(["Value Prompt:\n" + "\n\n".join(value_prompt.values()), "Value Outputs:\n" + "\n------\n".join(value_outputs)])
+    prompt_log = delimiter.join(["Value Prompt:\n" + "\n\n".join(value_prompt), "Value Outputs:\n" + "\n------\n".join(value_outputs)])
     return value, prompt_log
 
 def get_values(task, current_node, n_evaluate_sample, cache_value=True):
+    values = []
     prompt_log = []
     local_value_cache = {}
 
     # valuation
     for child in current_node.children:  # each partial output
-        if child.LLM_answer in local_value_cache:  # avoid duplicate candidates
+        if child.content in local_value_cache:  # avoid duplicate candidates
             value = 0
         else:    
-            value, value_prompt = get_value(task, child, n_evaluate_sample, cache_value=cache_value)
+            value, value_prompt = get_value(task, child, n_evaluate_sample, current_node.level, cache_value=cache_value)
             child.value = value
-            local_value_cache[child.LLM_answer] = value
+            local_value_cache[child.content] = value
+        values.append(value)
         prompt_log.append(value_prompt)
    
     # log
     delimiter = "\n###########################################################\n"
-    prompt_log = delimiter + delimiter.join([str(s) for s in prompt_log])
-    return prompt_log
+    prompt_log = delimiter + delimiter.join(prompt_log)
+    return values, prompt_log
 
 def get_votes(task, current_node, n_evaluate_sample):
     if len(current_node.children) == 1:
@@ -116,7 +118,7 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
         sorted_new_ys, sorted_values = zip(*sorted(zip(new_ys, values), key=lambda x: x[1], reverse=True))
         print(f'-- new_ys --: {sorted_new_ys}\n-- sol values --: {sorted_values}\n-- choices --: {current_node.children}\n')
     prompt_log = '\n'.join([gen_prompts, eval_prompts])
-    infos.append({'step': step, 'x': current_node.x, 'ys': current_node.LLM_answer, 'new_ys': [str(y) for y in new_ys], 'values': values, 'select_new_ys': [str(child) for child in current_node.children], 'prompt_log': prompt_log})
+    infos.append({'step': step, 'x': current_node.x, 'ys': current_node.content, 'new_ys': [str(y) for y in new_ys], 'values': values, 'select_new_ys': [str(child) for child in current_node.children], 'prompt_log': prompt_log})
     
     step += 1
     for child in current_node.children:
