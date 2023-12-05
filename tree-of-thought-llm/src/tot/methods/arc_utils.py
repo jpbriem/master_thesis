@@ -256,6 +256,22 @@ def extract_dict_keys(d, target, keys=set(), found=False):
             extract_dict_keys(value, target, keys, found)
     return list(keys)
 
+def get_int_from_dict_value(d, key):
+    try:
+        value = d[key]
+        if isinstance(value, str):
+            pattern = r"\d+"
+            return int(re.findall(pattern, value)[0])
+        elif isinstance(value, int):
+            return value
+        elif isinstance(value, float):
+            return int(value) 
+    except:
+        print(f'Key ({key}) not found in dict: {d}')
+    return None
+
+
+    return value
 def get_thought(LLM_answer, prompt_modules, current_step):
     all_json_keys = extract_dict_keys(prompt_modules, "output_format")
     output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
