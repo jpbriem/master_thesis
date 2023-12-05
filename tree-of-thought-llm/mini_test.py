@@ -58,9 +58,9 @@ args = argparse.Namespace(
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy', 
-    n_generate_sample=2, 
-    n_evaluate_sample=2, 
-    n_select_sample=1)
+    n_generate_sample=3, 
+    n_evaluate_sample=3, 
+    n_select_sample=2)
 
 
 log, failure_log = [], ""

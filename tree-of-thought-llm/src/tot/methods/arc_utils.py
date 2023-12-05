@@ -265,17 +265,18 @@ def get_thought(LLM_answer, prompt_modules, current_step):
     if isinstance(thought_data, dict):
         for _, value in thought_data.items():
             thought += f'{value} '
-    elif isinstance(thought_data, str):
-        thought += thought_data
     else:
-        thought += "Error: Thought is not a string or dictionary."
+        thought += f'{thought_data}'
     return thought
 
 def get_previous_thoughts(node):
     thoughts = ""
-    while node.parent:
-        thoughts += f'\n{node.thought}'
+    while True:
+        if node.thought != "":
+            thoughts = f'{node.thought}' + thoughts
         node = node.parent
+        if node is None:
+            break
     return thoughts
 
 ##################### Prompt Helper #####################

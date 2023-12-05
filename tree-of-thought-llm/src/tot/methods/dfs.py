@@ -5,11 +5,11 @@ from tot.models import gpt
 from tot.methods.tree_nodes import Node
 
 def get_value(task, child, n_evaluate_sample, cache_value=True):
-    value_prompt = task.value_prompt_wrap(child, child.level-1, task.steps)
+    value_prompt = task.value_prompt_wrap(child, task.steps)
     if cache_value and str(value_prompt) in task.value_cache:
         return task.value_cache[str(value_prompt)], value_prompt
     value_outputs = gpt(value_prompt, n=n_evaluate_sample, stop=None)
-    value = task.value_outputs_unwrap(value_outputs)
+    value = task.value_outputs_unwrap(value_outputs, child.level-1)
     if cache_value:
         task.value_cache[str(value_prompt)] = value
     delimiter = "\n#############################\n"
@@ -97,7 +97,7 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
     
     # evaluation
     if args.method_evaluate == 'vote':
-        # always vote for single best child 
+        # always vote for single best child, n_evalute_sample times
         eval_prompts = get_votes(task, current_node, args.n_evaluate_sample)
     elif args.method_evaluate == 'value':
         eval_prompts = get_values(task, current_node, args.n_evaluate_sample)
