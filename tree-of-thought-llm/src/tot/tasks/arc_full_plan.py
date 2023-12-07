@@ -21,7 +21,7 @@ class ARCTask(Task):
         super().__init__()
         path = os.path.join(DATA_PATH, 'arc')
         self.data, self.names = load_arc_tasks(path)
-        self.steps = 4
+        self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
         self.stops = [None]*self.steps # TODO: adjust to prompt! 
         self.success = {} # saves success rates for each task
         self.full_success = 0 # counts completely solved tasks
@@ -49,7 +49,8 @@ class ARCTask(Task):
         if task_name not in self.success: # TODO: works currently only if we have just one try
             self.success[task_name] = 0
         for solution in solutions[:1]: # TODO: currently just check first test case in case more exist
-            test_output_grid = extract_json_value(output, output_format, "test_output") 
+            output_key = list(prompt_modules[str(self.steps-1)]["generation"]["output_format"].keys())[-1]
+            test_output_grid = extract_json_value(output, output_format, output_key) 
             test_output_grid = grid_to_nparray(test_output_grid)
             solution = grid_to_nparray(solution)
             is_success = np.array_equal(test_output_grid, solution)

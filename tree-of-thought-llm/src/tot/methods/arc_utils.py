@@ -2,6 +2,7 @@
 from tot.methods.arc_config import * 
 from tot.methods.credentials import *
 import numpy as np
+import tkinter as tk
 import json
 import re
 import matplotlib.pyplot as plt
@@ -272,16 +273,18 @@ def get_int_from_dict_value(d, key):
 
 
     return value
+
 def get_thought(LLM_answer, prompt_modules, current_step):
     all_json_keys = extract_dict_keys(prompt_modules, "output_format")
     output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
     thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
     thought_data = extract_json_value(LLM_answer, all_json_keys, thought_key)
-    thought = "\n" + " ".join(thought_key.split("_")) + ": "
     if isinstance(thought_data, dict):
-        for _, value in thought_data.items():
-            thought += f'{value} '
+        thought = ""
+        for key, value in thought_data.items():
+            thought += f'\n{" ".join(key.split("_"))}: {value}'
     else:
+        thought = "\n" + " ".join(thought_key.split("_")) + ": "
         thought += f'{thought_data}'
     return thought
 
