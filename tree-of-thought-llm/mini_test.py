@@ -49,17 +49,18 @@ from tot.models import gpt_usage
 
 ########## ARC ##########
 args = argparse.Namespace(
-    # backend='gpt-3.5-turbo-1106', 
-    backend='gpt-4-1106-preview', 
-    use_api=False, 
+    backend='gpt-3.5-turbo-1106', 
+    # backend='gpt-4-1106-preview', 
+    use_api=True, 
     temperature=0.7, 
-    task='arc', 
+    # task='arc', 
+    task='1D-arc',
     naive_run=False, 
     prompt_sample='cot', 
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy', 
-    n_generate_sample=1, 
+    n_generate_sample=2, 
     n_evaluate_sample=1, 
     n_select_sample=1)
 

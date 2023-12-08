@@ -115,7 +115,7 @@ def get_samples(args, task, current_node, n_generate_sample, prompt_sample, stop
         new_node = Node(current_node.level+1, current_node.x, LLM_answer=sample, parent=current_node, children=[], leaf=leaf)
         current_node.children.append(new_node)
     
-    if task.__class__.__name__ == "ARCTask":
+    if task.__class__.__name__ in ["ARCTask", "ARC_1D"]:
         return prompt_log
     #return [y + _ for _ in samples], prompt_log # TODO: apply to old tasks
 
@@ -124,7 +124,6 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
     if current_node.isLeaf:  # Leaf node
         return [current_node], infos
     
-    # TODO: Check how to get information from intermediate_results
     # generation  # TODO: Rename? Generate children?
     if args.method_generate == 'sample':
         # Sample: 1. Standard, 2. CoT, 3. Multiple CoT (w self-consistency)

@@ -301,27 +301,25 @@ def get_previous_thoughts(node):
 ##################### Prompt Helper #####################
 
 # load tasks
-def load_arc_tasks(path):
+def load_arc_tasks(path, dataset="origianl"):
     # load data 
     tasks_jsons = []
     tasks_names = []
-    tasks_len = []
+    paths = []
 
-    # train and test path
-    train_path = os.path.join(path, "training")
-    test_path = os.path.join(path, "evaluation")
+    if dataset == "original":
+        # train and test path
+        paths.append(os.path.join(path, "training"))
+        paths.append(os.path.join(path, "evaluation"))
+    elif dataset == "1D-arc":
+        paths = [os.path.join(path, f.name) for f in os.scandir(path) if f.is_dir()]
     
-    for task_file in sorted(os.listdir(train_path)):
-        with open(os.path.join(train_path, task_file)) as fid:
-            task_json = json.load(fid)
-        tasks_jsons.append(task_json)
-        tasks_names.append(task_file)
-
-    for task_file in sorted(os.listdir(test_path)):
-        with open(os.path.join(test_path, task_file)) as fid:
-            task_json = json.load(fid)
-        tasks_jsons.append(task_json)
-        tasks_names.append(task_file)
+    for path in paths:
+        for task_file in sorted(os.listdir(path)):
+            with open(os.path.join(path, task_file)) as fid:
+                task_json = json.load(fid)
+            tasks_jsons.append(task_json)
+            tasks_names.append(task_file)
 
     print("Total number of tasks:", len(tasks_jsons))
     return tasks_jsons, tasks_names
@@ -574,13 +572,14 @@ def data_generator(model_name, directory_train, directory_eval, delimiter, promp
 def change_color_representation(task_original, new_representation):
     task = deepcopy(task_original)
     for test_train in task:
-        for sample in task[test_train]:
-            for i, row in enumerate(sample["input"]):
-                for j, value in enumerate(row):
-                    sample["input"][i][j] = new_representation[value]
-            for i, row in enumerate(sample["output"]):
-                for j, value in enumerate(row):
-                    sample["output"][i][j] = new_representation[value]
+        if test_train  in ["test", "train"]:
+            for sample in task[test_train]:
+                for i, row in enumerate(sample["input"]):
+                    for j, value in enumerate(row):
+                        sample["input"][i][j] = new_representation[value]
+                for i, row in enumerate(sample["output"]):
+                    for j, value in enumerate(row):
+                        sample["output"][i][j] = new_representation[value]
     
     return task
 

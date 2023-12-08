@@ -2,6 +2,7 @@
 from tot.methods.arc_config import * 
 from tot.methods.credentials import *
 import numpy as np
+import tkinter as tk
 import json
 import re
 import matplotlib.pyplot as plt
@@ -120,7 +121,7 @@ def count_tokens(prompt, model_name, tokenizer):
         token_limit = tokenizer.model_max_length
     return num_tokens, token_limit
 
-def replace_quotes_in_text(res, json_format):
+def replace_quotes_in_text(res, json_format):  
     # do some regex to remove unwanted single aprostrophes
     res = res.replace("'", '"')
     res = res.replace("\n", " ")
@@ -136,7 +137,11 @@ def replace_quotes_in_text(res, json_format):
     # print(res)
 
     # add back double quotes to header names
-    for key in list(json_format.keys())+["Choice"]:
+    if isinstance(json_format, dict):
+        keys = list(json_format.keys())
+    elif isinstance(json_format, list):
+        keys = json_format
+    for key in keys+["Choice"]:
         pattern = fr"'({key}(?:_\d+)?)'"
         res = re.sub(pattern, r'"\1"', res)
 
@@ -224,8 +229,9 @@ def find_key(dictionary, target_key):
 def extract_json_value(string, json_format, key):
     data = get_json_from_text(string, json_format)
     if isinstance(data, str): # error in json parsing
-        # get path
+        # get path from beginning of string
         path = data.split(".txt")[0]+".txt"
+        # get error from end of string
         data = data.split(".txt")[-1]
         data += f'Key to extract:\n{key}'
         with open(path, "w") as text_file:
@@ -238,34 +244,82 @@ def extract_json_value(string, json_format, key):
         for key in keys:
             data = data[key]
     
-    # Return the value for the given key
+    # Return the value for the given key or entire dictionar if not found
     return data
 
-   
+def extract_dict_keys(d, target, keys=set(), found=False):
+    for key, value in d.items():
+        if found:
+            keys.add(key)
+        if key == target:
+            found = True
+        if isinstance(value, dict):
+            extract_dict_keys(value, target, keys, found)
+    return list(keys)
+
+def get_int_from_dict_value(d, key):
+    try:
+        value = d[key]
+        if isinstance(value, str):
+            pattern = r"\d+"
+            return int(re.findall(pattern, value)[0])
+        elif isinstance(value, int):
+            return value
+        elif isinstance(value, float):
+            return int(value) 
+    except:
+        print(f'Key ({key}) not found in dict: {d}')
+    return None
+
+
+    return value
+
+def get_thought(LLM_answer, prompt_modules, current_step):
+    all_json_keys = extract_dict_keys(prompt_modules, "output_format")
+    output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
+    thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
+    thought_data = extract_json_value(LLM_answer, all_json_keys, thought_key)
+    if isinstance(thought_data, dict):
+        thought = ""
+        for key, value in thought_data.items():
+            thought += f'\n{" ".join(key.split("_"))}: {value}'
+    else:
+        thought = "\n" + " ".join(thought_key.split("_")) + ": "
+        thought += f'{thought_data}'
+    return thought
+
+def get_previous_thoughts(node):
+    thoughts = ""
+    while True:
+        if node.thought != "":
+            thoughts = f'{node.thought}' + thoughts
+        node = node.parent
+        if node is None:
+            break
+    return thoughts
+
 ##################### Prompt Helper #####################
 
 # load tasks
-def load_arc_tasks(path):
+def load_arc_tasks(path, dataset="origianl"):
     # load data 
     tasks_jsons = []
     tasks_names = []
-    tasks_len = []
+    paths = []
 
-    # train and test path
-    train_path = os.path.join(path, "training")
-    test_path = os.path.join(path, "evaluation")
+    if dataset == "original":
+        # train and test path
+        paths.append(os.path.join(path, "training"))
+        paths.append(os.path.join(path, "evaluation"))
+    elif dataset == "1D-arc":
+        paths = [os.path.join(path, f.name) for f in os.scandir(path) if f.is_dir()]
     
-    for task_file in sorted(os.listdir(train_path)):
-        with open(os.path.join(train_path, task_file)) as fid:
-            task_json = json.load(fid)
-        tasks_jsons.append(task_json)
-        tasks_names.append(task_file)
-
-    for task_file in sorted(os.listdir(test_path)):
-        with open(os.path.join(test_path, task_file)) as fid:
-            task_json = json.load(fid)
-        tasks_jsons.append(task_json)
-        tasks_names.append(task_file)
+    for path in paths:
+        for task_file in sorted(os.listdir(path)):
+            with open(os.path.join(path, task_file)) as fid:
+                task_json = json.load(fid)
+            tasks_jsons.append(task_json)
+            tasks_names.append(task_file)
 
     print("Total number of tasks:", len(tasks_jsons))
     return tasks_jsons, tasks_names
@@ -273,8 +327,11 @@ def load_arc_tasks(path):
 # get context out of json
 def get_context(task_json, delimiter):
     text = ""
-    for sample in task_json["train"]:
-        text += delimiter["example_start"]
+    for i, sample in enumerate(task_json["train"], 1):
+        if delimiter["example_start"] == "Example_X":
+            text += f"Example_{i}:\n"
+        else:
+            text += delimiter["example_start"]
         text += delimiter["input_train"]
         text += delimiter["grid_start"]
         for i, row in enumerate(sample["input"]):
