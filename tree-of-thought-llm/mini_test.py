@@ -49,18 +49,18 @@ from tot.models import gpt_usage
 
 ########## ARC ##########
 args = argparse.Namespace(
-    backend='gpt-3.5-turbo-1106', 
-    # backend='gpt-4-1106-preview', 
+    # backend='gpt-3.5-turbo-1106', 
+    backend='gpt-4-1106-preview', 
     use_api=True, 
     temperature=0.7, 
-    # task='arc', 
-    task='1D-arc',
+    task='arc', 
+    # task='1D-arc',
     naive_run=False, 
     prompt_sample='cot', 
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy', 
-    n_generate_sample=2, 
+    n_generate_sample=1, 
     n_evaluate_sample=1, 
     n_select_sample=1)
 
@@ -76,6 +76,8 @@ os.makedirs(directory, exist_ok=True)
 
 task = get_task(args.task)
 for idx in range(len(task)):
+    if idx in [1,2,3,6,7,8]:
+        continue
     Node.reset_tree()
     task_name = task.names[idx].split(".json")[0]  
     ys, infos = dfs.solve(args, task, idx)
@@ -84,7 +86,7 @@ for idx in range(len(task)):
     result_infos = [task.test_output(idx, y.LLM_answer) for y in ys] # TODO: Implement
 
     #log 
-    infos.update({'idx': idx, 'ys': [str(y) for y in ys], 'infos': result_infos, 'usage_so_far': gpt_usage(args.backend)})
+    infos.update({'idx': idx, 'task': task_name, 'ys': [str(y) for y in ys], 'infos': result_infos, 'usage_so_far': gpt_usage(args.backend)})
     log.append(infos)
     
     # save LLM result as txt file

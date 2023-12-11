@@ -301,7 +301,7 @@ def get_previous_thoughts(node):
 ##################### Prompt Helper #####################
 
 # load tasks
-def load_arc_tasks(path, dataset="origianl"):
+def load_arc_tasks(path, dataset="original"):
     # load data 
     tasks_jsons = []
     tasks_names = []
