@@ -210,7 +210,7 @@ def get_json_from_text(string, json_format):
     log += f'Input string: {input_string}\n\n\n'
     log += f'JSON parsing error: {error_msg}\n\n\n'
     current_datetime = datetime.datetime.now()
-    path = "json_parsing_errors/"+current_datetime.strftime("%Y-%m-%d_%H-%M-%S")+".txt"
+    path = "error_log/json_parsing_errors/"+current_datetime.strftime("%Y-%m-%d_%H-%M-%S")+".txt"
     with open(path, "w") as text_file:
         text_file.write(log)
     return path+"\n\n"+log+error_msg
@@ -300,18 +300,32 @@ def get_previous_thoughts(node):
 
 ##################### Prompt Helper #####################
 
+# get prompt templates/modules
+def get_prompts(dataset="arc"):
+    if dataset=="arc":
+        import tot.prompts.arc as prompts
+    elif dataset=="arc-1D":
+        import tot.prompts.arc_1D as prompts # TODO: use ARC prompts
+    arc_prompts = {
+        "standard_prompt": prompts.standard_prompt,
+        "cot_prompt": prompts.cot_prompt,
+        "vote_prompt": prompts.vote_prompt,
+        "value_prompt": prompts.value_prompt,
+        "prompt_modules": prompts.prompt_modules
+        }
+    return arc_prompts
 # load tasks
-def load_arc_tasks(path, dataset="origianl"):
+def load_arc_tasks(path, dataset="arc"):
     # load data 
     tasks_jsons = []
     tasks_names = []
     paths = []
 
-    if dataset == "original":
+    if dataset == "arc":
         # train and test path
         paths.append(os.path.join(path, "training"))
         paths.append(os.path.join(path, "evaluation"))
-    elif dataset == "1D-arc":
+    elif dataset == "arc-1D":
         paths = [os.path.join(path, f.name) for f in os.scandir(path) if f.is_dir()]
     
     for path in paths:
@@ -572,23 +586,49 @@ def data_generator(model_name, directory_train, directory_eval, delimiter, promp
 def change_color_representation(task_original, new_representation):
     task = deepcopy(task_original)
     for test_train in task:
-        for sample in task[test_train]:
-            for i, row in enumerate(sample["input"]):
-                for j, value in enumerate(row):
-                    sample["input"][i][j] = new_representation[value]
-            for i, row in enumerate(sample["output"]):
-                for j, value in enumerate(row):
-                    sample["output"][i][j] = new_representation[value]
+        if test_train  in ["test", "train"]:
+            for sample in task[test_train]:
+                for i, row in enumerate(sample["input"]):
+                    for j, value in enumerate(row):
+                        sample["input"][i][j] = new_representation[value]
+                for i, row in enumerate(sample["output"]):
+                    for j, value in enumerate(row):
+                        sample["output"][i][j] = new_representation[value]
     
     return task
 
-def grid_to_nparray(grid):
+def grid_to_2D_nparray(grid):
     if isinstance(grid, str):
         # array in string
         array_start = grid.find("[[")
         array_end = grid.rfind("]]") + 2
         if array_start == -1 or array_end == 1:
-            error = "No array found in final output string: " + grid
+            error = "No 2D-array found in final output string: " + grid
+            return error
+        grid = grid[array_start:array_end]          
+        # Replace single letters with quotes around them
+        pattern = re.compile(r'(?<![\'"])([a-zA-Z])(?![\'"])')
+        grid = pattern.sub(r"'\1'", grid)  
+
+        try:
+            return np.array(eval(grid))
+        except:
+            error = "Array found in string but error while converting string to array: " + str(grid)
+            return error
+    else:
+        try: 
+            return np.array(grid)
+        except:
+            error = f"Error while converting grid of type {type(grid)} to nparray: " + str(grid)
+            return error
+
+def grid_to_1D_nparray(grid):
+    if isinstance(grid, str):
+        # array in string
+        array_start = grid.find("[")
+        array_end = grid.rfind("]") + 1
+        if array_start == -1 or array_end == 1:
+            error = "No 1D-array found in final output string: " + grid
             return error
         grid = grid[array_start:array_end]          
         # Replace single letters with quotes around them

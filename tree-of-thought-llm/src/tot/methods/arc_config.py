@@ -86,20 +86,38 @@ CHANGE_REPRESENTATION = True
 NEW_REPRESENTATION = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
 
 POST_TEST_CASE = ""
+##### 2D  ARC: #####
 DELIMITER = {
-    "item": ", ",
-    "grid_start": "[",
-    "grid_end": "]]\n", # include end of last row
-    "row_start": "[",
-    "row_end": "], ", # except for last row
-    "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
-    "example_end": "\n",
-    "task_start": "Test case:\n",
-    "task_end": "",
-    "input_train": "input: ",
-    "output_train": "output: ",    
-    "input_test": "input: ",
-    "output_test": "", 
+    "arc": {
+        "item": ", ",
+        "grid_start": "[",
+        "grid_end": "]]\n", # include end of last row
+        "row_start": "[",
+        "row_end": "], ", # except for last row
+        "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
+        "example_end": "\n",
+        "task_start": "Test case:\n",
+        "task_end": "",
+        "input_train": "input: ",
+        "output_train": "output: ",    
+        "input_test": "input: ",
+        "output_test": "",
+    },
+    "arc-1D": {
+        "item": ", ",
+        "grid_start": "[",
+        "grid_end": "]\n", # include end of last row
+        "row_start": "",
+        "row_end": ", ", # except for last row
+        "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
+        "example_end": "\n",
+        "task_start": "Test case:\n",
+        "task_end": "",
+        "input_train": "input: ",
+        "output_train": "output: ",    
+        "input_test": "input: ",
+        "output_test": "", 
+    }    
 }
 
 

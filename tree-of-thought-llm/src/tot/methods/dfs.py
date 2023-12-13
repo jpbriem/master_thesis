@@ -22,9 +22,19 @@ def read_multiline_input(query):
     return text
 
 def get_value(args, task, child, n_evaluate_sample, cache_value=True):
+    delimiter = "\n#############################\n"
+    
     value_prompt = task.value_prompt_wrap(child, task.steps)
+    
+    # If just one child  
+    if len(child.parent.children) == 1:
+        value = 1
+        prompt_log = delimiter.join(["Value Prompt:\n" + "\n\n".join(value_prompt.values()), "Value Outputs:\nNo Valuation - Only one candidate"])
+        return value, prompt_log
+    
     if cache_value and str(value_prompt) in task.value_cache:
         return task.value_cache[str(value_prompt)], value_prompt
+    
     if args.use_api:
         value_outputs = gpt(value_prompt, n=n_evaluate_sample, stop=None)
     else: 
@@ -38,19 +48,13 @@ def get_value(args, task, child, n_evaluate_sample, cache_value=True):
     value = task.value_outputs_unwrap(value_outputs, child.level-1)
     if cache_value:
         task.value_cache[str(value_prompt)] = value
-    delimiter = "\n#############################\n"
     prompt_log = delimiter.join(["Value Prompt:\n" + "\n\n".join(value_prompt.values()), "Value Outputs:\n" + "\n------\n".join(value_outputs)])
     return value, prompt_log
 
 def get_values(args, task, current_node, n_evaluate_sample, cache_value=True):
     prompt_log = []
     local_value_cache = {}
-    
-    # If just one child
-    if len(current_node.children) == 1:
-        current_node.children[0].value = 1
-        return "\n###########################################################\nNo Valuation - Only one candidate\n"
-    
+      
     # valuation
     for child in current_node.children:  # each partial output
         if child.LLM_answer in local_value_cache:  # avoid duplicate candidates

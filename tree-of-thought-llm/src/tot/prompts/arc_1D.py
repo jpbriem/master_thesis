@@ -1,6 +1,13 @@
 ################## General Task Explanation ##################
-general_explanation = '''You are given a series of example input and output pairs that share the same logical pattern of getting the output from its input. Each input and output is a 1-dimensional sequence of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. For example, ['a','b','b','a','a'] represents a sequence of length 5 with color 'b' at index 1 and 2, with zero-indexing.
-'''
+general_explanation = '''You are given a series of example input and output pairs that share the same logical rules of transforming the input into its output. Each input and output is a 1-dimensional sequence of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background color. Adjacent pixels of the same non-'a' color are designated as objects. For example, ['a','b','b','a','c'] represents a sequence with the following objects: Object_1: {color: 'b', position: (1 - 2), size: 2}, Object_2: {color: 'c', position: (4), size: 1}, with zero-indexing for the position.
+
+The logical rules might refer to concepts as follows:
+- Geometry: Symmetries, mirroring, connecting points.
+- Objects: transformations, such as move, hollow, scale, remove, copy, recolor.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.'''
 
 ################## Prompt Templates ##########################
 
@@ -35,77 +42,96 @@ score_prompt = '''
 ################## Prompt modules per step ##################
 # new try - revised prompts!
 prompt_modules = {
- 	"0": {
-		# pattern 
+ 	"0": { # description 
 		'generation': {
-			"instruct_task": f'\n\nYour task is to infer an overall pattern that describes the simplest relation between all input and output pairs.',
+			"instruct_task": f'\n\nYour task is to describe objects in the given input and output sequences.',
 			"output_format": {
-				'Example_1': {
-					'pixel_changes': 'describe the changes between the input and output pixels, focusing on color, index, patterns, counts', 
-					'object_changes': 'describe the changes between the objects in the input and output sequences, focusing on amount, size, position, counts, symmetry', 
-					'parts_of_interest': 'regarding the transformation from input to output, describe and explain the importance of the parts of interest of the input sequence, e.g. pixel pattern, or objects; be specific and describe the parts appropriately (position, color, size, count, symmetry, etc.)',
-					},
-				'Example_2': {...},
-				'overall_pattern': {
-					'parts_of_interest': 'Regarding all examples, is there a pattern about how to determine the parts of interest of the input sequence?',
-					'overall_pattern': 'summarize your findings and describe the simplest input-output relationship valid for all examples', 
-					},
+				'objects': {
+					'Example_1': {
+						'input_sequence': 'regarding the first example, identify all objects in the input sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+						'output_sequence': 'regarding the first example, identify all objects in the output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+						},
+					'Example_2': {...},
+    				}
                 },
    		 	},
 		'evaluation': {
-			"instruct_previous_thoughts": f'\nMoreover, you are given hints to determine parts of interest of the input sequence and an overall pattern that describes the relation between the input and output sequences of all examples.',
-			"instruct_task": f'\n\nEvaluate the given hints and pattern and analyze if they correctly describe the relation between the inputs and outputs of all examples. Be as critical as possible with all pattern details!',
+			"instruct_previous_thoughts": f'\nMoreover, you are given the identified objects of all examples.',
+			"instruct_task": f'\n\nEvaluate the given object descriptions and analyze if they correctly cover all objects. Be as critical as possible with all details!',
 			"output_format": {
                 'Example_1': {
-                    'parts_of_interest_analysis': 'Regarding the first example, analyze if the given hints about parts of interest help to determine the parts of interest with all needed characteristics of the input.',
-                    'overall_pattern_analysis': 'Regarding the first example, divide the pattern in distinct parts and analyze each part individually: 1. is it part of the transformation from input to output? 2. is it specific enough?',
-                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the given hints and pattern as integer.'
+                    'input_analysis': 'Regarding the first example, analyze if the given object descriptions cover all objects in the input sequence.',
+                    'output_analysis': 'Regarding the first example, analyze if the given object descriptions cover all objects in the output sequence',
+                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the given object descriptions as integer.'
                     },
                 'Example_2': {...},
                 }
    		 	}
      	},
-	"1": {
+ 	"1": { # pattern 
 		'generation': {
-			"instruct_task": f'\n\nYour task is to give step-by-step instructions that are generally applicable to all examples to transform the input sequence into its output sequence.',
+			"instruct_task": f'\n\nYour task is to infer an overall pattern that describes the relation between all input and output pairs.',
 			"output_format": {
 				'Example_1': {
-					'part_of_interest': 'describe the parts of interest of the input sequence; be specific and describe the parts appropriately (position, color, shape, size, count, symmetry, etc.)',
-					'transformation': 'describe the transformation from input to output step-by-step and refer to the parts of interest',
-					'conditions': 'describe if and how the transformation process is based on conditions, e.g. object characteristics (number, shape, symmetry, color, size, position) or pixel characteristics (color, position)',
+					'object_numbers': 'analyze if and how the number of objects changed from input to output',
+					'object_analysis': 'make an in-depth analysis and compare the input and output objects, focus on color, position, size',
+					'object_relations': 'can you identify relationships between objects from the input and objects from the output?',
+					'object_transformation': 'how can we determine the output object\'s color, position, size, focus on conditions explaining the transformation',
 					},
 				'Example_2': {...},
-				'instructions': 'summarize the example transformations and provide step-by-step instructions that are generally applicable to transform an input sequence into its output sequence, focus on potential transformation conditions and how to solve them', 
+				'overall_pattern': { 
+					'conditions': 'regarding the object changes, why do they happen? search for conditions based on object colors, positions, and sizes!',
+					'overall_pattern': 'combine your findings and describe general rules to transform inputs into outputs valid for all examples, focusing on WHAT type of object changed and HOW. Be specific!', 
+					},
+                },
+   		 	},
+		'evaluation': {
+			"instruct_previous_thoughts": f'\nMoreover, you are given an overall pattern that describes the relation between the input and output sequences of all examples.',
+			"instruct_task": f'\n\nEvaluate the given pattern and analyze if it correctly describes the relation between the inputs and outputs of all examples. Be as critical as possible with all details!',
+			"output_format": {
+                'Example_1': {
+                    'conditions_analysis': 'Regarding the first example, analyze if the given conditions are relevant to determine the object changes.',
+                    'overall_pattern_analysis': 'Regarding the first example, analyze if the given overall pattern: 1. is it part of the transformation from input to output? 2. is it specific enough?',
+                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the given hints and pattern as integer.'
+                    },
+                'Example_2': {...},
+                }
+   		 	}
+     	}, 
+	"2": { # instructions/algorithm
+		'generation': {
+			"instruct_task": f'\n\nYour task is to give a textual step-by-step transformation algorithm that is generally applicable to all examples to transform the input sequence into its output sequence.',
+			"output_format": {
+				'conditions': 'list all relevant conditions that are part of the transformation',
+				'transformation_algorithm': 'create a textual transformation algorithm that is generally applicable to transform a given input sequence into its output sequence, focus on conditions. Be specific!',
    		 		},
 			},
 		'evaluation': {
-			"instruct_previous_thoughts": f'\nMoreover, you are given step-by-step instructions that are generally applicable to transform an input sequence into its output sequence.',
-			"instruct_task": f'\n\nEvaluate the given instructions and analyze if they correctly describe the transformation for all examples. Be as critical as possible with all pattern details!',
+			"instruct_previous_thoughts": f'\nMoreover, you are given a step-by-step transformation algorithm that transforms an input sequence into its output sequence.',
+			"instruct_task": f'\n\nEvaluate the given algorithm and analyze if it correctly describes the transformation for all examples. Be as critical as possible with all details!',
 			"output_format": {
                 'Example_1': {
-                    'instruction_analysis': 'Regarding the first example, apply the given instructions to the input sequence and analyze if they correctly transform the input sequence into its output sequence.',
-                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the instructions as integer.'
+                    'algorithm_analysis': 'Regarding the first example, apply the given algorithm step-by-step to the input sequence and analyze if it correctly transforms the input sequence into its output sequence.',
+                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the algorithm as integer.'
                     },
-                'Example_2': {
-                    'instruction_analysis': '...',
-                    'value': '...'
-                    },
+                'Example_2': {...},
                 },
    		 	},
      	},
-	"2": {
+	"3": { # test case
 		'generation': {
-			"instruct_task": f'\n\nMoreover, you are given a new test case with an input sequence. Your task is to transform the test input sequence into its test output sequence.',
+			"instruct_task": f'\n\nMoreover, you are given a new test case with a new input sequence. Your task is to transform the test input sequence into its test output sequence.',
 			"output_format": {
-                'intermediate_results': 'apply the instructions step-by-step to the test input sequence; focus on potential transformation conditions and provide all intermediate sequences',
+				'input_description': 'identify all objects in the input sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+                'algorithm_execution': 'apply the algorithm step-by-step to the test input sequence; focus on potential transformation conditions and respond to every algorithm detail.',
                 'output': 'return only the resulting test output sequence as numpy array' 
                 }
    		 	},
 		'evaluation': {
 			"instruct_previous_thoughts": f'\nMoreover, you are given a test input sequence and a potential test output sequence.',
-			"instruct_task": f'\n\nEvaluate the given test output sequence and analyze if it fits to the given description, overall pattern, and instructions. Be as critical as possible with all pattern details!',
+			"instruct_task": f'\n\nEvaluate the given test output sequence and analyze if the transformation algorithm was applied correctly to the test input sequence. Be as critical as possible with all details!',
 			"output_format": {
-                'test_output_analysis': 'analyze if the given test output fits to the given description, overall pattern, and instructions.',
+                'test_output_analysis': 'consider each step of the transformation algorithm and analyze if the test input sequence was correctly transformed into its test output sequence.',
                 'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer.'
                 }
    		 	}

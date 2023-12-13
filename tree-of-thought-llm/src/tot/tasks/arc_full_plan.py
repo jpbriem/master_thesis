@@ -1,7 +1,7 @@
 import os
 import re
 from tot.tasks.base import Task, DATA_PATH
-from tot.prompts.arc import * # TODO: use ARC prompts
+from tot.prompts.arc import * # TODO: use ARC prompts  
 from tot.models import gpt
 from tot.methods.arc_utils import *
 from tot.methods.arc_config import * 
@@ -14,6 +14,7 @@ class ARCTask(Task):
     Input Example:  [[0, 1, 0], [1, 0, 1], [0, 1, 0]]
     Output Example: [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
     """
+
     def __init__(self):
         """
         2 subfolders: training, evaluation
@@ -40,19 +41,19 @@ class ARCTask(Task):
             
         return task_json
     
-    def test_output(self, idx: int, output: str):      
-        output_format = {'reflection': "", 'grid_view': "", 'pixel_view': "",  'object_view': "", 'description': "", 'grid_changes': "", 'pixel_changes': "",  'object_changes': "", 'overall_pattern': "", 'part_of_interest': "", 'conditions': "", 'instructions': "",  'intermediate_results': "", 'test_output': ""}
+    def test_output(self, idx: int, output: str, prompt_modules: dict=prompt_modules, dataset: str="arc"):      
+        output_format = prompt_modules[str(self.steps-1)]["generation"]["output_format"]
         # get test case
         task_json = self.data[idx]
         task_name = self.names[idx]
-        _, solutions = get_tasks(task_json, DELIMITER)
+        _, solutions = get_tasks(task_json, DELIMITER[dataset])
         if task_name not in self.success: # TODO: works currently only if we have just one try
             self.success[task_name] = 0
         for solution in solutions[:1]: # TODO: currently just check first test case in case more exist
-            output_key = list(prompt_modules[str(self.steps-1)]["generation"]["output_format"].keys())[-1]
+            output_key = list(output_format.keys())[-1]
             test_output_grid = extract_json_value(output, output_format, output_key) 
-            test_output_grid = grid_to_nparray(test_output_grid)
-            solution = grid_to_nparray(solution)
+            test_output_grid = grid_to_2D_nparray(test_output_grid)
+            solution = grid_to_2D_nparray(solution)
             is_success = np.array_equal(test_output_grid, solution)
             self.success[task_name] += is_success / len(solutions)
         
@@ -64,22 +65,22 @@ class ARCTask(Task):
         return info
     
     @staticmethod
-    def standard_prompt_wrap(node) -> str:
-        task_context = get_context(node.x, DELIMITER)
-        task_input, _ = get_tasks(node.x, DELIMITER) # TODO: currently just check first test case in case more exist        
+    def standard_prompt_wrap(node, standard_prompt: str=standard_prompt, dataset: str="arc") -> str:
+        task_context = get_context(node.x, DELIMITER[dataset])
+        task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist        
         prompt = standard_prompt.copy()
         prompt["user"] = prompt["user"].format(context=task_context, test_input=task_input[0])
         return prompt
 
     @staticmethod
-    def cot_prompt_wrap(node, total_steps: int=1) -> str:
+    def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
         current_step = node.level
         
         # get arc examples
-        task_context = get_context(node.x, DELIMITER)
+        task_context = get_context(node.x, DELIMITER[dataset])
         # get test case
         if current_step == total_steps-1:
-            task_input, _ = get_tasks(node.x, DELIMITER) # TODO: currently just check first test case in case more exist
+            task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist
             task_input[0] = "\n\n" + task_input[0]
         else:
             task_input = [""]        
@@ -101,9 +102,9 @@ class ARCTask(Task):
         return prompt 
 
     @staticmethod
-    def vote_prompt_wrap(node, total_steps: int=1) -> str:
-        task_context = get_context(node.x, DELIMITER)
-        task_input, _ = get_tasks(node.x, DELIMITER) # TODO: currently just check first test case in case more exist
+    def vote_prompt_wrap(node, total_steps: int=1, dataset: str="arc") -> str:
+        task_context = get_context(node.x, DELIMITER[dataset])
+        task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist
         instruct, previous_thoughts = "", ""  
         prompt = vote_prompt.copy()
         json_keys = {'reflection': "", 'grid_view': "", 'pixel_view': "",  'object_view': "", 'description': "", 'grid_changes': "", 'pixel_changes': "",  'object_changes': "", 'overall_pattern': "", 'part_of_interest': "", 'conditions': "", 'instructions': "",  'intermediate_results': "", 'test_output': ""}
@@ -235,7 +236,7 @@ Evaluate the given test output grids and analyze if they fit to the given descri
                 vote = -1
                 log = "'vote' from LLM not a single integer: " + str(vote_output)
                 print(log)
-                path = "json_parsing_errors/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".txt"
+                path = "error_log/json_parsing_errors/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".txt"
                 with open(path, "w") as text_file:
                     text_file.write(log)
             
@@ -244,14 +245,14 @@ Evaluate the given test output grids and analyze if they fit to the given descri
         return values
     
     @staticmethod
-    def value_prompt_wrap(node, total_steps: int=1) -> str:
+    def value_prompt_wrap(node, total_steps: int=1, value_prompt: str=value_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
         current_step = node.level-1 # -1 bc. node is the child to be evaluated
         
         # get arc examples
-        task_context = get_context(node.x, DELIMITER)
+        task_context = get_context(node.x, DELIMITER[dataset])
         # get test case
         if current_step == total_steps-1:
-            task_input, _ = get_tasks(node.x, DELIMITER) # TODO: currently just check first test case in case more exist
+            task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist
             task_input[0] = "\n\n" + task_input[0]
         else:
             task_input = ["\n"]
@@ -278,7 +279,7 @@ Evaluate the given test output grids and analyze if they fit to the given descri
         return prompt
 
     @staticmethod
-    def value_outputs_unwrap(value_outputs: list, current_step: int=0) -> float:
+    def value_outputs_unwrap(value_outputs: list, current_step: int=0, prompt_modules: dict=prompt_modules) -> float:
         final_value = 0
         cnt_outputs = 0 # counter for number of outputs w valid value
         output_keys = extract_dict_keys(prompt_modules[str(current_step)]["evaluation"], "output_format")
@@ -297,7 +298,7 @@ Evaluate the given test output grids and analyze if they fit to the given descri
                     except:
                         log = "'value' from LLM not a single integer: " + str(value_output["Example_"+str(example_id)])
                         print(log)
-                        path = "json_parsing_errors/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".txt"
+                        path = "error_log/json_parsing_errors/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".txt"
                         with open(path, "w") as text_file:
                             text_file.write(log)
                     example_id += 1

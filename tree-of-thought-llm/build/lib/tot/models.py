@@ -1,7 +1,7 @@
 import os
 import openai
 import backoff 
-import time
+import datetime
 
 completion_tokens = prompt_tokens = 0
 
@@ -16,7 +16,16 @@ if api_base != "":
     print("Warning: OPENAI_API_BASE is set to {}".format(api_base))
     openai.api_base = api_base
 
-@backoff.on_exception(backoff.expo, openai.error.OpenAIError)
+# log openai errors
+def log_exception(details):
+    current_datetime = datetime.datetime.now()
+    log = "Exception occurred: {}\nRetry number: {}\nNext retry in: {}\nKwargs: {}\n".format(details['exception'], details.get('tries', 0), details.get('wait', 0), details["kwargs"], )
+    path = "error_log/gpt_output_errors/"+current_datetime.strftime("%Y-%m-%d_%H-%M-%S")+".txt"
+    with open(path, "w") as text_file:
+        text_file.write(log)
+    print("Backoff: try again..")
+
+@backoff.on_exception(backoff.expo, openai.error.OpenAIError, on_backoff=log_exception)
 def completions_with_backoff(**kwargs):
     print("call openai API")
     return openai.ChatCompletion.create(**kwargs)
@@ -39,6 +48,15 @@ def chatgpt(messages, model="gpt-3.5-turbo-1106", temperature=0.7, response_form
         # log completion tokens
         completion_tokens += res["usage"]["completion_tokens"]
         prompt_tokens += res["usage"]["prompt_tokens"]
+        # log if finish_reason != "stop"
+        for choice in res["choices"]:
+            if choice["finish_reason"] != "stop":
+                current_datetime = datetime.datetime.now()
+                log = "Model: {}\nMessages: {}\nResponse Format: {}\nMax Tokens: {}\nStop symbol: {}\nAnswer: {}\n".format(model, messages, response_format, max_tokens, stop, choice)
+                path = "error_log/gpt_output_errors/"+current_datetime.strftime("%Y-%m-%d_%H-%M-%S")+".txt"
+                with open(path, "w") as text_file:
+                    text_file.write(log)
+                print("Warning: finish_reason is {}".format(choice["finish_reason"]))
     return outputs
     
 def gpt_usage(backend="gpt-4"):

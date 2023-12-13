@@ -2,6 +2,7 @@ import os
 OPENAI_KEY = "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"
 os.environ['OPENAI_API_KEY'] = OPENAI_KEY
 
+import random
 import datetime
 import json
 import argparse
@@ -49,12 +50,12 @@ from tot.models import gpt_usage
 
 ########## ARC ##########
 args = argparse.Namespace(
-    # backend='gpt-3.5-turbo-1106', 
-    backend='gpt-4-1106-preview', 
-    use_api=True, 
+    backend='gpt-3.5-turbo-1106', 
+    # backend='gpt-4-1106-preview', 
+    use_api=False, 
     temperature=0.7, 
-    task='arc', 
-    # task='1D-arc',
+    # task='arc', 
+    task='arc-1D',
     naive_run=False, 
     prompt_sample='cot', 
     method_generate='sample', 
@@ -75,9 +76,10 @@ directory = "Testing_none_official_result/"+current_datetime.strftime("%Y-%m-%d_
 os.makedirs(directory, exist_ok=True)
 
 task = get_task(args.task)
-for idx in range(len(task)):
-    if idx in [1,2,3,6,7,8]:
-        continue
+indices = list(range(len(task)))
+random.shuffle(indices)
+for idx in indices:
+
     Node.reset_tree()
     task_name = task.names[idx].split(".json")[0]  
     ys, infos = dfs.solve(args, task, idx)
