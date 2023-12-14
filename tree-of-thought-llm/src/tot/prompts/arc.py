@@ -44,6 +44,11 @@ value_prompt = {
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
 
+revision_prompt = {
+    "system": general_explanation + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+	"user": '''{context}{previous_thoughts}{test_input}'''
+ }
+
 compare_prompt = '''
 
 '''

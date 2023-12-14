@@ -21,7 +21,7 @@ def read_multiline_input(query):
     text = "\n".join(lines)
     return text
 
-def get_value(args, task, child, n_evaluate_sample, cache_value=True):
+def get_value(args, task, child, cache_value=True):
     delimiter = "\n#############################\n"
     
     value_prompt = task.value_prompt_wrap(child, task.steps)
@@ -36,11 +36,11 @@ def get_value(args, task, child, n_evaluate_sample, cache_value=True):
         return task.value_cache[str(value_prompt)], value_prompt
     
     if args.use_api:
-        value_outputs = gpt(value_prompt, n=n_evaluate_sample, stop=None)
+        value_outputs = gpt(value_prompt, n=args.n_evaluate_sample, stop=None)
     else: 
         # get values from chat interface
         value_outputs = []
-        for i in range(n_evaluate_sample):
+        for i in range(args.n_evaluate_sample):
             print(value_prompt["system"] + "\n" + value_prompt["user"])
             value_output = read_multiline_input("Answer of LLM (type '<END>' after answer): ")
             value_outputs.append(value_output)
@@ -51,7 +51,7 @@ def get_value(args, task, child, n_evaluate_sample, cache_value=True):
     prompt_log = delimiter.join(["Value Prompt:\n" + "\n\n".join(value_prompt.values()), "Value Outputs:\n" + "\n------\n".join(value_outputs)])
     return value, prompt_log
 
-def get_values(args, task, current_node, n_evaluate_sample, cache_value=True):
+def get_values(args, task, current_node, cache_value=True):
     prompt_log = []
     local_value_cache = {}
       
@@ -60,7 +60,7 @@ def get_values(args, task, current_node, n_evaluate_sample, cache_value=True):
         if child.LLM_answer in local_value_cache:  # avoid duplicate candidates
             value = 0
         else:    
-            value, value_prompt = get_value(args, task, child, n_evaluate_sample, cache_value=cache_value)
+            value, value_prompt = get_value(args, task, child, args.n_evaluate_sample, cache_value=cache_value)
             child.value = value
             local_value_cache[child.LLM_answer] = value
         prompt_log.append(value_prompt)
@@ -88,7 +88,7 @@ def get_votes(task, current_node, n_evaluate_sample):
     
     return prompt_log
 
-def get_samples(args, task, current_node, n_generate_sample, prompt_sample, stop):
+def get_samples(args, task, current_node, prompt_sample, stop):
     # sampling
     if prompt_sample == 'standard':
         prompt = task.standard_prompt_wrap(current_node)
@@ -97,11 +97,11 @@ def get_samples(args, task, current_node, n_generate_sample, prompt_sample, stop
     else:
         raise ValueError(f'prompt_sample {prompt_sample} not recognized')
     if args.use_api:
-        samples = gpt(prompt, n=n_generate_sample, stop=stop)
+        samples = gpt(prompt, n=current_node.n_generate_children, stop=stop)
     else:
         # get samples from chat interface
         samples = []
-        for i in range(n_generate_sample):
+        for i in range(current_node.n_generate_children):
             print(prompt["system"] + "\n" + prompt["user"])
             sample = read_multiline_input("Answer of LLM: ")
             samples.append(sample)
@@ -116,7 +116,7 @@ def get_samples(args, task, current_node, n_generate_sample, prompt_sample, stop
     else:
         leaf = False
     for sample in samples:
-        new_node = Node(current_node.level+1, current_node.x, LLM_answer=sample, parent=current_node, children=[], leaf=leaf)
+        new_node = Node(current_node.level+1, current_node.x, LLM_answer=sample, parent=current_node, n_generate_children=args.n_generate_sample, children=[], leaf=leaf)
         current_node.children.append(new_node)
     
     if task.__class__.__name__ in ["ARCTask", "ARC_1D"]:
@@ -124,14 +124,14 @@ def get_samples(args, task, current_node, n_generate_sample, prompt_sample, stop
     #return [y + _ for _ in samples], prompt_log # TODO: apply to old tasks
 
 
-def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nodes=[], infos=[], to_print=True):
+def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nodes=[], abstractionSuccess=False, infos=[], to_print=True):
     if current_node.isLeaf:  # Leaf node
         return [current_node], infos
     
     # generation  # TODO: Rename? Generate children?
     if args.method_generate == 'sample':
         # Sample: 1. Standard, 2. CoT, 3. Multiple CoT (w self-consistency)
-        gen_prompts = get_samples(args, task, current_node, args.n_generate_sample, prompt_sample=args.prompt_sample, stop=task.stops[step])
+        gen_prompts = get_samples(args, task, current_node, prompt_sample=args.prompt_sample, stop=task.stops[step])
     # elif args.method_generate == 'propose':
     #     # Propose potential next steps, define in promptamount of proposals
     #     new_ys, gen_prompts = get_proposals(task, x, y)
@@ -142,7 +142,7 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
         # always vote for single best child, n_evalute_sample times
         eval_prompts = get_votes(task, current_node, args.n_evaluate_sample)
     elif args.method_evaluate == 'value':
-        eval_prompts = get_values(args, task, current_node, args.n_evaluate_sample)
+        eval_prompts = get_values(args, task, current_node)
     values = [n.value for n in current_node.children]
     
     # selection / pruning
@@ -153,6 +153,10 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
     elif args.method_select == 'greedy':
         current_node.children = sorted(current_node.children, key=lambda n: n.value, reverse=True)[:args.n_select_sample]
 
+    # if needed, update children nodes: phase & spreading
+    for child in current_node.children:
+        child.update_node()
+    
     # log
     if to_print: 
         sorted_new_ys, sorted_values = zip(*sorted(zip(new_ys, values), key=lambda x: x[1], reverse=True))
@@ -162,7 +166,19 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
     
     step += 1
     for child in current_node.children:
-        leaf_nodes, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, infos, to_print) 
+        if abstractionSuccess:
+            # abstraction was already successful on examples -> no further search needed 
+            continue
+        
+        if args.revision and child.phase == "application":
+            revision_log, abstractionSuccess = task.abstraction_revision_wrap(child)
+            # TODO: what is in log? Add to infos?
+            if abstractionSuccess:
+                # abstraction is successfull on examples -> apply to test case    
+                leaf_nodes, abstractionSuccess, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, abstractionSuccess, infos, to_print) 
+        
+        else:
+            leaf_nodes, abstractionSuccess, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, abstractionSuccess, infos, to_print) 
         for leaf_node in leaf_nodes:
             if leaf_node in best_leaf_nodes:
                 continue
@@ -174,14 +190,14 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
                     best_leaf_nodes.append(leaf_node)
     best_leaf_nodes = sorted(best_leaf_nodes, key=lambda n: n.value, reverse=True)
 
-    return best_leaf_nodes, infos
+    return best_leaf_nodes, abstractionSuccess, infos
 
 def solve(args, task, idx, to_print=True):
     global gpt
     gpt = partial(gpt, model=args.backend, temperature=args.temperature)
     x = task.get_input(idx)  # input
-    root = Node(0, x, children=[])
-    best_leaf_nodes, infos = depth_first_search_prioritized(args, task, root, step=0, best_leaf_nodes=[], infos=[], to_print=to_print)
+    root = Node(0, x, n_generate_children=args.n_generate_sample, children=[])
+    best_leaf_nodes, revisionSuccess, infos = depth_first_search_prioritized(args, task, root, step=0, best_leaf_nodes=[], infos=[], to_print=to_print)
     return best_leaf_nodes, {'steps': infos}
     
     

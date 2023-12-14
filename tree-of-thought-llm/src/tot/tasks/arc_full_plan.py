@@ -41,6 +41,18 @@ class ARCTask(Task):
             
         return task_json
     
+    def update_node(self, prompt_modules: dict=prompt_modules):
+        if self.level == len(prompt_modules):
+            return
+        
+        # check if abstraction or application phase 
+        self.phase = prompt_modules[str(self.level)]["phase"]
+        
+        # check if node level should spread
+        isSpreader = prompt_modules[str(self.level)]["spread"]
+        if isSpreader:
+            self.n_generate_children = 1
+    
     def test_output(self, idx: int, output: str, prompt_modules: dict=prompt_modules, dataset: str="arc"):      
         output_format = prompt_modules[str(self.steps-1)]["generation"]["output_format"]
         # get test case
@@ -64,7 +76,7 @@ class ARCTask(Task):
         info = {'rs': self.success[task_name], 'r': self.full_success / len(self)}
         return info
     
-    @staticmethod
+    @staticmethod # TODO: distingusih between abstraction & application 
     def standard_prompt_wrap(node, standard_prompt: str=standard_prompt, dataset: str="arc") -> str:
         task_context = get_context(node.x, DELIMITER[dataset])
         task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist        
@@ -72,7 +84,7 @@ class ARCTask(Task):
         prompt["user"] = prompt["user"].format(context=task_context, test_input=task_input[0])
         return prompt
 
-    @staticmethod
+    @staticmethod # TODO: distingusih between abstraction & application
     def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
         current_step = node.level
         
@@ -316,7 +328,85 @@ Evaluate the given test output grids and analyze if they fit to the given descri
             final_value = 0
         return final_value
 
+    # @staticmethod
+    # def revision_prompt_wrap(node, revision_prompt: str=revision_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
+        
+       
+    #     current_step = node.level
+        
+    #     # get arc examples
+    #     task_context = get_context(node.x, DELIMITER[dataset])
+    #     # get test case
+    #     if current_step == total_steps-1:
+    #         task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist
+    #         task_input[0] = "\n\n" + task_input[0]
+    #     else:
+    #         task_input = [""]        
+    #     # get output format for current step
+    #     output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
+    #     # get instructions for current step
+    #     instruct = ""
+    #     for i in range(current_step):
+    #         instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
+    #     instruct += prompt_modules[str(current_step)]["generation"]["instruct_task"]
+    #     # get previous thoughts
+    #     previous_thoughts = f'{get_previous_thoughts(node)}' # add own thought to previous thoughts to generate children
 
+    #     # get prompt template and fill
+    #     prompt = revision_prompt.copy()
+    #     prompt["system"] = cot_prompt["system"].format(output=output_format, special_instructions=instruct)
+    #     prompt["user"] = cot_prompt["user"].format(context=task_context, test_input=task_input[0], previous_thoughts=previous_thoughts)
+
+    #     return prompt 
+    
+    @staticmethod
+    def abstraction_revision_wrap(args, node, DELIMITER, dataset: str="arc"):# Delimiter, dataset, 
+        ########
+        # Wenn ich immer den node.x anpasse, an das zu testende example, und eine angepasste promptmodule  mitgebe, kann ich CoT_prompt_wrap benutzen! 
+        ########
+        # save original task
+        x = node.x.copy()
+        
+        # tracker for example success
+        n_examples = len(x["train"])
+        example_success = [False]*len(n_examples)
+
+        
+        # get arc examples
+        
+        # tracker for example success
+        example_success = [False]*len(inputs)
+       
+        # revision in a loop 
+        revision_log = ""
+        i = 0 
+        while True:
+            # termination conditions
+            if example_success.count(True) == len(inputs): # TODO: OR
+                break
+            
+            # apply abstraction to example
+            node.x["train"], node.x["test"] = node.x["test"], node.x["train"] # change train and test samples in node.x to simulate current example as test case
+            prompt = ARCTask.cot_prompt_wrap(node, ARCTask.steps) 
+            if args.use_api:
+                output = gpt(prompt, n=1)
+            else:
+                # get output from chat interface
+                print(prompt["system"] + "\n" + prompt["user"])
+                output = [read_multiline_input("Answer of LLM: ")]
+            
+            
+            # test the result 
+            
+            # if success: move to next example
+            
+            # if failure: analyze example
+            # if failure: revise example
+            
+        # reset original task
+        node.x = x.copy()
+        return revision_log, all(example_success)
+        
 
 
 
