@@ -299,6 +299,21 @@ def get_previous_thoughts(node):
     return thoughts
 
 ##################### Prompt Helper #####################
+# read multi line user inputs 
+def read_multiline_input(query):
+    lines = []
+    eos = "eee"
+    print(query)
+    print(f'type {eos} after answer.')
+
+    while True:
+        line = input()
+        if line == eos:
+            break
+        lines.append(line)
+
+    text = "\n".join(lines)
+    return text
 
 # get prompt templates/modules
 def get_prompts(dataset="arc"):

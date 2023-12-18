@@ -21,6 +21,7 @@ def read_multiline_input(query):
     text = "\n".join(lines)
     return text
 
+# Evaluation: get value of a child
 def get_value(args, task, child, cache_value=True):
     delimiter = "\n#############################\n"
     
@@ -51,6 +52,7 @@ def get_value(args, task, child, cache_value=True):
     prompt_log = delimiter.join(["Value Prompt:\n" + "\n\n".join(value_prompt.values()), "Value Outputs:\n" + "\n------\n".join(value_outputs)])
     return value, prompt_log
 
+# Evaluation: get values of children
 def get_values(args, task, current_node, cache_value=True):
     prompt_log = []
     local_value_cache = {}
@@ -70,6 +72,7 @@ def get_values(args, task, current_node, cache_value=True):
     prompt_log = delimiter + delimiter.join([str(s) for s in prompt_log])
     return prompt_log
 
+# Evaluation: get vote for a child
 def get_votes(task, current_node, n_evaluate_sample):
     if len(current_node.children) == 1:
         current_node.children[0].value = 1
@@ -88,6 +91,7 @@ def get_votes(task, current_node, n_evaluate_sample):
     
     return prompt_log
 
+# Generation: get new samples
 def get_samples(args, task, current_node, prompt_sample, stop):
     # sampling
     if prompt_sample == 'standard':
@@ -123,6 +127,114 @@ def get_samples(args, task, current_node, prompt_sample, stop):
         return prompt_log
     #return [y + _ for _ in samples], prompt_log # TODO: apply to old tasks
 
+
+# Revision: anaylse failure of abstraction on example
+def analyse_failure(args, task, node):
+    prompt = task.failure_analysis_prompt_wrap(node)             
+    if args.use_api:
+        output = gpt(prompt, n=1)
+    else:
+        # get output from chat interface
+        print(prompt["system"] + "\n" + prompt["user"])
+        output = [read_multiline_input("Answer of LLM: ")]
+    analysis_result = task.failure_analysis_prompt_unwrap(output, node)
+
+    # create new node
+    new_node = Node(node.level+1, node.x, LLM_answer=output[0], thought=analysis_result, parent=node, children=[])
+    node.children.append(new_node)
+    
+    # log
+    delimiter = "\n###########################################################\n"
+    analysis_log = delimiter.join["Analysis Prompt:\n" + "\n".join(prompt.values()),"Analysis Result:\n" + output]    
+    
+    return analysis_log
+
+# Revision: revise abstraction
+def revise(args, task, node):
+    # revise abstraction
+    prompt = task.revision_prompt_wrap(node)
+    if args.use_api:
+        output = gpt(prompt, n=1)
+    else:
+        # get output from chat interface
+        print(prompt["system"] + "\n" + prompt["user"])
+        output = [read_multiline_input("Answer of LLM: ")]
+    revision_result = task.revision_prompt_unwrap(output, node)
+    
+    # create new node
+    new_node = Node(node.level+1, node.x, LLM_answer=output[0], thought=revision_result, parent=node, children=[])
+    node.children.append(new_node)
+    
+    # replace old thoughts with revised thoughts - for each element in thought revise one more parent node one layer higher
+    replacement_log = task.replace_revised_thoughts(new_node)    
+    
+    # log
+    delimiter = "\n###########################################################\n"
+    revision_log = delimiter.join["Revision Prompt:\n" + "\n".join(prompt.values()),"Revision Result:\n" + output]    
+    revision_log += delimiter + replacement_log 
+    
+    return revision_log
+    
+# Revision: Loop
+def revise_abstraction(args, task, original_node):
+    # log
+    delimiter = "\n###########################################################\n"
+    revision_log = delimiter + "Abstraction Revision\n" + delimiter
+
+    # work with copy of node
+    node = original_node.copy()
+    
+    # tracker for example success
+    n_examples = len(node.x["train"])
+    example_success = [False]*n_examples
+    
+    # revision in a loop till termination
+    currrent_test_idx = 0 
+    revisions_in_a_row = 0 # for termination condition
+    revision_last_iteration = False # for termination condition
+    revisions_total = 0 # for termination condition
+    max_revisions = 2*n_examples # for termination condition
+    while True:
+        # termination conditions
+        revisions_in_a_row = revisions_in_a_row + 1 if revision_last_iteration else 0
+        revision_last_iteration = False
+        if example_success.count(True) == n_examples or revisions_in_a_row == n_examples or revisions_total >= max_revisions:
+            break
+
+        # change train and test samples in node.x to simulate current example as test case
+        node.x = task.simulate_ex_as_test_case(original_node.x, currrent_test_idx)
+
+        # apply abstraction to solve current example -> get child node
+        revision_log += get_samples(args, task, node, prompt_sample=args.prompt_sample, stop=task.stops[node.level])
+        example_test_node = node.children[0]
+        
+        # test the answer, which is in child 
+        is_success = task.test_output(node=example_test_node, output=node.LLM_answer, is_revision=True)
+        
+        # if success: move to next example
+        if is_success:
+            example_success[currrent_test_idx] = True
+            currrent_test_idx += 1
+            revision_log += delimiter + "Example solved!\n" + delimiter
+        # if failure: 
+        else:
+            example_success[currrent_test_idx] = False
+            currrent_test_idx += 1
+            
+            # compare wrong answer (which is in child node) to gt
+            revision_log += delimiter + analyse_failure(args, task, example_test_node)
+            analysis_node = example_test_node.children[0]
+            
+            # revise abstraction 
+            revision_last_iteration = True
+            example_success = [False]*n_examples
+            revisions_total += 1
+            revision_log += delimiter + revise(args, task, analysis_node)
+        
+        # reset children of node for next example iteration
+        node.children = []
+            
+    return revision_log, example_success
 
 def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nodes=[], abstractionSuccess=False, infos=[], to_print=True):
     if current_node.isLeaf:  # Leaf node
@@ -166,19 +278,21 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
     
     step += 1
     for child in current_node.children:
-        if abstractionSuccess:
+        if all(example_success):
             # abstraction was already successful on examples -> no further search needed 
             continue
         
         if args.revision and child.phase == "application":
-            revision_log, abstractionSuccess = task.abstraction_revision_wrap(child)
+            revision_log, example_success = task.abstraction_revision_wrap(args, task, child) # TODO: Add params
             # TODO: what is in log? Add to infos?
-            if abstractionSuccess:
+            if all(example_success):
                 # abstraction is successfull on examples -> apply to test case    
-                leaf_nodes, abstractionSuccess, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, abstractionSuccess, infos, to_print) 
-        
+                leaf_nodes, example_success, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, example_success, infos, to_print) 
+            else:
+                # at least one example was wrong: value of instruction becomse # of solved examples
+                child.value = example_success.count(True)
         else:
-            leaf_nodes, abstractionSuccess, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, abstractionSuccess, infos, to_print) 
+            leaf_nodes, example_success, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, example_success, infos, to_print) 
         for leaf_node in leaf_nodes:
             if leaf_node in best_leaf_nodes:
                 continue
@@ -190,7 +304,7 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
                     best_leaf_nodes.append(leaf_node)
     best_leaf_nodes = sorted(best_leaf_nodes, key=lambda n: n.value, reverse=True)
 
-    return best_leaf_nodes, abstractionSuccess, infos
+    return best_leaf_nodes, example_success, infos
 
 def solve(args, task, idx, to_print=True):
     global gpt

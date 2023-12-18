@@ -29,6 +29,9 @@ class ARC_1D(ARCTask):
         self.full_success = 0 # counts completely solved tasks
         self.value_cache = {}
 
+    def update_node(self, prompt_modules: dict=prompt_modules):
+        super().update_node(prompt_modules)
+
     def test_output(self, idx: int, output: str, prompt_modules: dict=prompt_modules):      
         output_format = prompt_modules[str(self.steps-1)]["generation"]["output_format"]
         # get test case

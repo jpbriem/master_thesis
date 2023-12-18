@@ -17,7 +17,7 @@ class Node:
         self.parent = parent
         self.LLM_answer = LLM_answer 
         self.thought = thought # Extract the thought from the LLM answer
-        self.value = value # valuation of thought
+        self.value = value # valuation of thought 
         Node.nodes.append(self)
 
     def __repr__(self) -> str:

@@ -50,17 +50,23 @@ class ARCTask(Task):
         
         # check if node level should spread
         isSpreader = prompt_modules[str(self.level)]["spread"]
-        if isSpreader:
+        if not isSpreader:
             self.n_generate_children = 1
     
-    def test_output(self, idx: int, output: str, prompt_modules: dict=prompt_modules, dataset: str="arc"):      
+    def test_output(self, idx: int=0, output: str="", prompt_modules: dict=prompt_modules, dataset: str="arc", is_revision: bool=False, node: Node=None):      
         output_format = prompt_modules[str(self.steps-1)]["generation"]["output_format"]
-        # get test case
-        task_json = self.data[idx]
-        task_name = self.names[idx]
+        
+        # if revision of abstraction based on examples, get task from revision node
+        if is_revision:
+            task_json = node.x.copy()
+        # otherwise, get test case from task data & initialize success tracker
+        else:
+            task_json = self.data[idx]
+            task_name = self.names[idx]
+            if task_name not in self.success: # TODO: works currently only if we have just one try
+                self.success[task_name] = 0
+        
         _, solutions = get_tasks(task_json, DELIMITER[dataset])
-        if task_name not in self.success: # TODO: works currently only if we have just one try
-            self.success[task_name] = 0
         for solution in solutions[:1]: # TODO: currently just check first test case in case more exist
             output_key = list(output_format.keys())[-1]
             test_output_grid = extract_json_value(output, output_format, output_key) 
@@ -69,11 +75,17 @@ class ARCTask(Task):
             is_success = np.array_equal(test_output_grid, solution)
             self.success[task_name] += is_success / len(solutions)
         
-        if self.success[task_name] == 1:
-            self.full_success += 1
-            
-        # print('------------')
-        info = {'rs': self.success[task_name], 'r': self.full_success / len(self)}
+        
+        # log the success if not revision
+        if is_revision:
+            node.thought = test_output_grid
+            return is_success
+        else:
+            if self.success[task_name] == 1:
+                self.full_success += 1
+            # print('------------')
+            info = {'rs': self.success[task_name], 'r': self.full_success / len(self)}
+        
         return info
     
     @staticmethod # TODO: distingusih between abstraction & application 
@@ -328,85 +340,123 @@ Evaluate the given test output grids and analyze if they fit to the given descri
             final_value = 0
         return final_value
 
-    # @staticmethod
-    # def revision_prompt_wrap(node, revision_prompt: str=revision_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
+    @staticmethod
+    def failure_analysis_prompt_wrap(node, failure_analysis_prompt: str=failure_analysis_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
+        current_step = node.level - 1 # -1 bc. node is the child of the node under revision
         
-       
-    #     current_step = node.level
-        
-    #     # get arc examples
-    #     task_context = get_context(node.x, DELIMITER[dataset])
-    #     # get test case
-    #     if current_step == total_steps-1:
-    #         task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist
-    #         task_input[0] = "\n\n" + task_input[0]
-    #     else:
-    #         task_input = [""]        
-    #     # get output format for current step
-    #     output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
-    #     # get instructions for current step
-    #     instruct = ""
-    #     for i in range(current_step):
-    #         instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
-    #     instruct += prompt_modules[str(current_step)]["generation"]["instruct_task"]
-    #     # get previous thoughts
-    #     previous_thoughts = f'{get_previous_thoughts(node)}' # add own thought to previous thoughts to generate children
+        # get input and gt output
+        input, output_gt = get_tasks(node.x, DELIMITER[dataset])
+        # get wrong output
+        output_wrong = node.thought
+        # get output format 
+        output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
 
-    #     # get prompt template and fill
-    #     prompt = revision_prompt.copy()
-    #     prompt["system"] = cot_prompt["system"].format(output=output_format, special_instructions=instruct)
-    #     prompt["user"] = cot_prompt["user"].format(context=task_context, test_input=task_input[0], previous_thoughts=previous_thoughts)
+        # get prompt template and fill
+        prompt = failure_analysis_prompt.copy()
+        prompt["system"] = failure_analysis_prompt["system"].format(output=output_format)
+        prompt["user"] = failure_analysis_prompt["user"].format(test_input=input, output_gt=output_gt, output_wrong=output_wrong)
 
-    #     return prompt 
+        return prompt
     
     @staticmethod
-    def abstraction_revision_wrap(args, node, DELIMITER, dataset: str="arc"):# Delimiter, dataset, 
-        ########
-        # Wenn ich immer den node.x anpasse, an das zu testende example, und eine angepasste promptmodule  mitgebe, kann ich CoT_prompt_wrap benutzen! 
-        ########
-        # save original task
-        x = node.x.copy()
+    def failure_analysis_prompt_unwrap(output, node, prompt_modules: dict=prompt_modules) -> str:
+        current_step = node.level - 1 # -1 bc. node is the child of the node under revision
+        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["analysis"], "output_format")   
+        output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
+        thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
+        thought_data = extract_json_value(output[0], output_keys, thought_key)
+        if isinstance(thought_data, dict):
+            thought = ""
+            for key, value in thought_data.items():
+                thought += f'\n{" ".join(key.split("_"))}: {value}'
+        else:
+            thought = "\n" + " ".join(thought_key.split("_")) + ": "
+            thought += f'{thought_data}'
+        return thought
+            
+    @staticmethod
+    def revision_prompt_wrap(node, revision_prompt: str=revision_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
+        current_step = node.level - 2 # -2 bc. node is the grand child of the node under revision
         
-        # tracker for example success
-        n_examples = len(x["train"])
-        example_success = [False]*len(n_examples)
+        # get the arc example as context that was tried to be solved
+        node.x["train"] = node.x["test"]
+        task_context = get_context(node.x, DELIMITER[dataset])
+        
+        # get output format for current step
+        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
+        
+        # get instructions for current step
+        instruct = ""
+        for i in range(current_step+1):
+            instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
+        instruct += prompt_modules[str(current_step)]["revision"]["revision"]["instruct_task"]
+        
+        # get previous thoughts
+        previous_thoughts = get_previous_thoughts(node.parent.parent) # use thoughts of node under revision and higher
 
+        # add hypotheses regarding potential mistakes 
+        hypotheses = get_thought(node.LLM_answer, prompt_modules, current_step)
+        node.thought = hypotheses
         
-        # get arc examples
+        # get output format 
+        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
+
+        # get prompt template and fill
+        prompt = revision_prompt.copy()
+        prompt["system"] = revision_prompt["system"].format(output=output_format, special_instructions=instruct)
+        prompt["user"] = revision_prompt["user"].format(context=task_context, previous_thoughts=previous_thoughts, hypotheses=hypotheses)
+
+        return prompt
+    
+    @staticmethod
+    def revision_prompt_unwrap(output, node, prompt_modules: dict=prompt_modules) -> str:
+        current_step = node.level - 2 # -2 bc. node is the grand child of the node under revision
+        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
+        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
+        thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
+        thought_data = extract_json_value(output[0], output_keys, thought_key)
+        if isinstance(thought_data, dict):
+            thought = ""
+            for key, value in thought_data.items():
+                thought += f'\n{" ".join(key.split("_"))}: {value}'
+        else:
+            thought = "\n" + " ".join(thought_key.split("_")) + ": "
+            thought += f'{thought_data}'
+        return thought
         
-        # tracker for example success
-        example_success = [False]*len(inputs)
+    @staticmethod
+    def replace_revised_thoughts(node, prompt_modules: dict=prompt_modules):
+        replacement_log = ""
+        current_step = node.level - 3 # -3 bc. node is the grand grand child of the node under revision
+        revision_node = node.parent.parent.parent
+        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
+        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
+        thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
+        thought_data = extract_json_value(node.LLM_answer, output_keys, thought_key)
+        if isinstance(thought_data, dict):
+            for i, (key, value) in enumerate(reversed(thought_data.items()), 1):
+                thought = f'{" ".join(key.split("_"))}: {value}'                
+                replacement_log += f'\n\n\nRevised node {i} layers above.\nOld thought: {revision_node.thought}\nNew thought: {thought}'
+                revision_node.thought = thought
+                revision_node = revision_node.parent
+        else:
+            thought = "\n" + " ".join(thought_key.split("_")) + ": "
+            thought += f'{thought_data}'
+            replacement_log += f'\n\n\nRevised node 1 layer above.\nOld thought: {revision_node.thought}\nNew thought: {thought}'
+            revision_node.thought = thought
+        return replacement_log
+   
+    @staticmethod
+    def simulate_ex_as_test_case(original_x, currrent_test_idx):
+        x = original_x.copy()
+        # turn examples in context and test case
+        context = original_x["train"][:currrent_test_idx]+original_x["train"][currrent_test_idx+1:]
+        test_case = original_x["train"][currrent_test_idx]
+        x["train"], x["test"] = context, test_case
+        return x
+    
        
-        # revision in a loop 
-        revision_log = ""
-        i = 0 
-        while True:
-            # termination conditions
-            if example_success.count(True) == len(inputs): # TODO: OR
-                break
             
-            # apply abstraction to example
-            node.x["train"], node.x["test"] = node.x["test"], node.x["train"] # change train and test samples in node.x to simulate current example as test case
-            prompt = ARCTask.cot_prompt_wrap(node, ARCTask.steps) 
-            if args.use_api:
-                output = gpt(prompt, n=1)
-            else:
-                # get output from chat interface
-                print(prompt["system"] + "\n" + prompt["user"])
-                output = [read_multiline_input("Answer of LLM: ")]
-            
-            
-            # test the result 
-            
-            # if success: move to next example
-            
-            # if failure: analyze example
-            # if failure: revise example
-            
-        # reset original task
-        node.x = x.copy()
-        return revision_log, all(example_success)
-        
 
 
 

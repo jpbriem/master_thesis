@@ -32,10 +32,16 @@ value_prompt = {
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
 
-revision_prompt = {
-    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
-	"user": '''{context}{previous_thoughts}{test_input}'''
+failure_analysis_prompt = {
+    "system": '''You are confronted with a task in which a 1-dimensional sequence of pixels should be transformed. The input and output sequences have values from 'a' to 'j' representing different colors, where 'a' represents the background color. Adjacent pixels of the same color are designated as objects. For example ['a','b','b','a','c'] represents a pixel sequence with the following objects: Object_1: {color: 'b', position: [1,2], size: 2}, Object_2: {color: 'c', position: [4], size: 1}, with zero-indexing for the position.\n
+You are given an input sequence and 2 output sequences, one is wrong and the other is the ground truth. Your task is to compare the output sequences.\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+	"user": '''Input: {test_input}\nOutput ground truth: {output_gt}\nOutput wrong: {output_wrong}'''
  }
+
+revision_prompt = {
+	"system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+	"user": '''{context}{previous_thoughts}{hypotheses}'''
+}
 
 compare_prompt = '''
 
@@ -150,8 +156,18 @@ prompt_modules = {
                 }
    		 	},
      	'revision': {
-			'analyze': '',
-   			'revise': '',
+			'analysis': {
+				'output_format': {
+					# TODO: 
+					}
+       			},
+   			'revision':  {
+				'instruct_task': f'\n\nYour task is to revise the given overall pattern and to improve it.',
+				'output_format': {
+					# TODO: Sollen beides Patter + Instructions in einem revised werden? 
+					#
+					}
+       			}
 			}
       	}
    }

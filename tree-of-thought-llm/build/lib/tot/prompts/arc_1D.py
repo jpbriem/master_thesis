@@ -1,9 +1,10 @@
 ################## General Task Explanation ##################
-general_explanation = '''You are given a series of example input and output pairs that share the same logical rules of transforming the input into its output. Each input and output is a 1-dimensional sequence of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background color. Adjacent pixels of the same non-'a' color are designated as objects. For example, ['a','b','b','a','c'] represents a sequence with the following objects: Object_1: {color: 'b', position: (1 - 2), size: 2}, Object_2: {color: 'c', position: (4), size: 1}, with zero-indexing for the position.
-
-The logical rules might refer to concepts as follows:
+general_explanation = '''You are given a series of example input and output pairs that share the same logical rules of transforming the input into its output. Each input and output is a 1-dimensional sequence of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background color. Adjacent pixels of the same non-'a' color are designated as objects. For example, ['a','b','b','a','c'] represents a sequence with the following objects: Object_1: {color: 'b', position: (1 - 2), size: 2}, Object_2: {color: 'c', position: (4), size: 1}, with zero-indexing for the position.\n'''
+human_priors = '''\nThe logical rules might refer to concepts as follows:
 - Geometry: Symmetries, mirroring, connecting points.
-- Objects: transformations, such as move, hollow, scale, remove, copy, recolor.
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
 - Noise pixels.
 - Arithmetics based on objects: Counting, sorting.
 - Conditions: rules might be conditional.
@@ -16,18 +17,23 @@ standard_prompt = {
 }
 
 cot_prompt = {
-    "system": general_explanation + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
 
 
 vote_prompt = {
-    "system": general_explanation + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
 
 value_prompt = {
     "system": general_explanation + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+	"user": '''{context}{previous_thoughts}{test_input}'''
+ }
+
+revision_prompt = {
+    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
 
@@ -43,7 +49,9 @@ score_prompt = '''
 # new try - revised prompts!
 prompt_modules = {
  	"0": { # description 
-		'generation': {
+		'spread': False,
+		'phase': 'abstraction',
+  		'generation': {
 			"instruct_task": f'\n\nYour task is to describe objects in the given input and output sequences.',
 			"output_format": {
 				'objects': {
@@ -69,8 +77,10 @@ prompt_modules = {
    		 	}
      	},
  	"1": { # pattern 
-		'generation': {
-			"instruct_task": f'\n\nYour task is to infer an overall pattern that describes the relation between all input and output pairs.',
+		'spread': True,
+		'phase': 'abstraction',
+  		'generation': {
+        	"instruct_task": f'\n\nYour task is to infer an overall pattern that describes the relation between all input and output pairs.',
 			"output_format": {
 				'Example_1': {
 					'object_numbers': 'analyze if and how the number of objects changed from input to output',
@@ -99,7 +109,9 @@ prompt_modules = {
    		 	}
      	}, 
 	"2": { # instructions/algorithm
-		'generation': {
+		'spread': False,
+		'phase': 'abstraction',
+  		'generation': {
 			"instruct_task": f'\n\nYour task is to give a textual step-by-step transformation algorithm that is generally applicable to all examples to transform the input sequence into its output sequence.',
 			"output_format": {
 				'conditions': 'list all relevant conditions that are part of the transformation',
@@ -119,8 +131,10 @@ prompt_modules = {
    		 	},
      	},
 	"3": { # test case
-		'generation': {
-			"instruct_task": f'\n\nMoreover, you are given a new test case with a new input sequence. Your task is to transform the test input sequence into its test output sequence.',
+		'spread': False,
+		'phase': 'application',
+  		'generation': {
+        	"instruct_task": f'\n\nMoreover, you are given a new test case with a new input sequence. Your task is to transform the test input sequence into its test output sequence.',
 			"output_format": {
 				'input_description': 'identify all objects in the input sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
                 'algorithm_execution': 'apply the algorithm step-by-step to the test input sequence; focus on potential transformation conditions and respond to every algorithm detail.',
@@ -134,8 +148,12 @@ prompt_modules = {
                 'test_output_analysis': 'consider each step of the transformation algorithm and analyze if the test input sequence was correctly transformed into its test output sequence.',
                 'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer.'
                 }
-   		 	}
-     	},
+   		 	},
+     	'revision': {
+			'analyze': '',
+   			'revise': '',
+			}
+      	}
    }
 
 # old one
