@@ -288,14 +288,17 @@ def get_thought(LLM_answer, prompt_modules, current_step):
         thought += f'{thought_data}'
     return thought
 
-def get_previous_thoughts(node):
+def get_previous_thoughts(node, climbing_layers=-1):
     thoughts = ""
     while True:
+        if climbing_layers == 0:
+            break
         if node.thought != "":
             thoughts = f'{node.thought}' + thoughts
         node = node.parent
         if node is None:
             break
+        climbing_layers -= 1
     return thoughts
 
 ##################### Prompt Helper #####################

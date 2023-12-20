@@ -83,10 +83,10 @@ MODEL_CONFIG_GPT = {
 
 #################### Prompt ####################
 CHANGE_REPRESENTATION = True
-NEW_REPRESENTATION = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+NEW_REPRESENTATION = [".", "a", "b", "c", "d", "e", "f", "g", "h", "i"]
 
 POST_TEST_CASE = ""
-##### 2D  ARC: #####
+
 DELIMITER = {
     "arc": {
         "item": ", ",

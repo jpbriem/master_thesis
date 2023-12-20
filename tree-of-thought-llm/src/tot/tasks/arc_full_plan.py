@@ -41,17 +41,7 @@ class ARCTask(Task):
             
         return task_json
     
-    def update_node(self, prompt_modules: dict=prompt_modules):
-        if self.level == len(prompt_modules):
-            return
-        
-        # check if abstraction or application phase 
-        self.phase = prompt_modules[str(self.level)]["phase"]
-        
-        # check if node level should spread
-        isSpreader = prompt_modules[str(self.level)]["spread"]
-        if not isSpreader:
-            self.n_generate_children = 1
+
     
     def test_output(self, idx: int=0, output: str="", prompt_modules: dict=prompt_modules, dataset: str="arc", is_revision: bool=False, node: Node=None):      
         output_format = prompt_modules[str(self.steps-1)]["generation"]["output_format"]
@@ -73,12 +63,13 @@ class ARCTask(Task):
             test_output_grid = grid_to_2D_nparray(test_output_grid)
             solution = grid_to_2D_nparray(solution)
             is_success = np.array_equal(test_output_grid, solution)
-            self.success[task_name] += is_success / len(solutions)
+            if not is_revision:
+                self.success[task_name] += is_success / len(solutions)
         
         
         # log the success if not revision
         if is_revision:
-            node.thought = test_output_grid
+            node.thought = test_output_grid.tolist()
             return is_success
         else:
             if self.success[task_name] == 1:
@@ -88,7 +79,20 @@ class ARCTask(Task):
         
         return info
     
-    @staticmethod # TODO: distingusih between abstraction & application 
+    @staticmethod
+    def update_node(node, prompt_modules: dict=prompt_modules):
+        if node.level == len(prompt_modules):
+            return
+        
+        # check if abstraction or application phase 
+        node.phase = prompt_modules[str(node.level)]["phase"]
+        
+        # check if node level should spread
+        isSpreader = prompt_modules[str(node.level)]["spread"]
+        if not isSpreader:
+            node.n_generate_children = 1
+    
+    @staticmethod 
     def standard_prompt_wrap(node, standard_prompt: str=standard_prompt, dataset: str="arc") -> str:
         task_context = get_context(node.x, DELIMITER[dataset])
         task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist        
@@ -112,11 +116,18 @@ class ARCTask(Task):
         output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
         # get instructions for current step
         instruct = ""
-        for i in range(current_step):
-            instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
+        if current_step == total_steps-1: #  For application don't use description of examples
+            for i in range(current_step-2, current_step):
+                instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
+        else:
+            for i in range(current_step):
+                instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
         instruct += prompt_modules[str(current_step)]["generation"]["instruct_task"]
         # get previous thoughts
-        previous_thoughts = f'{get_previous_thoughts(node)}' # add own thought to previous thoughts to generate children
+        if current_step == total_steps-1:
+            previous_thoughts = f'{get_previous_thoughts(node, 2)}' # just take thoughts of nodes until 2 layers above 
+        else:
+            previous_thoughts = f'{get_previous_thoughts(node)}' # tak thoughts of all nodes above
 
         # get prompt template and fill
         prompt = cot_prompt.copy()
@@ -125,6 +136,207 @@ class ARCTask(Task):
 
         return prompt 
 
+    @staticmethod
+    def value_prompt_wrap(node, total_steps: int=1, value_prompt: str=value_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
+        current_step = node.level-1 # -1 bc. node is the child to be evaluated
+        
+        # get arc examples
+        task_context = get_context(node.x, DELIMITER[dataset])
+        # get test case
+        if current_step == total_steps-1:
+            task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist
+            task_input[0] = "\n\n" + task_input[0]
+        else:
+            task_input = ["\n"]
+        # get output format for current step
+        output_format = prompt_modules[str(current_step)]["evaluation"]["output_format"]
+        # get instructions for current step
+        instruct = ""
+        for i in range(current_step+1):
+            instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
+        instruct += prompt_modules[str(current_step)]["evaluation"]["instruct_task"]
+        # get previous thoughts
+        previous_thoughts = get_previous_thoughts(node)
+
+        # add thought to be valued 
+        thought = get_thought(node.LLM_answer, prompt_modules, current_step)
+        node.thought = thought
+        task_input[0] += f'{thought}'
+        
+        # get prompt template and fill 
+        prompt = value_prompt.copy()
+        prompt["system"] = value_prompt["system"].format(output=output_format, special_instructions=instruct)
+        prompt["user"] = value_prompt["user"].format(context=task_context, test_input=task_input[0], previous_thoughts=previous_thoughts)
+
+        return prompt
+
+    @staticmethod
+    def value_outputs_unwrap(value_outputs: list, current_step: int=0, prompt_modules: dict=prompt_modules) -> float:
+        final_value = 0
+        cnt_outputs = 0 # counter for number of outputs w valid value
+        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["evaluation"], "output_format")
+        for value_output in value_outputs:
+            value_output = get_json_from_text(value_output, output_keys)
+            if isinstance(value_output, str):
+                continue
+            cnt_examples = 0 # counter for number of examples w valid value
+            value = 0 # sum up values over all examples
+            example_id = 1
+            if "Example_1" in value_output:
+                while "Example_"+str(example_id) in value_output:
+                    try:
+                        value += get_int_from_dict_value(value_output["Example_"+str(example_id)], "value")
+                        cnt_examples += 1
+                    except:
+                        log = "'value' from LLM not a single integer: " + str(value_output["Example_"+str(example_id)])
+                        print(log)
+                        path = "error_log/json_parsing_errors/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".txt"
+                        with open(path, "w") as text_file:
+                            text_file.write(log)
+                    example_id += 1
+            elif "value" in value_output:
+                value += int(value_output["value"])
+                cnt_examples += 1
+
+            if cnt_examples > 0:
+                value /= cnt_examples
+                final_value += value
+                cnt_outputs += 1
+        if cnt_outputs > 0:
+            final_value /= cnt_outputs
+        else:
+            final_value = 0
+        return final_value
+
+    @staticmethod
+    def failure_analysis_prompt_wrap(node, failure_analysis_prompt: str=failure_analysis_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
+        current_step = node.level - 1 # -1 bc. node is the child of the node under revision
+        
+        # get input and gt output
+        delimmiter = DELIMITER.copy()
+        delimmiter[dataset]["task_start"] = "" #  We dont want the prefix "Test Case:\n" (or similar) here
+        delimmiter[dataset]["input_test"] = "" #  We dont want the prefix "input: " (or similar) here
+        input, output_gt = get_tasks(node.x, DELIMITER[dataset])
+        # get wrong output
+        output_wrong = node.thought
+        # get output format 
+        output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
+
+        # get prompt template and fill
+        prompt = failure_analysis_prompt.copy()
+        prompt["system"] = failure_analysis_prompt["system"].format(output=output_format)
+        prompt["user"] = failure_analysis_prompt["user"].format(test_input=input[0], output_gt=output_gt[0], output_wrong=output_wrong)
+
+        return prompt
+    
+    @staticmethod
+    def failure_analysis_prompt_unwrap(output, node, prompt_modules: dict=prompt_modules) -> str:
+        current_step = node.level - 1 # -1 bc. node is the child of the node under revision
+        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["analysis"], "output_format")   
+        output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
+        thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
+        thought_data = extract_json_value(output[0], output_keys, thought_key)
+        if isinstance(thought_data, dict):
+            thought = ""
+            for key, value in thought_data.items():
+                thought += f'\n{" ".join(key.split("_"))}: {value}'
+        else:
+            thought = "\n" + " ".join(thought_key.split("_")) + ": "
+            thought += f'{thought_data}'
+        return thought
+            
+    @staticmethod
+    def revision_prompt_wrap(node, revision_prompt: str=revision_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
+        current_step = node.level - 2 # -2 bc. node is the grand child of the node under revision
+        
+        # get the arc example as context that was tried to be solved
+        node.x["train"] = node.x["test"]
+        task_context = get_context(node.x, DELIMITER[dataset])
+        
+        # get output format for current step
+        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
+        
+        # get instructions for current step
+        instruct = ""
+        for i in range(current_step): # take instructions from all previous steps except test case generation step
+            instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
+        instruct += prompt_modules[str(current_step)]["revision"]["revision"]["instruct_task"]
+        
+        # get previous thoughts
+        previous_thoughts = get_previous_thoughts(node.parent.parent.parent.parent) # get only Example description of example under test
+        previous_thoughts = previous_thoughts.split('\n')[node.current_test_idx]
+        previous_thoughts += get_previous_thoughts(node.parent.parent, 2) # use thoughts of node under revision and higher except description of examples
+
+        # add hypotheses regarding potential mistakes 
+        hypotheses = get_thought(node.LLM_answer, prompt_modules, current_step, isRevision=True)
+        node.thought = hypotheses
+        
+        # get output format 
+        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
+
+        # get prompt template and fill
+        prompt = revision_prompt.copy()
+        prompt["system"] = revision_prompt["system"].format(output=output_format, special_instructions=instruct)
+        prompt["user"] = revision_prompt["user"].format(context=task_context, previous_thoughts=previous_thoughts, hypotheses=hypotheses)
+
+        return prompt
+    
+    @staticmethod
+    def revision_prompt_unwrap(output, node, prompt_modules: dict=prompt_modules) -> str:
+        current_step = node.level - 2 # -2 bc. node is the grand child of the node under revision
+        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
+        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
+        thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
+        thought_data = extract_json_value(output[0], output_keys, thought_key)
+        if isinstance(thought_data, dict):
+            thought = ""
+            for key, value in thought_data.items():
+                thought += f'\n{" ".join(key.split("_"))}: {value}'
+        else:
+            thought = "\n" + " ".join(thought_key.split("_")) + ": "
+            thought += f'{thought_data}'
+        return thought
+        
+    @staticmethod
+    def replace_revised_thoughts(node, prompt_modules: dict=prompt_modules):
+        replacement_log = ""
+        current_step = node.level - 3 # -3 bc. node is the grand grand child of the node under revision
+        revision_node = node.parent.parent.parent
+        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
+        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
+        thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
+        thought_data = extract_json_value(node.LLM_answer, output_keys, thought_key)
+        if isinstance(thought_data, dict):
+            for i, (key, value) in enumerate(reversed(thought_data.items()), 1):
+                thought = f'{" ".join(key.split("_"))}: {value}'                
+                replacement_log += f'\n\n\nRevised node {i} layers above.\nOld thought: {revision_node.thought}\nNew thought: {thought}'
+                revision_node.thought = thought
+                revision_node = revision_node.parent
+        else:
+            thought = "\n" + " ".join(thought_key.split("_")) + ": "
+            thought += f'{thought_data}'
+            replacement_log += f'\n\n\nRevised node 1 layer above.\nOld thought: {revision_node.thought}\nNew thought: {thought}'
+            revision_node.thought = thought
+        return replacement_log
+   
+    @staticmethod
+    def simulate_ex_as_test_case(original_x, currrent_test_idx):
+        x = original_x.copy()
+        # turn examples in context and test case
+        context = original_x["train"][:currrent_test_idx]+original_x["train"][currrent_test_idx+1:]
+        test_case = [original_x["train"][currrent_test_idx]]
+        x["train"], x["test"] = context, test_case
+        return x
+    
+       
+            
+
+
+
+
+
+
+    # TODO: NEEDED?!
     @staticmethod
     def vote_prompt_wrap(node, total_steps: int=1, dataset: str="arc") -> str:
         task_context = get_context(node.x, DELIMITER[dataset])
@@ -268,202 +480,7 @@ Evaluate the given test output grids and analyze if they fit to the given descri
                 values[vote-1] += 1
         return values
     
-    @staticmethod
-    def value_prompt_wrap(node, total_steps: int=1, value_prompt: str=value_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
-        current_step = node.level-1 # -1 bc. node is the child to be evaluated
-        
-        # get arc examples
-        task_context = get_context(node.x, DELIMITER[dataset])
-        # get test case
-        if current_step == total_steps-1:
-            task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist
-            task_input[0] = "\n\n" + task_input[0]
-        else:
-            task_input = ["\n"]
-        # get output format for current step
-        output_format = prompt_modules[str(current_step)]["evaluation"]["output_format"]
-        # get instructions for current step
-        instruct = ""
-        for i in range(current_step+1):
-            instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
-        instruct += prompt_modules[str(current_step)]["evaluation"]["instruct_task"]
-        # get previous thoughts
-        previous_thoughts = get_previous_thoughts(node)
-
-        # add thought to be valued 
-        thought = get_thought(node.LLM_answer, prompt_modules, current_step)
-        node.thought = thought
-        task_input[0] += f'{thought}'
-        
-        # get prompt template and fill 
-        prompt = value_prompt.copy()
-        prompt["system"] = value_prompt["system"].format(output=output_format, special_instructions=instruct)
-        prompt["user"] = value_prompt["user"].format(context=task_context, test_input=task_input[0], previous_thoughts=previous_thoughts)
-
-        return prompt
-
-    @staticmethod
-    def value_outputs_unwrap(value_outputs: list, current_step: int=0, prompt_modules: dict=prompt_modules) -> float:
-        final_value = 0
-        cnt_outputs = 0 # counter for number of outputs w valid value
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["evaluation"], "output_format")
-        for value_output in value_outputs:
-            value_output = get_json_from_text(value_output, output_keys)
-            if isinstance(value_output, str):
-                continue
-            cnt_examples = 0 # counter for number of examples w valid value
-            value = 0 # sum up values over all examples
-            example_id = 1
-            if "Example_1" in value_output:
-                while "Example_"+str(example_id) in value_output:
-                    try:
-                        value += get_int_from_dict_value(value_output["Example_"+str(example_id)], "value")
-                        cnt_examples += 1
-                    except:
-                        log = "'value' from LLM not a single integer: " + str(value_output["Example_"+str(example_id)])
-                        print(log)
-                        path = "error_log/json_parsing_errors/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".txt"
-                        with open(path, "w") as text_file:
-                            text_file.write(log)
-                    example_id += 1
-            elif "value" in value_output:
-                value += int(value_output["value"])
-                cnt_examples += 1
-
-            if cnt_examples > 0:
-                value /= cnt_examples
-                final_value += value
-                cnt_outputs += 1
-        if cnt_outputs > 0:
-            final_value /= cnt_outputs
-        else:
-            final_value = 0
-        return final_value
-
-    @staticmethod
-    def failure_analysis_prompt_wrap(node, failure_analysis_prompt: str=failure_analysis_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
-        current_step = node.level - 1 # -1 bc. node is the child of the node under revision
-        
-        # get input and gt output
-        input, output_gt = get_tasks(node.x, DELIMITER[dataset])
-        # get wrong output
-        output_wrong = node.thought
-        # get output format 
-        output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
-
-        # get prompt template and fill
-        prompt = failure_analysis_prompt.copy()
-        prompt["system"] = failure_analysis_prompt["system"].format(output=output_format)
-        prompt["user"] = failure_analysis_prompt["user"].format(test_input=input, output_gt=output_gt, output_wrong=output_wrong)
-
-        return prompt
     
-    @staticmethod
-    def failure_analysis_prompt_unwrap(output, node, prompt_modules: dict=prompt_modules) -> str:
-        current_step = node.level - 1 # -1 bc. node is the child of the node under revision
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["analysis"], "output_format")   
-        output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
-        thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
-        thought_data = extract_json_value(output[0], output_keys, thought_key)
-        if isinstance(thought_data, dict):
-            thought = ""
-            for key, value in thought_data.items():
-                thought += f'\n{" ".join(key.split("_"))}: {value}'
-        else:
-            thought = "\n" + " ".join(thought_key.split("_")) + ": "
-            thought += f'{thought_data}'
-        return thought
-            
-    @staticmethod
-    def revision_prompt_wrap(node, revision_prompt: str=revision_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
-        current_step = node.level - 2 # -2 bc. node is the grand child of the node under revision
-        
-        # get the arc example as context that was tried to be solved
-        node.x["train"] = node.x["test"]
-        task_context = get_context(node.x, DELIMITER[dataset])
-        
-        # get output format for current step
-        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
-        
-        # get instructions for current step
-        instruct = ""
-        for i in range(current_step+1):
-            instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
-        instruct += prompt_modules[str(current_step)]["revision"]["revision"]["instruct_task"]
-        
-        # get previous thoughts
-        previous_thoughts = get_previous_thoughts(node.parent.parent) # use thoughts of node under revision and higher
-
-        # add hypotheses regarding potential mistakes 
-        hypotheses = get_thought(node.LLM_answer, prompt_modules, current_step)
-        node.thought = hypotheses
-        
-        # get output format 
-        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
-
-        # get prompt template and fill
-        prompt = revision_prompt.copy()
-        prompt["system"] = revision_prompt["system"].format(output=output_format, special_instructions=instruct)
-        prompt["user"] = revision_prompt["user"].format(context=task_context, previous_thoughts=previous_thoughts, hypotheses=hypotheses)
-
-        return prompt
-    
-    @staticmethod
-    def revision_prompt_unwrap(output, node, prompt_modules: dict=prompt_modules) -> str:
-        current_step = node.level - 2 # -2 bc. node is the grand child of the node under revision
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
-        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
-        thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
-        thought_data = extract_json_value(output[0], output_keys, thought_key)
-        if isinstance(thought_data, dict):
-            thought = ""
-            for key, value in thought_data.items():
-                thought += f'\n{" ".join(key.split("_"))}: {value}'
-        else:
-            thought = "\n" + " ".join(thought_key.split("_")) + ": "
-            thought += f'{thought_data}'
-        return thought
-        
-    @staticmethod
-    def replace_revised_thoughts(node, prompt_modules: dict=prompt_modules):
-        replacement_log = ""
-        current_step = node.level - 3 # -3 bc. node is the grand grand child of the node under revision
-        revision_node = node.parent.parent.parent
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
-        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
-        thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
-        thought_data = extract_json_value(node.LLM_answer, output_keys, thought_key)
-        if isinstance(thought_data, dict):
-            for i, (key, value) in enumerate(reversed(thought_data.items()), 1):
-                thought = f'{" ".join(key.split("_"))}: {value}'                
-                replacement_log += f'\n\n\nRevised node {i} layers above.\nOld thought: {revision_node.thought}\nNew thought: {thought}'
-                revision_node.thought = thought
-                revision_node = revision_node.parent
-        else:
-            thought = "\n" + " ".join(thought_key.split("_")) + ": "
-            thought += f'{thought_data}'
-            replacement_log += f'\n\n\nRevised node 1 layer above.\nOld thought: {revision_node.thought}\nNew thought: {thought}'
-            revision_node.thought = thought
-        return replacement_log
-   
-    @staticmethod
-    def simulate_ex_as_test_case(original_x, currrent_test_idx):
-        x = original_x.copy()
-        # turn examples in context and test case
-        context = original_x["train"][:currrent_test_idx]+original_x["train"][currrent_test_idx+1:]
-        test_case = original_x["train"][currrent_test_idx]
-        x["train"], x["test"] = context, test_case
-        return x
-    
-       
-            
-
-
-
-
-
-
-    # TODO: NEEDED?!
     @staticmethod
     def compare_prompt_wrap(x: str, ys: list) -> str:
         assert len(ys) == 2, 'compare prompt only supports 2 candidates'

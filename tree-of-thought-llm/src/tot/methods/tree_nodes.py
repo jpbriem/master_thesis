@@ -18,11 +18,14 @@ class Node:
         self.LLM_answer = LLM_answer 
         self.thought = thought # Extract the thought from the LLM answer
         self.value = value # valuation of thought 
+        self.current_test_idx = None # index of example currently under test 
         Node.nodes.append(self)
 
     def __repr__(self) -> str:
         return f"Node_{self.nodeID}(Level: {self.level}, Phase: {self.phase}, Thought: {self.thought}, Value: {self.value}, Parent_ID: {self.parent.nodeID if not self.isRoot else None}, Spread: {True if self.n_generate_children>1 else False}, Children_ID: {[child.nodeID for child in self.children]}, is_root: {self.isRoot}, is_leaf: {self.isLeaf})"
     
+    def copy(self):
+        return Node(self.level, self.x, self.phase, self.LLM_answer, self.thought, self.value, self.parent, self.n_generate_children, self.children, self.isLeaf)
     
     def reset_tree():
         Node.nodeID = 0

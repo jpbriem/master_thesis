@@ -62,7 +62,7 @@ def get_values(args, task, current_node, cache_value=True):
         if child.LLM_answer in local_value_cache:  # avoid duplicate candidates
             value = 0
         else:    
-            value, value_prompt = get_value(args, task, child, args.n_evaluate_sample, cache_value=cache_value)
+            value, value_prompt = get_value(args, task, child, cache_value=cache_value)
             child.value = value
             local_value_cache[child.LLM_answer] = value
         prompt_log.append(value_prompt)
@@ -145,7 +145,7 @@ def analyse_failure(args, task, node):
     
     # log
     delimiter = "\n###########################################################\n"
-    analysis_log = delimiter.join["Analysis Prompt:\n" + "\n".join(prompt.values()),"Analysis Result:\n" + output]    
+    analysis_log = delimiter.join(["Analysis Prompt:\n" + "\n".join(prompt.values()),"Analysis Result:\n" + str(output)])    
     
     return analysis_log
 
@@ -170,7 +170,7 @@ def revise(args, task, node):
     
     # log
     delimiter = "\n###########################################################\n"
-    revision_log = delimiter.join["Revision Prompt:\n" + "\n".join(prompt.values()),"Revision Result:\n" + output]    
+    revision_log = delimiter.join(["Revision Prompt:\n" + "\n".join(prompt.values()),"Revision Result:\n" + str(output)])    
     revision_log += delimiter + replacement_log 
     
     return revision_log
@@ -189,7 +189,7 @@ def revise_abstraction(args, task, original_node):
     example_success = [False]*n_examples
     
     # revision in a loop till termination
-    currrent_test_idx = 0 
+    current_test_idx = 0 
     revisions_in_a_row = 0 # for termination condition
     revision_last_iteration = False # for termination condition
     revisions_total = 0 # for termination condition
@@ -202,29 +202,28 @@ def revise_abstraction(args, task, original_node):
             break
 
         # change train and test samples in node.x to simulate current example as test case
-        node.x = task.simulate_ex_as_test_case(original_node.x, currrent_test_idx)
+        node.x = task.simulate_ex_as_test_case(original_node.x, current_test_idx)
 
         # apply abstraction to solve current example -> get child node
         revision_log += get_samples(args, task, node, prompt_sample=args.prompt_sample, stop=task.stops[node.level])
         example_test_node = node.children[0]
         
         # test the answer, which is in child 
-        is_success = task.test_output(node=example_test_node, output=node.LLM_answer, is_revision=True)
+        is_success = task.test_output(node=example_test_node, output=example_test_node.LLM_answer, is_revision=True)
         
         # if success: move to next example
         if is_success:
-            example_success[currrent_test_idx] = True
-            currrent_test_idx += 1
+            example_success[current_test_idx] = True
+            current_test_idx += 1
             revision_log += delimiter + "Example solved!\n" + delimiter
         # if failure: 
         else:
-            example_success[currrent_test_idx] = False
-            currrent_test_idx += 1
+            current_test_idx += 1
             
-            # compare wrong answer (which is in child node) to gt
+            # compare wrong answer (which is in example_test_node) to gt
             revision_log += delimiter + analyse_failure(args, task, example_test_node)
             analysis_node = example_test_node.children[0]
-            
+            analysis_node.current_test_idx = current_test_idx
             # revise abstraction 
             revision_last_iteration = True
             example_success = [False]*n_examples
@@ -236,7 +235,7 @@ def revise_abstraction(args, task, original_node):
             
     return revision_log, example_success
 
-def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nodes=[], abstractionSuccess=False, infos=[], to_print=True):
+def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nodes=[], example_success=[False], infos=[], to_print=True):
     if current_node.isLeaf:  # Leaf node
         return [current_node], infos
     
@@ -267,7 +266,7 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
 
     # if needed, update children nodes: phase & spreading
     for child in current_node.children:
-        child.update_node()
+        task.update_node(child)
     
     # log
     if to_print: 
@@ -277,13 +276,14 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
     infos.append({'step': step, 'x': current_node.x, 'ys': current_node.LLM_answer, 'new_ys': [str(y) for y in new_ys], 'values': values, 'select_new_ys': [str(child) for child in current_node.children], 'prompt_log': prompt_log})
     
     step += 1
+    leaf_nodes = []
     for child in current_node.children:
         if all(example_success):
             # abstraction was already successful on examples -> no further search needed 
             continue
         
         if args.revision and child.phase == "application":
-            revision_log, example_success = task.abstraction_revision_wrap(args, task, child) # TODO: Add params
+            revision_log, example_success = revise_abstraction(args, task, child) # TODO: Add params
             # TODO: what is in log? Add to infos?
             if all(example_success):
                 # abstraction is successfull on examples -> apply to test case    
@@ -291,6 +291,7 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
             else:
                 # at least one example was wrong: value of instruction becomse # of solved examples
                 child.value = example_success.count(True)
+                leaf_nodes.append(child)
         else:
             leaf_nodes, example_success, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, example_success, infos, to_print) 
         for leaf_node in leaf_nodes:
@@ -311,6 +312,7 @@ def solve(args, task, idx, to_print=True):
     gpt = partial(gpt, model=args.backend, temperature=args.temperature)
     x = task.get_input(idx)  # input
     root = Node(0, x, n_generate_children=args.n_generate_sample, children=[])
+    task.update_node(root)
     best_leaf_nodes, revisionSuccess, infos = depth_first_search_prioritized(args, task, root, step=0, best_leaf_nodes=[], infos=[], to_print=to_print)
     return best_leaf_nodes, {'steps': infos}
     

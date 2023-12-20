@@ -156,9 +156,9 @@ def replace_quotes_in_text(res, json_format):
     pattern = r"(\\[^nt])"
     res = re.sub(pattern, "", res)
 
-    # In case the test output is an array but with double quotes
-    pattern = r'(":\s*)(\[\[.*?\]\])'
-    res = re.sub(pattern, r'\1"\2"', res)
+    # In case the test output is an array but with letters w/o double quotes
+    pattern = r'('+keys[-1]+'":\s*)(\[.*?)(})'
+    res = re.sub(pattern, r'\1"\2"\3', res)
     
     # # replace newline and tabs
     # res = res.replace("\n", "\\n").replace("\t", "\\t")
@@ -274,28 +274,34 @@ def get_int_from_dict_value(d, key):
 
     return value
 
-def get_thought(LLM_answer, prompt_modules, current_step):
+def get_thought(LLM_answer, prompt_modules, current_step, isRevision=False):
     all_json_keys = extract_dict_keys(prompt_modules, "output_format")
-    output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
+    if isRevision:
+        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
+    else:
+        output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
     thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
     thought_data = extract_json_value(LLM_answer, all_json_keys, thought_key)
     if isinstance(thought_data, dict):
-        thought = ""
+        thought = "" #" ".join(thought_key.split("_")) + ":\n"
         for key, value in thought_data.items():
-            thought += f'\n{" ".join(key.split("_"))}: {value}'
+            thought += f'\n\n{" ".join(key.split("_"))}: {value}'
     else:
         thought = "\n" + " ".join(thought_key.split("_")) + ": "
         thought += f'{thought_data}'
     return thought
 
-def get_previous_thoughts(node):
+def get_previous_thoughts(node, climbing_layers=-1):
     thoughts = ""
     while True:
+        if climbing_layers == 0:
+            break
         if node.thought != "":
-            thoughts = f'{node.thought}' + thoughts
+            thoughts = f'{node.thought}\n' + thoughts
         node = node.parent
         if node is None:
             break
+        climbing_layers -= 1
     return thoughts
 
 ##################### Prompt Helper #####################
@@ -615,39 +621,21 @@ def change_color_representation(task_original, new_representation):
 def grid_to_2D_nparray(grid):
     if isinstance(grid, str):
         # array in string
-        array_start = grid.find("[[")
-        array_end = grid.rfind("]]") + 2
-        if array_start == -1 or array_end == 1:
-            error = "No 2D-array found in final output string: " + grid
-            return error
-        grid = grid[array_start:array_end]          
+        for i in range(2):
+            array_start = grid.find("[[")
+            array_end = grid.rfind("]]") + 2
+            if array_start == -1 or array_end == 1:
+                if i == 1:
+                    error = "No 2D-array found in final output string: " + grid
+                    return error
+                print("No 2D-array found, trying to add extra bracket: [..]")
+                grid = "[" + grid.strip() + "]"
+            else:
+                break
+        grid = grid[array_start:array_end] 
+                 
         # Replace single letters with quotes around them
-        pattern = re.compile(r'(?<![\'"])([a-zA-Z])(?![\'"])')
-        grid = pattern.sub(r"'\1'", grid)  
-
-        try:
-            return np.array(eval(grid))
-        except:
-            error = "Array found in string but error while converting string to array: " + str(grid)
-            return error
-    else:
-        try: 
-            return np.array(grid)
-        except:
-            error = f"Error while converting grid of type {type(grid)} to nparray: " + str(grid)
-            return error
-
-def grid_to_1D_nparray(grid):
-    if isinstance(grid, str):
-        # array in string
-        array_start = grid.find("[")
-        array_end = grid.rfind("]") + 1
-        if array_start == -1 or array_end == 1:
-            error = "No 1D-array found in final output string: " + grid
-            return error
-        grid = grid[array_start:array_end]          
-        # Replace single letters with quotes around them
-        pattern = re.compile(r'(?<![\'"])([a-zA-Z])(?![\'"])')
+        pattern = re.compile(r'(?<![\'"])([a-zA-Z\.])(?![\'"])')
         grid = pattern.sub(r"'\1'", grid)  
 
         try:

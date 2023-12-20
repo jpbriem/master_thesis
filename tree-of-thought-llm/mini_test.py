@@ -62,7 +62,7 @@ args = argparse.Namespace(
     method_evaluate='value', 
     method_select='greedy',
     revision=True, 
-    n_generate_sample=1, 
+    n_generate_sample=2, 
     n_evaluate_sample=1, 
     n_select_sample=1)
 

@@ -1,5 +1,5 @@
 ################## General Task Explanation ##################
-general_explanation = '''You are given a series of example input and output pairs that share the same logical rules of transforming the input into its output. Each input and output is a 1-dimensional sequence of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background color. Adjacent pixels of the same non-'a' color are designated as objects. For example, ['a','b','b','a','c'] represents a sequence with the following objects: Object_1: {color: 'b', position: (1 - 2), size: 2}, Object_2: {color: 'c', position: (4), size: 1}, with zero-indexing for the position.\n'''
+general_explanation = '''You are given a series of example input and output pairs that share the same logical rules of transforming the input into its output. Each input and output is a 1-dimensional sequence of pixels. The values from 'a' to 'i' represent different colors and '.' represents the background color. Adjacent pixels of the same non-'.' color are designated as objects. For example, ['.','b','b','.','c'] represents a sequence with the following objects: Object_1: {{color: 'b', position: [1, 2], size: 2}}, Object_2: {{color: 'c', position: [4], size: 1}}, with zero-indexing for the position.\n'''
 human_priors = '''\nThe logical rules might refer to concepts as follows:
 - Geometry: Symmetries, mirroring, connecting points.
 - Objects: 
@@ -32,10 +32,16 @@ value_prompt = {
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
 
-revision_prompt = {
-    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
-	"user": '''{context}{previous_thoughts}{test_input}'''
+failure_analysis_prompt = {
+    "system": '''You are confronted with a task in which a 1-dimensional sequence of pixels should be transformed. The input and output sequences have values from 'a' to 'i' representing different colors, and '.' representing the background color. Adjacent pixels of the same color are designated as objects. For example ['.','b','b','.','c'] represents a pixel sequence with the following objects: Object_1: {color: 'b', position: [1,2], size: 2}, Object_2: {color: 'c', position: [4], size: 1}, with zero-indexing for the position.\n
+You are given an input sequence and 2 output sequences, one is wrong and the other is the ground truth. Your task is to compare the output sequences.\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+	"user": '''Input: {test_input}\nOutput ground truth: {output_gt}\nOutput wrong: {output_wrong}'''
  }
+
+revision_prompt = {
+	"system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+	"user": '''{context}{previous_thoughts}{hypotheses}'''
+}
 
 compare_prompt = '''
 
@@ -150,8 +156,26 @@ prompt_modules = {
                 }
    		 	},
      	'revision': {
-			'analyze': '',
-   			'revise': '',
+			'analysis': {
+				'output_format': {
+					'input_objects': 'identify all objects in the input sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+					'output_wrong_objects': 'identify all objects in the wrong output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+					'output_gt_objects': 'identify all objects in the ground truth output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+					'comparison': 'compare the wrong output to the ground truth and identify all differences, focusing on sequence length and objects.',
+					'potential_mistakes': 'analyse the identified differences and make 3 hypotheses about potential mistakes in the transformation process from the input to output. Be specific!'
+					}
+       			},
+   			'revision':  {
+				'instruct_task': f'\n\nHowever, the given overall pattern is wrong and your task is to correct and revise the overall pattern.',
+				'output_format': {
+					'pattern_analysis': 'analyse the given wrong overall pattern with respect to the potential mistakes',
+					'potential_modification': 'brainstorm about opportunities to modify the overall pattern to correct the mistakes',
+					'revision': {
+						'overall_pattern': 'write the complete revised overall pattern',
+						'transformation_algorithm': 'write the complete revised algorithm to transform inputs into outputs'
+						}
+					}
+       			}
 			}
       	}
    }

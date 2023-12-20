@@ -1,5 +1,5 @@
 ################## General Task Explanation ##################
-general_explanation = '''You are given a series of example input and output pairs that share the same logical pattern of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+general_explanation = '''You are given a series of example input and output pairs that share the same logical pattern of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from 'a' to 'i' represent different colors and '.' represents the background. For example, [['.','b','.'],['.','.','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
 
 The logical pattern might refer to concepts as follows:
 - Goal-directedness: input is start and output is end state of process 
@@ -45,7 +45,7 @@ value_prompt = {
  }
 
 failure_analysis_prompt = {
-    "system": '''You are confronted with a task in which a 2-dimensional grid of pixels should be transformed. Each input and output is a 2-dimensional grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.\n
+    "system": '''You are confronted with a task in which a 2-dimensional grid of pixels should be transformed. Each input and output is a 2-dimensional grid of pixels. The values from 'a' to 'i' represent different colors, and '.' represents the background. For example, [['.','b','.'],['.','.','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.\n
 You are given an input grid and 2 output grids, one is wrong and the other is the ground truth. Your task is to compare the output sequences.\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
 	"user": '''Input: {test_input}\nOutput ground truth: {output_gt}\nOutput wrong: {output_wrong}'''
  }
