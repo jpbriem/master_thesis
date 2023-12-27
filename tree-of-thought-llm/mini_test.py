@@ -83,10 +83,16 @@ for idx in indices:
 
     Node.reset_tree()
     task_name = task.names[idx].split(".json")[0]  
-    ys, infos = dfs.solve(args, task, idx)
+    if args.naive_run:
+        ys, infos = dfs.naive_solve(args, task, idx)
+    else:
+        ys, infos = dfs.solve(args, task, idx)
 
     # check best leaf nodes
-    result_infos = [task.test_output(idx, y.LLM_answer) for y in ys] # TODO: Implement
+    if args.naive_run:
+        result_infos = [task.test_output_naive(idx, y.LLM_answer) for y in ys] # TODO: Implement
+    else:
+        result_infos = [task.test_output(idx, y.LLM_answer) for y in ys] # TODO: Implement
 
     #log 
     infos.update({'idx': idx, 'task': task_name, 'ys': [str(y) for y in ys], 'infos': result_infos, 'usage_so_far': gpt_usage(args.backend)})

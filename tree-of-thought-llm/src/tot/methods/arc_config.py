@@ -104,11 +104,11 @@ DELIMITER = {
         "output_test": "",
     },
     "arc-1D": {
-        "item": ", ",
+        "item": "', '",
         "grid_start": "[",
-        "grid_end": "]\n", # include end of last row
-        "row_start": "",
-        "row_end": ", ", # except for last row
+        "grid_end": "']\n", # include end of last row
+        "row_start": "'",
+        "row_end": "", # except for last row
         "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
         "example_end": "\n",
         "task_start": "Test case:\n",

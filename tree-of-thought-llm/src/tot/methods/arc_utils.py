@@ -173,22 +173,15 @@ def get_json_from_text(string, json_format):
     try:
         list_of_jsons = []
         indices = []
-        # search for json-like segment in string, including nested jsons
-        while True:
-            # Find the start and end of the JSON segment in the string
-            json_start = string.find("{")
-            json_end = string.rfind("}") + 1
-            if any([json_start == -1, json_end == 0]):
-                break
-            
-            # Extract the JSON-like segment           
-            list_of_jsons.append(string[json_start:json_end])
-            indices.append((json_start, json_end))
-            try:
-                string = string[json_start+1:json_end-1]
-            except:
-                break
+        # Find the start and end of the JSON segment in the string
+        json_start = string.find("{")
+        json_end = string.rfind("}") + 1
         
+        # Extract the JSON-like segment           
+        list_of_jsons.append(string[json_start:json_end])
+        indices.append((json_start, json_end))
+        string = string[json_start+1:json_end-1]
+
         previous_segment = None
         for i, json_segment in reversed(list(enumerate(list_of_jsons))):
             if previous_segment:
@@ -236,7 +229,7 @@ def extract_json_value(string, json_format, key):
         data += f'Key to extract:\n{key}'
         with open(path, "w") as text_file:
             text_file.write(data)
-        return data
+        return None
     
     # Check if the key exists in the JSON, also check nested dictionaries
     key_exists, keys = find_key(data, key)
@@ -361,7 +354,7 @@ def load_arc_tasks(path, dataset="arc"):
 
 # get context out of json
 def get_context(task_json, delimiter):
-    text = ""
+    text = "The following input-output pairs are examples and share the same underlying transformation pattern.\n"
     for i, sample in enumerate(task_json["train"], 1):
         if delimiter["example_start"] == "Example_X":
             text += f"Example_{i}:\n"

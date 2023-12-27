@@ -79,6 +79,21 @@ class ARCTask(Task):
         
         return info
     
+    def test_output_naive(self, idx: int=0, output: str="", dataset: str="arc"):
+        task_json = self.data[idx]
+        task_name = self.names[idx]
+        if task_name not in self.success: # TODO: works currently only if we have just one try
+            self.success[task_name] = 0
+        _, solutions = get_tasks(task_json, DELIMITER[dataset])
+        for solution in solutions[:1]: # TODO: currently just check first test case in case more exist
+            is_success = solution.strip() in output
+            self.success[task_name] += is_success / len(solutions)
+            
+        if self.success[task_name] == 1:
+            self.full_success += 1
+        info = {'rs': self.success[task_name], 'r': self.full_success / len(self)}
+        return info
+    
     @staticmethod
     def update_node(node, prompt_modules: dict=prompt_modules):
         if node.level == len(prompt_modules):
@@ -177,7 +192,7 @@ class ARCTask(Task):
         output_keys = extract_dict_keys(prompt_modules[str(current_step)]["evaluation"], "output_format")
         for value_output in value_outputs:
             value_output = get_json_from_text(value_output, output_keys)
-            if isinstance(value_output, str):
+            if isinstance(value_output, str): # error in json parsin
                 continue
             cnt_examples = 0 # counter for number of examples w valid value
             value = 0 # sum up values over all examples

@@ -63,6 +63,9 @@ class ARC_1D(ARCTask):
             info = {'rs': self.success[task_name], 'r': self.full_success / len(self)}
         
         return info
+
+    def test_output_naive(self, idx: int=0, output: str="", dataset: str="arc"):
+        return self.test_output_naive(idx, output, dataset)
    
     @staticmethod
     def update_node(node, prompt_modules: dict=prompt_modules):

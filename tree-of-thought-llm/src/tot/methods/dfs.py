@@ -235,9 +235,9 @@ def revise_abstraction(args, task, original_node):
             
     return revision_log, example_success
 
-def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nodes=[], example_success=[False], infos=[], to_print=True):
+def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nodes=[], best_abstraction_node=[], example_success=[False], infos=[], to_print=True):
     if current_node.isLeaf:  # Leaf node
-        return [current_node], infos
+        return [current_node], best_abstraction_node, example_success, infos
     
     # generation  # TODO: Rename? Generate children?
     if args.method_generate == 'sample':
@@ -286,14 +286,17 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
             revision_log, example_success = revise_abstraction(args, task, child) # TODO: Add params
             # TODO: what is in log? Add to infos?
             if all(example_success):
-                # abstraction is successfull on examples -> apply to test case    
-                leaf_nodes, example_success, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, example_success, infos, to_print) 
+                # abstraction is successfull on examples -> apply to all test cases    
+                leaf_nodes, best_abstraction_node, example_success, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, best_abstraction_node, example_success, infos, to_print) 
             else:
-                # at least one example was wrong: value of instruction becomse # of solved examples
+                # TODO: WRONG loic #######################################################################################################################################
+                # at least one example was wrong: value of instruction becomes # of solved examples
                 child.value = example_success.count(True)
-                leaf_nodes.append(child)
+                if best_abstraction_node and best_abstraction_node.value < child.value:
+                    best_abstraction_node = child
+                # leaf_nodes.append(child) IST KEIN LEAF SONDER INSTRUCTIONS NODE 
         else:
-            leaf_nodes, example_success, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, example_success, infos, to_print) 
+            leaf_nodes, best_abstraction_node, example_success, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, best_abstraction_node, example_success, infos, to_print) 
         for leaf_node in leaf_nodes:
             if leaf_node in best_leaf_nodes:
                 continue
@@ -305,16 +308,32 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
                     best_leaf_nodes.append(leaf_node)
     best_leaf_nodes = sorted(best_leaf_nodes, key=lambda n: n.value, reverse=True)
 
-    return best_leaf_nodes, example_success, infos
+    # TODO: Muss anggepasst werden an Baum!!
+    if len(best_leaf_nodes) == 0 and best_abstraction_node:
+        # abstraction not successfull on examples -> take best abstraction so far
+        leaf_nodes, best_abstraction_node, example_success, infos = depth_first_search_prioritized(args, task, best_abstraction_node, step, best_leaf_nodes, best_abstraction_node, example_success, infos, to_print) 
+  
+        
+        
+    return best_leaf_nodes, best_abstraction_node, example_success, infos
 
 def solve(args, task, idx, to_print=True):
     global gpt
     gpt = partial(gpt, model=args.backend, temperature=args.temperature)
+    print(gpt)
     x = task.get_input(idx)  # input
     root = Node(0, x, n_generate_children=args.n_generate_sample, children=[])
     task.update_node(root)
-    best_leaf_nodes, revisionSuccess, infos = depth_first_search_prioritized(args, task, root, step=0, best_leaf_nodes=[], infos=[], to_print=to_print)
+    best_leaf_nodes, best_abstraction_node, revisionSuccess, infos = depth_first_search_prioritized(args, task, root, step=0, best_leaf_nodes=[], best_abstraction_node=[], infos=[], to_print=to_print)
     return best_leaf_nodes, {'steps': infos}
     
-    
+
+def naive_solve(args, task, idx, to_print=True):
+    global gpt
+    gpt = partial(gpt, model=args.backend, temperature=args.temperature)
+    print(gpt)
+    x = task.get_input(idx)  # input
+    root = Node(0, x, n_generate_children=args.n_generate_sample, children=[])
+    prompt_log = get_samples(args, task, root, args.prompt_sample, stop=None)
+    return root.children, {'x': root.x, 'LLM_answers': [str(y.LLM_answer) for y in root.children], 'new_ys': [str(y) for y in root.children], 'prompt_log': prompt_log}
  
