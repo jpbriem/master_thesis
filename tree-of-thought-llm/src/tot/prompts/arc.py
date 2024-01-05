@@ -276,19 +276,18 @@ prompt_modules = {
 
 ################## Prompt modules Single CoT ################
 
-# prompt_modules = {
-# 	"0": {
-# 		'generation': {
-# 			"instruct_task": f'\n\nYou are to infer the simplest possible relation beetween input and output. Then, your task is to transform the test input grid into its test output grid.',
-# 			"output_format": {
-#        			'reflection': 'reflect on the answer', 
-#           		'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 
-# 				'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 
-# 				'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 
-# 				'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
-# 				'instructions': 'describe the transformation actions in detail step by step', 
-# 				'test_output': 'Use the instructions to transform the test input grid and return only the resulting output grid in numpy array format.'
-#             	},
-#    		 	},
-# 		},
-# 	}
+prompt_modules_naive = {
+	"0": {
+		'generation': {
+			"instruct_task": f'\n\nYou are to infer the simplest possible relation beetween input and output. Then, your task is to transform the test input grid into its test output grid.',
+			"output_format": {
+          		'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 
+				'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 
+				'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 
+				'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
+				'instructions': 'describe the transformation actions in detail step by step', 
+				'test_output': 'Use the instructions to transform the test input grid and return only the resulting output grid in numpy array format.'
+            	},
+   		 	},
+		},
+	}

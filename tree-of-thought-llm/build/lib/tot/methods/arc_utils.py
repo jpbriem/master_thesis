@@ -323,7 +323,7 @@ def get_prompts(dataset="arc"):
     if dataset=="arc":
         import tot.prompts.arc as prompts
     elif dataset=="arc-1D":
-        import tot.prompts.arc_1D as prompts # TODO: use ARC prompts
+        import tot.prompts.arc_1D as prompts 
     arc_prompts = {
         "standard_prompt": prompts.standard_prompt,
         "cot_prompt": prompts.cot_prompt,

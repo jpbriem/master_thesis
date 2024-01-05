@@ -15,17 +15,22 @@ class ARCTask(Task):
     Output Example: [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
     """
 
+    # class variable
+    prompt_modules = prompt_modules
+    
     def __init__(self):
         """
         2 subfolders: training, evaluation
         """
         super().__init__()
         path = os.path.join(DATA_PATH, 'arc')
-        self.data, self.names = load_arc_tasks(path)
+        self.data, self.names, self.categories = load_arc_tasks(path)
         self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
         self.stops = [None]*self.steps # TODO: adjust to prompt! 
         self.success = {} # saves success rates for each task
         self.full_success = 0 # counts completely solved tasks
+        self.cat_success = {} # saves success rates for each category
+        self.solved_tasks = []
         self.value_cache = {}
 
     def __len__(self) -> int:
@@ -43,7 +48,9 @@ class ARCTask(Task):
     
 
     
-    def test_output(self, idx: int=0, output: str="", prompt_modules: dict=prompt_modules, dataset: str="arc", is_revision: bool=False, node: Node=None):      
+    def test_output(self, idx: int=0, outputs: list=[""], prompt_modules: dict=None, dataset: str="arc", is_revision: bool=False, node: Node=None):      
+        if prompt_modules is None:
+            prompt_modules = ARCTask.prompt_modules
         output_format = prompt_modules[str(self.steps-1)]["generation"]["output_format"]
         
         # if revision of abstraction based on examples, get task from revision node
@@ -53,49 +60,82 @@ class ARCTask(Task):
         else:
             task_json = self.data[idx]
             task_name = self.names[idx]
+            category = self.categories[idx]
             if task_name not in self.success: # TODO: works currently only if we have just one try
                 self.success[task_name] = 0
         
         _, solutions = get_tasks(task_json, DELIMITER[dataset])
-        for solution in solutions[:1]: # TODO: currently just check first test case in case more exist
+        solution = solutions[0] # TODO: currently just check first test case 
+        
+        try_cnt = 0
+        for output in outputs:
+            output = output.LLM_answer
+            try_cnt += 1 
             output_key = list(output_format.keys())[-1]
             test_output_grid = extract_json_value(output, output_format, output_key) 
             test_output_grid = grid_to_2D_nparray(test_output_grid)
             solution = grid_to_2D_nparray(solution)
             is_success = np.array_equal(test_output_grid, solution)
-            if not is_revision:
-                self.success[task_name] += is_success / len(solutions)
-        
+            if is_success:
+                break     
         
         # log the success if not revision
         if is_revision:
             node.thought = test_output_grid.tolist()
             return is_success
         else:
+            self.success[task_name] += int(is_success) 
             if self.success[task_name] == 1:
                 self.full_success += 1
+                if category in self.cat_success:
+                    self.cat_success[category] += 1
+                else:
+                    self.cat_success[category] = 1
+            if self.success[task_name] > 0:
+                self.solved_tasks.append(task_name)
             # print('------------')
-            info = {'rs': self.success[task_name], 'r': self.full_success / len(self)}
+            info = {'success': self.success[task_name], 'tries': try_cnt, 'total_result': self.full_success / len(self), 'category_result': self.cat_success[category] / self.categories.count(category)}
         
         return info
     
-    def test_output_naive(self, idx: int=0, output: str="", dataset: str="arc"):
+    def test_output_naive(self, idx: int=0, outputs: list=[""], dataset: str="arc"):
         task_json = self.data[idx]
         task_name = self.names[idx]
+        category = self.categories[idx]
         if task_name not in self.success: # TODO: works currently only if we have just one try
             self.success[task_name] = 0
-        _, solutions = get_tasks(task_json, DELIMITER[dataset])
-        for solution in solutions[:1]: # TODO: currently just check first test case in case more exist
-            is_success = solution.strip() in output
-            self.success[task_name] += is_success / len(solutions)
+        if category not in self.cat_success:
+            self.cat_success[category] = 0
             
+        _, solutions = get_tasks(task_json, DELIMITER[dataset])
+        solution = solutions[0] # TODO: currently just check first test case 
+
+        try_cnt = 0
+        for output in outputs:
+            try_cnt += 1 
+            is_success = re.sub(r'\s+', ' ', solution).strip() in re.sub(r'\s+', ' ', output.LLM_answer).strip()
+            if is_success:
+                break     
+                        
+        self.success[task_name] += is_success    
         if self.success[task_name] == 1:
             self.full_success += 1
-        info = {'rs': self.success[task_name], 'r': self.full_success / len(self)}
+            self.cat_success[category] += 1
+
+        if self.success[task_name] > 0:
+            self.solved_tasks.append(task_name)
+        info = {'success': self.success[task_name], 'tries': try_cnt, 'total_result': self.full_success / len(self), 'category_result': self.cat_success[category] / self.categories.count(category)}
         return info
     
+    def update_prompt_modules(self, type: str="naive", p: dict=prompt_modules_naive):
+        if type == "naive":
+            ARCTask.prompt_modules = p
+            self.steps = int(list(p.keys())[-1])+1 # +1 bc. steps start at 0
+    
     @staticmethod
-    def update_node(node, prompt_modules: dict=prompt_modules):
+    def update_node(node, prompt_modules: dict=None):
+        if prompt_modules is None:
+            prompt_modules = ARCTask.prompt_modules
         if node.level == len(prompt_modules):
             return
         
@@ -109,14 +149,16 @@ class ARCTask(Task):
     
     @staticmethod 
     def standard_prompt_wrap(node, standard_prompt: str=standard_prompt, dataset: str="arc") -> str:
-        task_context = get_context(node.x, DELIMITER[dataset])
+        task_context = get_context(node.x, DELIMITER[dataset], with_intro=False)
         task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist        
         prompt = standard_prompt.copy()
         prompt["user"] = prompt["user"].format(context=task_context, test_input=task_input[0])
         return prompt
 
     @staticmethod # TODO: distingusih between abstraction & application
-    def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
+    def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=None, dataset: str="arc") -> str:
+        if prompt_modules is None:
+            prompt_modules = ARCTask.prompt_modules
         current_step = node.level
         
         # get arc examples
@@ -131,16 +173,26 @@ class ARCTask(Task):
         output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
         # get instructions for current step
         instruct = ""
-        if current_step == total_steps-1: #  For application don't use description of examples
-            for i in range(current_step-2, current_step):
-                instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
+        if total_steps == 1: # Naive run with COT prompt
+            pass 
+        # elif current_step == total_steps-1: #  For application don't use description of examples # NOTE: treat all the same!
+        #     for i in range(current_step-2, current_step):
+        #         instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
         else:
             for i in range(current_step):
                 instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
         instruct += prompt_modules[str(current_step)]["generation"]["instruct_task"]
+        
         # get previous thoughts
-        if current_step == total_steps-1:
-            previous_thoughts = f'{get_previous_thoughts(node, 2)}' # just take thoughts of nodes until 2 layers above 
+        if total_steps == 1: # Naive run with COT prompt
+            previous_thoughts = ""
+        elif node.current_test_idx: # we test an abstraction on an example
+            # get previous thoughts
+            previous_thoughts = get_previous_thoughts(node.parent.parent) # get only Example description of example under test
+            previous_thoughts = previous_thoughts.split('\n')[node.current_test_idx+1] # +1 bc. first line is irrelevant TODO: does it work?= 
+            previous_thoughts += get_previous_thoughts(node, 2) # use thoughts except description of examples   
+        # elif current_step == total_steps-1: # NOTE: treat all the same! nod difference beteween abstraction & application phase
+        #     previous_thoughts = f'{get_previous_thoughts(node, 2)}' # For application just take thoughts of nodes until 2 layers above 
         else:
             previous_thoughts = f'{get_previous_thoughts(node)}' # tak thoughts of all nodes above
 
@@ -152,7 +204,9 @@ class ARCTask(Task):
         return prompt 
 
     @staticmethod
-    def value_prompt_wrap(node, total_steps: int=1, value_prompt: str=value_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
+    def value_prompt_wrap(node, total_steps: int=1, value_prompt: str=value_prompt, prompt_modules: dict=None, dataset: str="arc") -> str:
+        if prompt_modules is None:
+            prompt_modules = ARCTask.prompt_modules
         current_step = node.level-1 # -1 bc. node is the child to be evaluated
         
         # get arc examples
@@ -176,6 +230,7 @@ class ARCTask(Task):
         # add thought to be valued 
         thought = get_thought(node.LLM_answer, prompt_modules, current_step)
         node.thought = thought
+        node.thought_before_revision = thought
         task_input[0] += f'{thought}'
         
         # get prompt template and fill 
@@ -186,7 +241,9 @@ class ARCTask(Task):
         return prompt
 
     @staticmethod
-    def value_outputs_unwrap(value_outputs: list, current_step: int=0, prompt_modules: dict=prompt_modules) -> float:
+    def value_outputs_unwrap(value_outputs: list, current_step: int=0, prompt_modules: dict=None) -> float:
+        if prompt_modules is None:
+            prompt_modules = ARCTask.prompt_modules
         final_value = 0
         cnt_outputs = 0 # counter for number of outputs w valid value
         output_keys = extract_dict_keys(prompt_modules[str(current_step)]["evaluation"], "output_format")
@@ -224,7 +281,9 @@ class ARCTask(Task):
         return final_value
 
     @staticmethod
-    def failure_analysis_prompt_wrap(node, failure_analysis_prompt: str=failure_analysis_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
+    def failure_analysis_prompt_wrap(node, failure_analysis_prompt: str=failure_analysis_prompt, prompt_modules: dict=None, dataset: str="arc") -> str:
+        if prompt_modules is None:
+            prompt_modules = ARCTask.prompt_modules
         current_step = node.level - 1 # -1 bc. node is the child of the node under revision
         
         # get input and gt output
@@ -245,7 +304,9 @@ class ARCTask(Task):
         return prompt
     
     @staticmethod
-    def failure_analysis_prompt_unwrap(output, node, prompt_modules: dict=prompt_modules) -> str:
+    def failure_analysis_prompt_unwrap(output, node, prompt_modules: dict=None) -> str:
+        if prompt_modules is None:
+            prompt_modules = ARCTask.prompt_modules
         current_step = node.level - 1 # -1 bc. node is the child of the node under revision
         output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["analysis"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
@@ -261,7 +322,9 @@ class ARCTask(Task):
         return thought
             
     @staticmethod
-    def revision_prompt_wrap(node, revision_prompt: str=revision_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc") -> str:
+    def revision_prompt_wrap(node, revision_prompt: str=revision_prompt, prompt_modules: dict=None, dataset: str="arc") -> str:
+        if prompt_modules is None:
+            prompt_modules = ARCTask.prompt_modules
         current_step = node.level - 2 # -2 bc. node is the grand child of the node under revision
         
         # get the arc example as context that was tried to be solved
@@ -279,7 +342,7 @@ class ARCTask(Task):
         
         # get previous thoughts
         previous_thoughts = get_previous_thoughts(node.parent.parent.parent.parent) # get only Example description of example under test
-        previous_thoughts = previous_thoughts.split('\n')[node.current_test_idx]
+        previous_thoughts = previous_thoughts.split('\n')[node.current_test_idx+1] # +1 bc. first line is irrelevant # TODO: does it work? 
         previous_thoughts += get_previous_thoughts(node.parent.parent, 2) # use thoughts of node under revision and higher except description of examples
 
         # add hypotheses regarding potential mistakes 
@@ -297,7 +360,9 @@ class ARCTask(Task):
         return prompt
     
     @staticmethod
-    def revision_prompt_unwrap(output, node, prompt_modules: dict=prompt_modules) -> str:
+    def revision_prompt_unwrap(output, node, prompt_modules: dict=None) -> str:
+        if prompt_modules is None:
+            prompt_modules = ARCTask.prompt_modules
         current_step = node.level - 2 # -2 bc. node is the grand child of the node under revision
         output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
@@ -313,7 +378,14 @@ class ARCTask(Task):
         return thought
         
     @staticmethod
-    def replace_revised_thoughts(node, prompt_modules: dict=prompt_modules):
+    def replace_revised_thoughts(node, prompt_modules: dict=None):
+        if node.level == 3:
+            # this means the initial abstraction was the best: return to initial thoughts
+            node.thought = node.thought_before_revision
+            node.parent = node.parent.thought_before_revision
+            return "Reset to initial thoughts."
+        if prompt_modules is None:
+            prompt_modules = ARCTask.prompt_modules
         replacement_log = ""
         current_step = node.level - 3 # -3 bc. node is the grand grand child of the node under revision
         revision_node = node.parent.parent.parent

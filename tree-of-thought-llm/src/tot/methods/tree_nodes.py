@@ -17,6 +17,7 @@ class Node:
         self.parent = parent
         self.LLM_answer = LLM_answer 
         self.thought = thought # Extract the thought from the LLM answer
+        self.thought_before_revision = thought
         self.value = value # valuation of thought 
         self.current_test_idx = None # index of example currently under test 
         Node.nodes.append(self)

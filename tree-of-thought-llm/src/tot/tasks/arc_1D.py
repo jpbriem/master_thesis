@@ -15,60 +15,45 @@ class ARC_1D(ARCTask):
     Output Example: [0, 0, 1, 1, 1, 1, 0, 0, 0]
     Pattern of Example: shift right by 1
     """
-    # prompt_modules = prompt_modules
+    
+    # class variable
+    prompt_modules = prompt_modules
+
     def __init__(self):
         """
         several subfolders by task type
-        """
+        """    
         path = os.path.join(DATA_PATH, 'arc-1D')
-        self.data, self.names = load_arc_tasks(path, "arc-1D")
+        self.data, self.names, self.categories = load_arc_tasks(path, "arc-1D")
         self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
         self.stops = [None]*self.steps # TODO: adjust to prompt! 
         self.success = {} # saves success rates for each task
+        self.solved_tasks = []
         self.full_success = 0 # counts completely solved tasks
+        self.cat_success = {} # saves success rates for each category
         self.value_cache = {}
 
-    def test_output(self, idx: int=0, output: str="", prompt_modules: dict=prompt_modules, dataset: str="arc", is_revision: bool=False, node: Node=None):      
-        output_format = prompt_modules[str(self.steps-1)]["generation"]["output_format"]
+    
+    # Overwrite all methods to pass correct prompts and refer to correct dataset
 
-        # if revision of abstraction based on examples, get task from revision node
-        if is_revision:
-            task_json = node.x.copy()
-        # otherwise, get test case from task data & initialize success tracker
-        else:
-            # get test case
-            task_json = self.data[idx]
-            task_name = self.names[idx]
-            if task_name not in self.success: # TODO: works currently only if we have just one try
-                self.success[task_name] = 0
+    def test_output(self, idx: int=0, outputs: str=[""], prompt_modules: dict=None, dataset: str="arc", is_revision: bool=False, node: Node=None):      
+        if prompt_modules is None:
+            prompt_modules = ARC_1D.prompt_modules
+        return super().test_output(idx, outputs, prompt_modules, dataset, is_revision, node)
+
+    def test_output_naive(self, idx: int=0, outputs: list=[""], dataset: str="arc-1D"):
+        return super().test_output_naive(idx, outputs, dataset)
+    
+    def update_prompt_modules(self, type: str="naive", p: dict=prompt_modules_naive):
+        if type == "naive":
+            ARC_1D.prompt_modules = p
+            self.steps = int(list(p.keys())[-1])+1 # +1 bc. steps start at 0
             
-        _, solutions = get_tasks(task_json, DELIMITER[dataset])
-        for solution in solutions[:1]: # TODO: currently just check first test case in case more exist
-            output_key = list(output_format.keys())[-1]
-            test_output_grid = extract_json_value(output, output_format, output_key) 
-            test_output_grid = grid_to_2D_nparray(test_output_grid)
-            solution = grid_to_2D_nparray(solution)
-            is_success = np.array_equal(test_output_grid, solution)
-            if not is_revision:
-                self.success[task_name] += is_success / len(solutions)
-                    
-        # log the success if not revision
-        if is_revision:
-            node.thought = test_output_grid.tolist()
-            return is_success
-        else:
-            if self.success[task_name] == 1:
-                self.full_success += 1
-            # print('------------')
-            info = {'rs': self.success[task_name], 'r': self.full_success / len(self)}
-        
-        return info
-
-    def test_output_naive(self, idx: int=0, output: str="", dataset: str="arc"):
-        return self.test_output_naive(idx, output, dataset)
-   
+    
     @staticmethod
-    def update_node(node, prompt_modules: dict=prompt_modules):
+    def update_node(node, prompt_modules: dict=None):
+        if prompt_modules is None:
+            prompt_modules = ARC_1D.prompt_modules
         return ARCTask.update_node(node, prompt_modules)
     
     @staticmethod
@@ -76,35 +61,51 @@ class ARC_1D(ARCTask):
         return ARCTask.standard_prompt_wrap(node, standard_prompt, dataset)
 
     @staticmethod
-    def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc-1D") -> str:
+    def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=None, dataset: str="arc-1D") -> str:
+        if prompt_modules is None:
+            prompt_modules = ARC_1D.prompt_modules
         return ARCTask.cot_prompt_wrap(node, total_steps, cot_prompt, prompt_modules, dataset)
     
     @staticmethod
-    def value_prompt_wrap(node, total_steps: int=1, value_prompt: str=value_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc-1D") -> str:
+    def value_prompt_wrap(node, total_steps: int=1, value_prompt: str=value_prompt, prompt_modules: dict=None, dataset: str="arc-1D") -> str:
+        if prompt_modules is None:
+            prompt_modules = ARC_1D.prompt_modules
         return ARCTask.value_prompt_wrap(node, total_steps, value_prompt, prompt_modules, dataset)
            
     @staticmethod
-    def value_outputs_unwrap(value_outputs: list, current_step: int=0, prompt_modules: dict=prompt_modules) -> float:
+    def value_outputs_unwrap(value_outputs: list, current_step: int=0, prompt_modules: dict=None) -> float:
+        if prompt_modules is None:
+            prompt_modules = ARC_1D.prompt_modules
         return ARCTask.value_outputs_unwrap(value_outputs, current_step, prompt_modules)
         
     @staticmethod
-    def failure_analysis_prompt_wrap(node, failure_analysis_prompt: str=failure_analysis_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc-1D") -> str:
+    def failure_analysis_prompt_wrap(node, failure_analysis_prompt: str=failure_analysis_prompt, prompt_modules: dict=None, dataset: str="arc-1D") -> str:
+        if prompt_modules is None:
+            prompt_modules = ARC_1D.prompt_modules
         return ARCTask.failure_analysis_prompt_wrap(node, failure_analysis_prompt, prompt_modules, dataset)    
     
     @staticmethod
-    def failure_analysis_prompt_unwrap(output, node, prompt_modules: dict=prompt_modules) -> str:
+    def failure_analysis_prompt_unwrap(output, node, prompt_modules: dict=None) -> str:
+        if prompt_modules is None:
+            prompt_modules = ARC_1D.prompt_modules
         return ARCTask.failure_analysis_prompt_unwrap(output, node, prompt_modules)
 
     @staticmethod
-    def revision_prompt_wrap(node, revision_prompt: str=revision_prompt, prompt_modules: dict=prompt_modules, dataset: str="arc-1D") -> str:
+    def revision_prompt_wrap(node, revision_prompt: str=revision_prompt, prompt_modules: dict=None, dataset: str="arc-1D") -> str:
+        if prompt_modules is None:
+            prompt_modules = ARC_1D.prompt_modules
         return ARCTask.revision_prompt_wrap(node, revision_prompt, prompt_modules, dataset)
     
     @staticmethod
-    def revision_prompt_unwrap(output, node, prompt_modules: dict=prompt_modules) -> str:
+    def revision_prompt_unwrap(output, node, prompt_modules: dict=None) -> str:
+        if prompt_modules is None:
+            prompt_modules = ARC_1D.prompt_modules
         return ARCTask.revision_prompt_unwrap(output, node, prompt_modules)
         
     @staticmethod
-    def replace_revised_thoughts(node, prompt_modules: dict=prompt_modules):
+    def replace_revised_thoughts(node, prompt_modules: dict=None):
+        if prompt_modules is None:
+            prompt_modules = ARC_1D.prompt_modules
         return ARCTask.replace_revised_thoughts(node, prompt_modules)
    
     @staticmethod

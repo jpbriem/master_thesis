@@ -89,10 +89,10 @@ POST_TEST_CASE = ""
 
 DELIMITER = {
     "arc": {
-        "item": ", ",
+        "item": "', '",
         "grid_start": "[",
-        "grid_end": "]]\n", # include end of last row
-        "row_start": "[",
+        "grid_end": "']]\n", # include end of last row
+        "row_start": "['",
         "row_end": "], ", # except for last row
         "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
         "example_end": "\n",

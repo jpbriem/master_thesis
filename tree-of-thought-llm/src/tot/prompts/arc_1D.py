@@ -61,8 +61,8 @@ prompt_modules = {
 			"output_format": {
 				'objects': {
 					'Example_1': {
-						'input_sequence': 'regarding the first example, identify all objects in the input sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
-						'output_sequence': 'regarding the first example, identify all objects in the output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+						'input': 'regarding the first example, identify all objects in the input sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+						'output': 'regarding the first example, identify all objects in the output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
 						},
 					'Example_2': {...},
     				}
@@ -281,19 +281,18 @@ prompt_modules = {
 
 ################## Prompt modules Single CoT ################
 
-# prompt_modules = {
-# 	"0": {
-# 		'generation': {
-# 			"instruct_task": f'\n\nYou are to infer the simplest possible relation beetween input and output. Then, your task is to transform the test input sequence into its test output sequence.',
-# 			"output_format": {
-#        			'reflection': 'reflect on the answer', 
-#           		'sequence_changes': 'describe if the dimension of the input sequence is different to its output sequence', 
-# 				'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 
-# 				'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 
-# 				'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
-# 				'instructions': 'describe the transformation actions in detail step by step', 
-# 				'test_output': 'Use the instructions to transform the test input sequence and return only the resulting output sequence in numpy array format.'
-#             	},
-#    		 	},
-# 		},
-# 	}
+prompt_modules_naive = {
+	"0": {
+		'generation': {
+			"instruct_task": f'\n\nYou are to infer the simplest possible relation beetween input and output. Then, your task is to transform the test input sequence into its test output sequence.',
+			"output_format": {
+          		'sequence_changes': 'describe if the dimension of the input sequence is different to its output sequence', 
+				'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 
+				'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 
+				'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
+				'instructions': 'describe the transformation actions in detail step by step', 
+				'test_output': 'Use the instructions to transform the test input sequence and return only the resulting output sequence in numpy array format.'
+            	},
+   		 	},
+		},
+	}

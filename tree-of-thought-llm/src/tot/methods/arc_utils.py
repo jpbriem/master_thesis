@@ -276,9 +276,10 @@ def get_thought(LLM_answer, prompt_modules, current_step, isRevision=False):
     thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
     thought_data = extract_json_value(LLM_answer, all_json_keys, thought_key)
     if isinstance(thought_data, dict):
-        thought = "" #" ".join(thought_key.split("_")) + ":\n"
+        thought = " ".join(thought_key.split("_")) + ":"
         for key, value in thought_data.items():
-            thought += f'\n\n{" ".join(key.split("_"))}: {value}'
+            thought += f'\n{" ".join(key.split("_"))}: {value}'
+        thought += "\n"
     else:
         thought = "\n" + " ".join(thought_key.split("_")) + ": "
         thought += f'{thought_data}'
@@ -339,22 +340,28 @@ def load_arc_tasks(path, dataset="arc"):
         # train and test path
         paths.append(os.path.join(path, "training"))
         paths.append(os.path.join(path, "evaluation"))
-    elif dataset == "arc-1D":
+    elif dataset in ["arc-1D", "arc_h_v"]:
         paths = [os.path.join(path, f.name) for f in os.scandir(path) if f.is_dir()]
     
+    subdirecotries = []
     for path in paths:
+        subdirecotry = path.split("/")[-1]
         for task_file in sorted(os.listdir(path)):
             with open(os.path.join(path, task_file)) as fid:
                 task_json = json.load(fid)
             tasks_jsons.append(task_json)
             tasks_names.append(task_file)
+            subdirecotries.append(subdirecotry)
 
     print("Total number of tasks:", len(tasks_jsons))
-    return tasks_jsons, tasks_names
+    return tasks_jsons, tasks_names, subdirecotries
 
 # get context out of json
-def get_context(task_json, delimiter):
-    text = "The following input-output pairs are examples and share the same underlying transformation pattern.\n"
+def get_context(task_json, delimiter, with_intro=True):
+    if with_intro:
+        text = "The following input-output pairs are examples and share the same underlying transformation pattern.\n"
+    else:
+        text = ""
     for i, sample in enumerate(task_json["train"], 1):
         if delimiter["example_start"] == "Example_X":
             text += f"Example_{i}:\n"
@@ -638,7 +645,11 @@ def grid_to_2D_nparray(grid):
             return error
     else:
         try: 
-            return np.array(grid)
+            arr = np.array(grid)
+            # check if 1D, then add extra dimension
+            if len(arr.shape) == 1:
+                arr = np.expand_dims(arr, axis=0)            
+            return arr
         except:
             error = f"Error while converting grid of type {type(grid)} to nparray: " + str(grid)
             return error
