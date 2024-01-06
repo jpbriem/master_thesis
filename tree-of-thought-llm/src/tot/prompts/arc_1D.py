@@ -159,14 +159,14 @@ prompt_modules = {
 			'analysis': {
 				'output_format': {
 					'input_objects': 'identify all objects in the input sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
-					'output_wrong_objects': 'identify all objects in the wrong output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
 					'output_gt_objects': 'identify all objects in the ground truth output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+					'output_wrong_objects': 'identify all objects in the wrong output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
 					'comparison': 'compare the wrong output to the ground truth and identify all differences, focusing on sequence length and objects.',
 					'potential_mistakes': 'analyse the identified differences and make 3 hypotheses about potential mistakes in the transformation process from input to output. Be specific!'
 					}
        			},
    			'revision':  {
-				'instruct_task': f'Moreover, you are given potential causes of mistakes in the pattern and instructions.\n\nHowever, the given overall pattern is wrong and your task is to correct and revise the overall pattern.',
+				'instruct_task': f'\nMoreover, you are given potential causes of mistakes in the pattern and instructions.\n\nHowever, the given overall pattern is wrong and your task is to correct and revise the overall pattern.',
 				'output_format': {
 					'pattern_analysis': 'analyse the given wrong overall pattern with respect to the potential mistakes',
 					'potential_modification': 'brainstorm about opportunities to modify the overall pattern to correct the mistakes',

@@ -270,7 +270,7 @@ def get_int_from_dict_value(d, key):
 def get_thought(LLM_answer, prompt_modules, current_step, isRevision=False):
     all_json_keys = extract_dict_keys(prompt_modules, "output_format")
     if isRevision:
-        output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
+        output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
     else:
         output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
     thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
@@ -297,6 +297,14 @@ def get_previous_thoughts(node, climbing_layers=-1):
             break
         climbing_layers -= 1
     return thoughts
+
+# function to ensure correct Example numbering, when using abstraction revision on Examples
+current_number = 1  # Starting number for incrementation
+def incremental_replace(match):
+    global current_number
+    result = f'Example {current_number}'
+    current_number += 1
+    return result
 
 ##################### Prompt Helper #####################
 # read multi line user inputs 

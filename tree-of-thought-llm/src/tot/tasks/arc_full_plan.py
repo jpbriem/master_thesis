@@ -63,7 +63,9 @@ class ARCTask(Task):
             category = self.categories[idx]
             if task_name not in self.success: # TODO: works currently only if we have just one try
                 self.success[task_name] = 0
-        
+            if category not in self.cat_success:
+                self.cat_success[category] = 0
+       
         _, solutions = get_tasks(task_json, DELIMITER[dataset])
         solution = solutions[0] # TODO: currently just check first test case 
         
@@ -87,10 +89,8 @@ class ARCTask(Task):
             self.success[task_name] += int(is_success) 
             if self.success[task_name] == 1:
                 self.full_success += 1
-                if category in self.cat_success:
-                    self.cat_success[category] += 1
-                else:
-                    self.cat_success[category] = 1
+                self.cat_success[category] += 1
+
             if self.success[task_name] > 0:
                 self.solved_tasks.append(task_name)
             # print('------------')
@@ -186,11 +186,15 @@ class ARCTask(Task):
         # get previous thoughts
         if total_steps == 1: # Naive run with COT prompt
             previous_thoughts = ""
-        elif node.current_test_idx: # we test an abstraction on an example
-            # get previous thoughts
+        elif node.current_test_idx is not None: # we test an abstraction on an example
+            # get previous thoughts about examples
             previous_thoughts = get_previous_thoughts(node.parent.parent) # get only Example description of example under test
-            previous_thoughts = previous_thoughts.split('\n')[node.current_test_idx+1] # +1 bc. first line is irrelevant TODO: does it work?= 
-            previous_thoughts += get_previous_thoughts(node, 2) # use thoughts except description of examples   
+            previous_thoughts = "\n".join(previous_thoughts.split('\n')[:node.current_test_idx+1] + previous_thoughts.split('\n')[node.current_test_idx+2:])  # first line is "Objects:" 
+            # correct the numbering of Examples
+            current_number = 1  # Starting number for incrementation
+            previous_thoughts = re.sub(r'Example \d+', incremental_replace, previous_thoughts)
+            # get other previous thoughts
+            previous_thoughts += "\n" + get_previous_thoughts(node, 2) # get thoughts except description of examples   
         # elif current_step == total_steps-1: # NOTE: treat all the same! nod difference beteween abstraction & application phase
         #     previous_thoughts = f'{get_previous_thoughts(node, 2)}' # For application just take thoughts of nodes until 2 layers above 
         else:
@@ -340,13 +344,17 @@ class ARCTask(Task):
             instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
         instruct += prompt_modules[str(current_step)]["revision"]["revision"]["instruct_task"]
         
-        # get previous thoughts
+        # get previous thoughts about examples
         previous_thoughts = get_previous_thoughts(node.parent.parent.parent.parent) # get only Example description of example under test
-        previous_thoughts = previous_thoughts.split('\n')[node.current_test_idx+1] # +1 bc. first line is irrelevant # TODO: does it work? 
-        previous_thoughts += get_previous_thoughts(node.parent.parent, 2) # use thoughts of node under revision and higher except description of examples
+        previous_thoughts = "\n".join(previous_thoughts.split('\n')[:1]+previous_thoughts.split('\n')[node.current_test_idx+1:node.current_test_idx+2]) # +1 bc. first line is "Objects:"
+        # correct the numbering of Examples
+        current_number = 1  # Starting number for incrementation
+        previous_thoughts = re.sub(r'Example \d+', incremental_replace, previous_thoughts)
+        # get other previous thoughts
+        previous_thoughts += "\n" + get_previous_thoughts(node.parent.parent, 2) # use thoughts of node under revision and higher except description of examples
 
         # add hypotheses regarding potential mistakes 
-        hypotheses = get_thought(node.LLM_answer, prompt_modules, current_step, isRevision=True)
+        hypotheses = get_thought(node.LLM_answer, prompt_modules, current_step, isRevision=True) # TODO: Check why not only last part of LLM Answer used as Thought!
         node.thought = hypotheses
         
         # get output format 
@@ -382,7 +390,7 @@ class ARCTask(Task):
         if node.level == 3:
             # this means the initial abstraction was the best: return to initial thoughts
             node.thought = node.thought_before_revision
-            node.parent = node.parent.thought_before_revision
+            node.parent.thought = node.parent.thought_before_revision
             return "Reset to initial thoughts."
         if prompt_modules is None:
             prompt_modules = ARCTask.prompt_modules

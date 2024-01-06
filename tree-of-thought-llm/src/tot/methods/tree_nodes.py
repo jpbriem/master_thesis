@@ -1,3 +1,5 @@
+import copy
+
 class Node:
     nodeID = 0
     nodes = []
@@ -26,7 +28,8 @@ class Node:
         return f"Node_{self.nodeID}(Level: {self.level}, Phase: {self.phase}, Thought: {self.thought}, Value: {self.value}, Parent_ID: {self.parent.nodeID if not self.isRoot else None}, Spread: {True if self.n_generate_children>1 else False}, Children_ID: {[child.nodeID for child in self.children]}, is_root: {self.isRoot}, is_leaf: {self.isLeaf})"
     
     def copy(self):
-        return Node(self.level, self.x, self.phase, self.LLM_answer, self.thought, self.value, self.parent, self.n_generate_children, self.children, self.isLeaf)
+        copied_childre = copy.deepcopy(self.children)
+        return Node(self.level, self.x, self.phase, self.LLM_answer, self.thought, self.value, self.parent, self.n_generate_children, copied_childre, self.isLeaf)
     
     def reset_tree():
         Node.nodeID = 0

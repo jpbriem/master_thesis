@@ -228,18 +228,18 @@ def revise_abstraction(args, task, original_node):
             revision_log += delimiter + "Example solved!\n" + delimiter
 
         # if failure: 
-        else:
+        else:          
+            # track best abstraction so far
+            if best_abstraction_node[0] is None:
+                best_abstraction_node = [original_node, example_success.copy()]
+            elif example_success.count(True) > best_abstraction_node[1].count(True):
+                best_abstraction_node = [analysis_node.child, example_success.count(True)] # analysis_node.child cotains best revised abstraction so far
+
             # termination conditions
             revisions_in_a_row = revisions_in_a_row + 1 if revision_last_iteration else 0
             revision_last_iteration = False
             if revisions_in_a_row == n_examples or revisions_total >= max_revisions:
                 break
-            
-            # track best abstraction so far
-            if best_abstraction_node[0] is None:
-                best_abstraction_node = [original_node, example_success.copy()]
-            elif example_success.count(True) > best_abstraction_node[1]:
-                best_abstraction_node = [analysis_node.child, example_success.count(True)] # analysis_node.child cotains best revised abstraction so far
             
             # compare wrong answer (which is in example_test_node) to gt
             revision_log += delimiter + analyse_failure(args, task, example_test_node)
