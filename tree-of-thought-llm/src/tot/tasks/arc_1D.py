@@ -103,10 +103,10 @@ class ARC_1D(ARCTask):
         return ARCTask.revision_prompt_unwrap(output, node, prompt_modules)
         
     @staticmethod
-    def replace_revised_thoughts(node, prompt_modules: dict=None):
+    def replace_revised_thoughts(node, original_node, prompt_modules: dict=None):
         if prompt_modules is None:
             prompt_modules = ARC_1D.prompt_modules
-        return ARCTask.replace_revised_thoughts(node, prompt_modules)
+        return ARCTask.replace_revised_thoughts(node, original_node, prompt_modules)
    
     @staticmethod
     def simulate_ex_as_test_case(original_x, currrent_test_idx):

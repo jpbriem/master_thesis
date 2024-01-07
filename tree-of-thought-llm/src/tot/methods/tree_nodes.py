@@ -22,6 +22,8 @@ class Node:
         self.thought_before_revision = thought
         self.value = value # valuation of thought 
         self.current_test_idx = None # index of example currently under test 
+        self.example_success = None # list of booleans indicating whether the thought is correct on the examples
+        self.revisions_total = None # total number of revisions needed to find a correct abstraction
         Node.nodes.append(self)
 
     def __repr__(self) -> str:

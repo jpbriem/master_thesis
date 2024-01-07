@@ -299,9 +299,9 @@ def get_previous_thoughts(node, climbing_layers=-1):
     return thoughts
 
 # function to ensure correct Example numbering, when using abstraction revision on Examples
-current_number = 1  # Starting number for incrementation
 def incremental_replace(match):
     global current_number
+    current_number = 1  # Starting number for incrementation
     result = f'Example {current_number}'
     current_number += 1
     return result

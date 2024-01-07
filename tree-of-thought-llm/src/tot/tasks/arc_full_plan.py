@@ -191,7 +191,6 @@ class ARCTask(Task):
             previous_thoughts = get_previous_thoughts(node.parent.parent) # get only Example description of example under test
             previous_thoughts = "\n".join(previous_thoughts.split('\n')[:node.current_test_idx+1] + previous_thoughts.split('\n')[node.current_test_idx+2:])  # first line is "Objects:" 
             # correct the numbering of Examples
-            current_number = 1  # Starting number for incrementation
             previous_thoughts = re.sub(r'Example \d+', incremental_replace, previous_thoughts)
             # get other previous thoughts
             previous_thoughts += "\n" + get_previous_thoughts(node, 2) # get thoughts except description of examples   
@@ -348,10 +347,9 @@ class ARCTask(Task):
         previous_thoughts = get_previous_thoughts(node.parent.parent.parent.parent) # get only Example description of example under test
         previous_thoughts = "\n".join(previous_thoughts.split('\n')[:1]+previous_thoughts.split('\n')[node.current_test_idx+1:node.current_test_idx+2]) # +1 bc. first line is "Objects:"
         # correct the numbering of Examples
-        current_number = 1  # Starting number for incrementation
         previous_thoughts = re.sub(r'Example \d+', incremental_replace, previous_thoughts)
         # get other previous thoughts
-        previous_thoughts += "\n" + get_previous_thoughts(node.parent.parent, 2) # use thoughts of node under revision and higher except description of examples
+        previous_thoughts += "\n\n" + get_previous_thoughts(node.parent.parent, 2) # use thoughts of node under revision and higher except description of examples
 
         # add hypotheses regarding potential mistakes 
         hypotheses = get_thought(node.LLM_answer, prompt_modules, current_step, isRevision=True) # TODO: Check why not only last part of LLM Answer used as Thought!
@@ -386,7 +384,7 @@ class ARCTask(Task):
         return thought
         
     @staticmethod
-    def replace_revised_thoughts(node, prompt_modules: dict=None):
+    def replace_revised_thoughts(node, revision_node, prompt_modules: dict=None):
         if node.level == 3:
             # this means the initial abstraction was the best: return to initial thoughts
             node.thought = node.thought_before_revision
@@ -395,8 +393,7 @@ class ARCTask(Task):
         if prompt_modules is None:
             prompt_modules = ARCTask.prompt_modules
         replacement_log = ""
-        current_step = node.level - 3 # -3 bc. node is the grand grand child of the node under revision
-        revision_node = node.parent.parent.parent
+        current_step = revision_node.level
         output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
         thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
@@ -405,12 +402,14 @@ class ARCTask(Task):
             for i, (key, value) in enumerate(reversed(thought_data.items()), 1):
                 thought = f'{" ".join(key.split("_"))}: {value}'                
                 replacement_log += f'\n\n\nRevised node {i} layers above.\nOld thought: {revision_node.thought}\nNew thought: {thought}'
-                revision_node.thought = thought
+                revision_node.thought = "\n" + thought
+                if i == 1:
+                    node.parent.parent.parent.thought = thought # also change thought of copy of node under revision
                 revision_node = revision_node.parent
         else:
             thought = "\n" + " ".join(thought_key.split("_")) + ": "
             thought += f'{thought_data}'
-            replacement_log += f'\n\n\nRevised node 1 layer above.\nOld thought: {revision_node.thought}\nNew thought: {thought}'
+            replacement_log += f'\n\n\nRevised node 1 layer above.\nOld thought: {revision_node.thought}\nNew thought: {thought}\n\n'
             revision_node.thought = thought
         return replacement_log
    

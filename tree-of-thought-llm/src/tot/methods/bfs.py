@@ -42,9 +42,10 @@ def solve(args, task, idx, to_print=True):
 
         # revise abstraction
         rev_log = ""
+        revisions_total=0
         if args.revision and selected_best_nodes[0].phase == "application":
             for child in selected_best_nodes:
-                revision_log, example_success = search_utils.revise_abstraction(args, task, child)
+                revision_log, revisions_total, example_success = search_utils.revise_abstraction(args, task, child)
                 rev_log += revision_log
                 if all(example_success):
                     # abstraction is successfull on examples -> apply to all test cases! Assumption: Not multiple tries needed.
@@ -53,10 +54,13 @@ def solve(args, task, idx, to_print=True):
                 else:  
                     # at least one example was wrong: value of instruction becomes # of solved examples
                     child.value = example_success.count(True)
-            # if len(selected_best_nodes) != 1:
-            #     # none of the abstractions was successfull on all examples -> take best abstraction on examples
-            #     selected_best_nodes = sorted(selected_best_nodes, key=lambda n: n.value, reverse=True)[:1]
-
+                    child.example_success = example_success
+                    child.revisions_total = revisions_total
+            if len(selected_best_nodes) != 1:
+                # none of the abstractions was successfull on all examples -> take best abstraction on examples
+                selected_best_nodes = sorted(selected_best_nodes, key=lambda n: n.value, reverse=True)[:1]
+                revisions_total = selected_best_nodes[0].revisions_total
+                example_success = selected_best_nodes[0].example_success
         # log
         if to_print: 
             sorted_new_ys, sorted_values = zip(*sorted(zip(new_ys, values), key=lambda x: x[1], reverse=True))
@@ -71,7 +75,8 @@ def solve(args, task, idx, to_print=True):
         infos.append(log)
         
         current_best_nodes = selected_best_nodes
-        
+    if args.revision:
+           return current_best_nodes, {'steps': infos, 'total_revisions': revisions_total}
     return current_best_nodes, {'steps': infos}
     
     

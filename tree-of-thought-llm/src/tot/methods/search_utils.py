@@ -157,7 +157,7 @@ def analyse_failure(args, task, node):
     return analysis_log
 
 # Revision: revise abstraction
-def revise(args, task, node):
+def revise(args, task, node, original_node):
     # revise abstraction
     prompt = task.revision_prompt_wrap(node)
     if args.use_api:
@@ -173,7 +173,7 @@ def revise(args, task, node):
     node.children.append(new_node)
     
     # replace old thoughts with revised thoughts - for each element in thought revise one more parent node one layer higher
-    replacement_log = task.replace_revised_thoughts(new_node)    
+    replacement_log = task.replace_revised_thoughts(new_node, original_node)    
     
     # log
     delimiter = "\n###########################################################\n"
@@ -233,7 +233,7 @@ def revise_abstraction(args, task, original_node):
             if best_abstraction_node[0] is None:
                 best_abstraction_node = [original_node, example_success.copy()]
             elif example_success.count(True) > best_abstraction_node[1].count(True):
-                best_abstraction_node = [analysis_node.child, example_success.count(True)] # analysis_node.child cotains best revised abstraction so far
+                best_abstraction_node = [analysis_node.children[0], example_success] # analysis_node.child cotains best revised abstraction so far
 
             # termination conditions
             revisions_in_a_row = revisions_in_a_row + 1 if revision_last_iteration else 0
@@ -249,7 +249,7 @@ def revise_abstraction(args, task, original_node):
             revision_last_iteration = True
             example_success = [False]*n_examples
             revisions_total += 1
-            revision_log += delimiter + revise(args, task, analysis_node)
+            revision_log += delimiter + revise(args, task, analysis_node, original_node)
             # update index of example to be tested
             current_test_idx = (current_test_idx+1) % len(example_success)
             
@@ -263,8 +263,8 @@ def revise_abstraction(args, task, original_node):
             revision_log += delimiter + "Initial abstraction was best.\n"
         else:
             revision_log += delimiter + "One of the revisions was best, reset to best thoughts.\n"
-        revision_log += task.replace_revised_thoughts(best_abstraction_node[0])
+        revision_log += task.replace_revised_thoughts(best_abstraction_node[0], original_node)
         example_success = best_abstraction_node[1]
         
-    return revision_log, example_success
+    return revision_log, revisions_total, example_success
 
