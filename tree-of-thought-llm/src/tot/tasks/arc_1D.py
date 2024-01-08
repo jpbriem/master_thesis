@@ -18,7 +18,7 @@ class ARC_1D(ARCTask):
     
     # class variable
     prompt_modules = prompt_modules
-
+    
     def __init__(self):
         """
         several subfolders by task type

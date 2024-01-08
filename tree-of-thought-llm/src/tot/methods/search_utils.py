@@ -184,6 +184,9 @@ def revise(args, task, node, original_node):
     
 # Revision: Loop
 def revise_abstraction(args, task, original_node):
+    # reset thoughts of higher levels in case already modified in due to revision of sibling with same parent
+    _ = task.replace_revised_thoughts(original_node, original_node)
+    
     # log
     delimiter = "\n###########################################################\n"
     revision_log = delimiter + "Abstraction Revision\n" + delimiter
@@ -213,10 +216,11 @@ def revise_abstraction(args, task, original_node):
         # change train and test samples in node.x to simulate current example as test case
         node.x = task.simulate_ex_as_test_case(original_node.x, current_test_idx)
         node.current_test_idx = current_test_idx
+        node.n_generate_children = 1 # in revision just 1 child
         
         # apply abstraction to solve current example -> get child node
         revision_log += get_samples(args, task, node, prompt_sample=args.prompt_sample, stop=task.stops[node.level])
-        example_test_node = node.children[0]
+        example_test_node = node.children[0] # TODO: use multiple children?
         
         # test the answer, which is in child 
         is_success = task.test_output(node=example_test_node, outputs=[example_test_node], is_revision=True)
@@ -265,6 +269,7 @@ def revise_abstraction(args, task, original_node):
             revision_log += delimiter + "One of the revisions was best, reset to best thoughts.\n"
         revision_log += task.replace_revised_thoughts(best_abstraction_node[0], original_node)
         example_success = best_abstraction_node[1]
+        original_node.best_abstraction_node = best_abstraction_node[0]
         
     return revision_log, revisions_total, example_success
 

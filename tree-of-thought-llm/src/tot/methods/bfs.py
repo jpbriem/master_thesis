@@ -42,10 +42,9 @@ def solve(args, task, idx, to_print=True):
 
         # revise abstraction
         rev_log = ""
-        revisions_total=0
         if args.revision and selected_best_nodes[0].phase == "application":
             for child in selected_best_nodes:
-                revision_log, revisions_total, example_success = search_utils.revise_abstraction(args, task, child)
+                revision_log, n_revisions, example_success = search_utils.revise_abstraction(args, task, child)
                 rev_log += revision_log
                 if all(example_success):
                     # abstraction is successfull on examples -> apply to all test cases! Assumption: Not multiple tries needed.
@@ -55,12 +54,14 @@ def solve(args, task, idx, to_print=True):
                     # at least one example was wrong: value of instruction becomes # of solved examples
                     child.value = example_success.count(True)
                     child.example_success = example_success
-                    child.revisions_total = revisions_total
+                    child.revisions_total = n_revisions
             if len(selected_best_nodes) != 1:
-                # none of the abstractions was successfull on all examples -> take best abstraction on examples
-                selected_best_nodes = sorted(selected_best_nodes, key=lambda n: n.value, reverse=True)[:1]
-                revisions_total = selected_best_nodes[0].revisions_total
-                example_success = selected_best_nodes[0].example_success
+                # none of the abstractions was successfull on all examples -> take best abstractions on examples
+                selected_best_nodes = sorted(selected_best_nodes, key=lambda n: n.value, reverse=True)[:args.n_select_sample]
+                revisions_total = [node.revisions_total for node in selected_best_nodes] 
+                example_success = [node.example_success for node in selected_best_nodes]
+                rev_log += f'\n\nReset to best abstraction node:\n'
+                rev_log += task.replace_revised_thoughts(selected_best_nodes[0].best_abstraction_node, selected_best_nodes[0])
         # log
         if to_print: 
             sorted_new_ys, sorted_values = zip(*sorted(zip(new_ys, values), key=lambda x: x[1], reverse=True))
@@ -71,12 +72,15 @@ def solve(args, task, idx, to_print=True):
             log['prompt_log'] = prompt_log
         else:
             prompt_log = '\n'.join([gen_prompts, eval_prompts, rev_log])
-            log.update({'prompt_log': prompt_log, 'revision_success': all(example_success)})
+            log.update({'prompt_log': prompt_log, 'revision_success':example_success, 'total_revisions': revisions_total})
         infos.append(log)
         
         current_best_nodes = selected_best_nodes
     if args.revision:
-           return current_best_nodes, {'steps': infos, 'total_revisions': revisions_total}
+            # get revision results for all end nodes
+            example_success = [node.parent.example_success for node in current_best_nodes]
+            revisions_total = [node.parent.revisions_total for node in current_best_nodes]
+            return current_best_nodes, {'steps': infos, 'revision_success': all(example_success), 'total_revisions': revisions_total}
     return current_best_nodes, {'steps': infos}
     
     

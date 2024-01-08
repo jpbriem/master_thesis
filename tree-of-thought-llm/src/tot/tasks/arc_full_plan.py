@@ -4,6 +4,7 @@ from tot.tasks.base import Task, DATA_PATH
 from tot.prompts.arc import * # TODO: use ARC prompts  
 from tot.models import gpt
 from tot.methods.arc_utils import *
+from tot.methods import arc_utils
 from tot.methods.arc_config import * 
 from tot.methods.tree_nodes import Node
 
@@ -13,9 +14,9 @@ class ARCTask(Task):
     Output (y)  : 2D grid of pixels 
     Input Example:  [[0, 1, 0], [1, 0, 1], [0, 1, 0]]
     Output Example: [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
-    """
+    """ 
 
-    # class variable
+    # class variables
     prompt_modules = prompt_modules
     
     def __init__(self):
@@ -191,6 +192,7 @@ class ARCTask(Task):
             previous_thoughts = get_previous_thoughts(node.parent.parent) # get only Example description of example under test
             previous_thoughts = "\n".join(previous_thoughts.split('\n')[:node.current_test_idx+1] + previous_thoughts.split('\n')[node.current_test_idx+2:])  # first line is "Objects:" 
             # correct the numbering of Examples
+            arc_utils.current_number = 1
             previous_thoughts = re.sub(r'Example \d+', incremental_replace, previous_thoughts)
             # get other previous thoughts
             previous_thoughts += "\n" + get_previous_thoughts(node, 2) # get thoughts except description of examples   
@@ -400,7 +402,7 @@ class ARCTask(Task):
         thought_data = extract_json_value(node.LLM_answer, output_keys, thought_key)
         if isinstance(thought_data, dict):
             for i, (key, value) in enumerate(reversed(thought_data.items()), 1):
-                thought = f'{" ".join(key.split("_"))}: {value}'                
+                thought = f'\n{" ".join(key.split("_"))}: {value}'                
                 replacement_log += f'\n\n\nRevised node {i} layers above.\nOld thought: {revision_node.thought}\nNew thought: {thought}'
                 revision_node.thought = "\n" + thought
                 if i == 1:
