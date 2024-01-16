@@ -18,6 +18,7 @@ class ARCTask(Task):
 
     # class variables
     prompt_modules = prompt_modules
+    use_object_representation = False
     
     def __init__(self):
         """
@@ -30,12 +31,20 @@ class ARCTask(Task):
         self.stops = [None]*self.steps # TODO: adjust to prompt! 
         self.success = {} # saves success rates for each task
         self.full_success = 0 # counts completely solved tasks
-        self.cat_success = {} # saves success rates for each category
+        self.cat_success, self.cat_failures = {}, {} # saves success rates for each category
         self.solved_tasks = []
         self.value_cache = {}
 
     def __len__(self) -> int:
         return len(self.data)
+    
+    def get_task_infos(self) -> dict:
+        return {"change_representation": CHANGE_REPRESENTATION, "new_representation": NEW_REPRESENTATION if CHANGE_REPRESENTATION else None}
+    
+    def set_input_representation(self, input_representation: str):
+        if input_representation == "objects":
+            ARCTask.use_object_representation = True
+    
     
     def get_input(self, idx: int) -> str:
         task_json = self.data[idx]
@@ -66,6 +75,7 @@ class ARCTask(Task):
                 self.success[task_name] = 0
             if category not in self.cat_success:
                 self.cat_success[category] = 0
+                self.cat_failures[category] = 0
        
         _, solutions = get_tasks(task_json, DELIMITER[dataset])
         solution = solutions[0] # TODO: currently just check first test case 
@@ -77,8 +87,8 @@ class ARCTask(Task):
             output_key = list(output_format.keys())[-1]
             test_output_grid = extract_json_value(output, output_format, output_key) 
             test_output_grid = grid_to_2D_nparray(test_output_grid)
-            solution = grid_to_2D_nparray(solution)
-            is_success = np.array_equal(test_output_grid, solution)
+            solution_grid = grid_to_2D_nparray(solution)
+            is_success = np.array_equal(test_output_grid, solution_grid)
             if is_success:
                 break     
         
@@ -91,30 +101,51 @@ class ARCTask(Task):
             if self.success[task_name] == 1:
                 self.full_success += 1
                 self.cat_success[category] += 1
+            else:
+                self.cat_failures += 1
 
             if self.success[task_name] > 0:
-                self.solved_tasks.append(task_name)
+                self.solved_tasks.append((task_name, self.success[task_name]))
             # print('------------')
-            info = {'success': self.success[task_name], 'tries': try_cnt, 'total_result': self.full_success / len(self), 'category_result': self.cat_success[category] / self.categories.count(category)}
+            info = {'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category])}
         
         return info
     
-    def test_output_naive(self, idx: int=0, outputs: list=[""], dataset: str="arc"):
+    def test_output_naive(self, idx: int=0, outputs: list=[""], prompt_modules: dict=None, dataset: str="arc"):
+        if prompt_modules is None:
+            prompt_modules = ARCTask.prompt_modules
         task_json = self.data[idx]
         task_name = self.names[idx]
         category = self.categories[idx]
+        output_format = prompt_modules[str(self.steps-1)]["generation"]["output_format"]
         if task_name not in self.success: # TODO: works currently only if we have just one try
             self.success[task_name] = 0
         if category not in self.cat_success:
             self.cat_success[category] = 0
+            self.cat_failures[category] = 0
             
         _, solutions = get_tasks(task_json, DELIMITER[dataset])
         solution = solutions[0] # TODO: currently just check first test case 
 
         try_cnt = 0
         for output in outputs:
+            output = output.LLM_answer
             try_cnt += 1 
-            is_success = re.sub(r'\s+', ' ', solution).strip() in re.sub(r'\s+', ' ', output.LLM_answer).strip()
+            # first, check if output is in json format with answer in the end
+            output_key = list(output_format.keys())[-1]
+            try:
+                test_output_grid = extract_json_value(output, output_format, output_key) 
+                if test_output_grid:
+                    test_output_grid = grid_to_2D_nparray(test_output_grid)
+                    solution_grid = grid_to_2D_nparray(solution)
+                    is_success = np.array_equal(test_output_grid, solution_grid)
+                    if is_success:
+                        break
+            except:
+                pass
+            # second, if not successful, check if solution string is in output string
+            print("Check if solution string is in output string")
+            is_success = re.sub(r'\s+', ' ', solution).strip() in re.sub(r'\s+', ' ', output).strip()
             if is_success:
                 break     
                         
@@ -122,10 +153,12 @@ class ARCTask(Task):
         if self.success[task_name] == 1:
             self.full_success += 1
             self.cat_success[category] += 1
-
+        else:
+            self.cat_failures[category] += 1
+            
         if self.success[task_name] > 0:
-            self.solved_tasks.append(task_name)
-        info = {'success': self.success[task_name], 'tries': try_cnt, 'total_result': self.full_success / len(self), 'category_result': self.cat_success[category] / self.categories.count(category)}
+            self.solved_tasks.append((task_name, self.success[task_name]))
+        info = {'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
         return info
     
     def update_prompt_modules(self, type: str="naive", p: dict=prompt_modules_naive):
@@ -150,8 +183,8 @@ class ARCTask(Task):
     
     @staticmethod 
     def standard_prompt_wrap(node, standard_prompt: str=standard_prompt, dataset: str="arc") -> str:
-        task_context = get_context(node.x, DELIMITER[dataset], with_intro=False)
-        task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist        
+        task_context = get_context(node.x, DELIMITER[dataset], with_intro=False, use_object_representation=ARCTask.use_object_representation)
+        task_input, _ = get_tasks(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist        
         prompt = standard_prompt.copy()
         prompt["user"] = prompt["user"].format(context=task_context, test_input=task_input[0])
         return prompt
@@ -163,15 +196,18 @@ class ARCTask(Task):
         current_step = node.level
         
         # get arc examples
-        task_context = get_context(node.x, DELIMITER[dataset])
+        task_context = get_context(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
         # get test case
         if current_step == total_steps-1:
-            task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist
-            task_input[0] = "\n\n" + task_input[0]
+            task_input, _ = get_tasks(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist
+            task_input[0] = "\n\n" + task_input[0]              
         else:
             task_input = [""]        
         # get output format for current step
         output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
+        if "{len}" in output_format[list(output_format.keys())[-1]]:
+            dimension = len(node.x["test"][0]["input"][0]) # TODO: geht nur für 1D
+            output_format[list(output_format.keys())[-1]] = output_format[list(output_format.keys())[-1]].format(len=dimension)
         # get instructions for current step
         instruct = ""
         if total_steps == 1: # Naive run with COT prompt
@@ -215,10 +251,10 @@ class ARCTask(Task):
         current_step = node.level-1 # -1 bc. node is the child to be evaluated
         
         # get arc examples
-        task_context = get_context(node.x, DELIMITER[dataset])
+        task_context = get_context(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
         # get test case
         if current_step == total_steps-1:
-            task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist
+            task_input, _ = get_tasks(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist
             task_input[0] = "\n\n" + task_input[0]
         else:
             task_input = ["\n"]
@@ -295,7 +331,7 @@ class ARCTask(Task):
         delimmiter = DELIMITER.copy()
         delimmiter[dataset]["task_start"] = "" #  We dont want the prefix "Test Case:\n" (or similar) here
         delimmiter[dataset]["input_test"] = "" #  We dont want the prefix "input: " (or similar) here
-        input, output_gt = get_tasks(node.x, DELIMITER[dataset])
+        input, output_gt = get_tasks(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
         # get wrong output
         output_wrong = node.thought
         # get output format 
@@ -334,7 +370,7 @@ class ARCTask(Task):
         
         # get the arc example as context that was tried to be solved
         node.x["train"] = node.x["test"]
-        task_context = get_context(node.x, DELIMITER[dataset])
+        task_context = get_context(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
         
         # get output format for current step
         output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
@@ -435,8 +471,8 @@ class ARCTask(Task):
     # TODO: NEEDED?!
     @staticmethod
     def vote_prompt_wrap(node, total_steps: int=1, dataset: str="arc") -> str:
-        task_context = get_context(node.x, DELIMITER[dataset])
-        task_input, _ = get_tasks(node.x, DELIMITER[dataset]) # TODO: currently just check first test case in case more exist
+        task_context = get_context(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
+        task_input, _ = get_tasks(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist
         instruct, previous_thoughts = "", ""  
         prompt = vote_prompt.copy()
         json_keys = {'reflection': "", 'grid_view': "", 'pixel_view': "",  'object_view': "", 'description': "", 'grid_changes': "", 'pixel_changes': "",  'object_changes': "", 'overall_pattern': "", 'part_of_interest': "", 'conditions': "", 'instructions': "",  'intermediate_results': "", 'test_output': ""}

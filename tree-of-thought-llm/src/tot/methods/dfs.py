@@ -1,6 +1,6 @@
 import numpy as np
 from functools import partial
-from tot.models import gpt
+from tot.models import initialize_model
 from tot.methods.tree_nodes import Node
 from tot.methods import search_utils
 
@@ -83,9 +83,10 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
     return best_leaf_nodes, best_abstraction_nodes, example_success, infos
 
 def solve(args, task, idx, to_print=True):
-    search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature)
+    # search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature)
+    search_utils.model = initialize_model(args)
     x = task.get_input(idx)  # input
-    root = Node(0, x, n_generate_children=args.n_generate_sample, children=[])
+    root = Node(0, x, n_generate_children=args.n_generate_sample, children=[], input_representation=args.input_representation)
     task.update_node(root)
     best_leaf_nodes, best_abstraction_nodes, example_success, infos = depth_first_search_prioritized(args, task, root, step=0, best_leaf_nodes=[], best_abstraction_nodes=[], infos=[], to_print=to_print)
     
@@ -98,7 +99,8 @@ def solve(args, task, idx, to_print=True):
     
 
 def naive_solve(args, task, idx, to_print=True):
-    search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature, response_format={ "type": "text" })
+    # search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature, response_format={ "type": "text" })
+    search_utils.model = initialize_model(args)
     x = task.get_input(idx)  # input
     root = Node(0, x, n_generate_children=args.n_generate_sample, children=[])
     prompt_log = search_utils.get_samples(args, task, root, args.prompt_sample, stop=None)

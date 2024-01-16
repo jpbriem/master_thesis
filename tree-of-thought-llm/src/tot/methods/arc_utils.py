@@ -3,8 +3,10 @@ from tot.methods.arc_config import *
 from tot.methods.credentials import *
 import numpy as np
 import tkinter as tk
+import itertools
 import json
 import re
+import ast
 import matplotlib.pyplot as plt
 import shutil
 import datetime
@@ -38,9 +40,9 @@ def load_llama(model_name, revision, max_token, model_config):
         model_name, trust_remote_code=True, device_map="auto", torch_dtype=torch.float16, revision=revision
     )
 
-    # fix bug for certain models 
-    if model_name in ["TheBloke/Camel-Platypus2-70B-GPTQ", "TheBloke/Platypus2-70B-GPTQ", "TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ", "TheBloke/Llama-2-70B-GPTQ"]:
-        model = exllama_set_max_input_length(model, 4096)
+    # # fix bug for certain models - fixed in new Optimum version
+    # if model_name in ["TheBloke/Camel-Platypus2-70B-GPTQ", "TheBloke/Platypus2-70B-GPTQ", "TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ", "TheBloke/Llama-2-70B-GPTQ"]:
+    #     model = exllama_set_max_input_length(model, 4096)
 
 
     # make pipeline
@@ -115,6 +117,10 @@ def count_tokens(prompt, model_name, tokenizer):
         if "gpt-3.5" in model_name:
             token_limit = 4096
         elif "gpt-4" in model_name:
+            token_limit = 8192
+        elif "gpt-4-1106-preview" in model_name:
+            token_limit = 128000
+        elif "gpt-3.5-turbo-1106" in model_name:
             token_limit = 8192
     else: 
         num_tokens = len(tokenizer.encode(prompt, add_special_tokens=True))
@@ -327,7 +333,7 @@ def read_multiline_input(query):
 def get_prompts(dataset="arc"):
     if dataset=="arc":
         import tot.prompts.arc as prompts
-    elif dataset=="arc-1D":
+    elif dataset=="arc_1D":
         import tot.prompts.arc_1D as prompts # TODO: use ARC prompts
     arc_prompts = {
         "standard_prompt": prompts.standard_prompt,
@@ -348,7 +354,7 @@ def load_arc_tasks(path, dataset="arc"):
         # train and test path
         paths.append(os.path.join(path, "training"))
         paths.append(os.path.join(path, "evaluation"))
-    elif dataset in ["arc-1D", "arc_h_v"]:
+    elif dataset in ["arc_1D", "arc_h_v"]:
         paths = [os.path.join(path, f.name) for f in os.scandir(path) if f.is_dir()]
     
     subdirecotries = []
@@ -364,12 +370,47 @@ def load_arc_tasks(path, dataset="arc"):
     print("Total number of tasks:", len(tasks_jsons))
     return tasks_jsons, tasks_names, subdirecotries
 
+import numpy as np
+
+# Find objects in 1D pixel sequences
+def find_objects(input_array, background_colour):
+    objects = []
+    current_object = None
+
+    for i, pixel in enumerate(input_array):
+        if pixel != background_colour:
+            if current_object is None:
+                # Start a new object
+                current_object = {'colour': pixel, 'start_index': i, 'end_index': i, 'size': 1}
+            elif pixel == current_object['colour']:
+                # Continue the current object
+                current_object['end_index'] = i
+                current_object['size'] += 1
+            else:
+                # Finish the current object and start a new one
+                objects.append(current_object)
+                current_object = {'colour': pixel, 'start_index': i, 'end_index': i, 'size': 1}
+        else:
+            if current_object is not None:
+                # Finish the current object
+                objects.append(current_object)
+                current_object = None
+
+    # Add the last object if it exists
+    if current_object is not None:
+        objects.append(current_object)
+
+    return objects
+
+
+
 # get context out of json
-def get_context(task_json, delimiter, with_intro=True):
+def get_context(task_json, delimiter, with_intro=True, use_object_representation=False):
     if with_intro:
         text = "The following input-output pairs are examples and share the same underlying transformation pattern.\n"
     else:
         text = ""
+        
     for i, sample in enumerate(task_json["train"], 1):
         if delimiter["example_start"] == "Example_X":
             text += f"Example_{i}:\n"
@@ -378,31 +419,47 @@ def get_context(task_json, delimiter, with_intro=True):
         text += delimiter["input_train"]
         text += delimiter["grid_start"]
         for i, row in enumerate(sample["input"]):
-            text += delimiter["row_start"]
-            for j, value in enumerate(row):
-                text += str(value)
-                if j < len(row) - 1:
-                    text += delimiter["item"]
-            if i < len(sample["input"]) - 1:
-                text += delimiter["row_end"]
-            #text += delimiter["row_end"]
+            if use_object_representation:
+                if CHANGE_REPRESENTATION:
+                    bg_colour = NEW_REPRESENTATION[0]
+                else:
+                    bg_colour = 0
+                objects = find_objects(row, bg_colour)
+                for i, o in enumerate(objects, 1):
+                    text += "Object_" + str(i) + ": " + str(o) + ", "
+                text = text[:-2] + "\n"
+            else:
+                text += delimiter["row_start"]
+                for j, value in enumerate(row):
+                    text += str(value)
+                    if j < len(row) - 1:
+                        text += delimiter["item"]
+                if i < len(sample["input"]) - 1:
+                    text += delimiter["row_end"]
+                #text += delimiter["row_end"]
         text += delimiter["grid_end"]
         text += delimiter["output_train"]
         text += delimiter["grid_start"]
         for i, row in enumerate(sample["output"]):
-            text += delimiter["row_start"]
-            for j, value in enumerate(row):
-                text += str(value)
-                if j < len(row) - 1:
-                    text += delimiter["item"]
-            if i < len(sample["output"]) - 1:
-                text += delimiter["row_end"]
+            if use_object_representation:
+                objects = find_objects(row, bg_colour)
+                for i, o in enumerate(objects, 1):
+                    text += "Object_" + str(i) + ": " + str(o) + ", "
+                text = text[:-2] + "\n"
+            else:
+                text += delimiter["row_start"]
+                for j, value in enumerate(row):
+                    text += str(value)
+                    if j < len(row) - 1:
+                        text += delimiter["item"]
+                if i < len(sample["output"]) - 1:
+                    text += delimiter["row_end"]
         text += delimiter["grid_end"]
         text += delimiter["example_end"]
     return text
 
 # get tasks out of json
-def get_tasks(task_json, delimiter):
+def get_tasks(task_json, delimiter, use_object_representation=False):
     tasks = []
     solutions = []
     
@@ -411,26 +468,46 @@ def get_tasks(task_json, delimiter):
         task += delimiter["input_test"]
         task += delimiter["grid_start"]
         for i, row in enumerate(sample["input"]):
-            task += delimiter["row_start"]
-            for j, value in enumerate(row):
-                task += str(value)
-                if j < len(row) - 1:
-                    task += delimiter["item"]
-            if i < len(sample["input"]) - 1:
-                task += delimiter["row_end"]
+            if use_object_representation:
+                if CHANGE_REPRESENTATION:
+                    bg_colour = NEW_REPRESENTATION[0]
+                else:
+                    bg_colour = 0
+                objects = find_objects(row, bg_colour)
+                for i, o in enumerate(objects, 1):
+                    task += "Object_" + str(i) + ": " + str(o) + ", "
+                task = task[:-2] + "\n"
+            else:
+                task += delimiter["row_start"]
+                for j, value in enumerate(row):
+                    task += str(value)
+                    if j < len(row) - 1:
+                        task += delimiter["item"]
+                if i < len(sample["input"]) - 1:
+                    task += delimiter["row_end"]
         task += delimiter["grid_end"]
         task += delimiter["output_test"]
         task += delimiter["task_end"]
 
         solution = delimiter["grid_start"]
         for i, row in enumerate(sample["output"]):
-            solution += delimiter["row_start"]
-            for j, value in enumerate(row):
-                solution += str(value)
-                if j < len(row) - 1:
-                    solution += delimiter["item"]
-            if i < len(sample["output"]) - 1:
-                solution += delimiter["row_end"]
+            if use_object_representation:
+                if CHANGE_REPRESENTATION:
+                    bg_colour = NEW_REPRESENTATION[0]
+                else:
+                    bg_colour = 0
+                objects = find_objects(row, bg_colour)
+                for i, o in enumerate(objects, 1):
+                    solution += "Object_" + str(i) + ": " + str(o) + ", "
+                solution = solution[:-2] + "\n"
+            else:
+                solution += delimiter["row_start"]
+                for j, value in enumerate(row):
+                    solution += str(value)
+                    if j < len(row) - 1:
+                        solution += delimiter["item"]
+                if i < len(sample["output"]) - 1:
+                    solution += delimiter["row_end"]
         solution += delimiter["grid_end"]
         tasks.append(task)
         solutions.append(solution)
@@ -527,33 +604,34 @@ def get_LLM_result_as_json(tasks, results):
     return llm_task_results
 
 # create data generator for efficient loading of data
-def data_generator(model_name, directory_train, directory_eval, delimiter, prompt_template, sys, output_format, pre_test_case, post_test_case, instruction_end, tokenizer, change_representation=False, new_representation=None, LARC=False):
-    # get list of files and respective directories
-    directories = [directory_train]*len(os.listdir(directory_train)) + [directory_eval]*len(os.listdir(directory_eval))
-    task_files =  sorted(os.listdir(directory_train))+sorted(os.listdir(directory_eval))
+def data_generator(model_name, dataset, directories, delimiter, prompt_template, sys, output_format, pre_test_case, post_test_case, instruction_end, tokenizer, change_representation=False, new_representation=None):
+    task_files = [sorted(os.listdir(os.path.join(dir,d))) for dir in directories for d in os.listdir(dir)]
+    task_files = list(itertools.chain(*task_files))
+    directories = [[os.path.join(dir,d)]*len(os.listdir(os.path.join(dir,d))) for dir in directories for d in os.listdir(dir)]
+    directories = list(itertools.chain(*directories)) 
+    categories = [d.split("/")[-1] for d in directories]
+
     # initialize counter for too long prompts
     promp_oversize_counter = 0
     # iterate over files
-    for directory, task_file in zip(directories, task_files):
+    for directory, task_file, category in zip(directories, task_files, categories):
         with open(os.path.join(directory, task_file)) as fid:
             task_json = json.load(fid)
         
         # if we load LARC data, we need to check if the task has been solved by humans
-        if LARC:
+        if dataset == "LARC":
             descriptions, task_json = get_successful_descriptions(task_json)
             if len(descriptions) == 0:
                 continue
-            
         else:
             descriptions = [""]       
     
         # change numbers to other representation if wanted
         if change_representation:
-            
             task_json = change_color_representation(task_json, new_representation)
 
         # create context
-        if LARC:
+        if dataset == "LARC":
             context = ""
         else:
             context = get_context(task_json, delimiter)
@@ -582,8 +660,7 @@ def data_generator(model_name, directory_train, directory_eval, delimiter, promp
                     description_id = "-"+str(i)
                 else:
                     description_id = ""
-                print(task_file+description_id, "Prompt too long.")
-                
+                print(task_file+description_id, "Prompt too long.")    
                 continue
           
             # yield prompts
@@ -600,6 +677,8 @@ def data_generator(model_name, directory_train, directory_eval, delimiter, promp
                     prompt_gpt = ""      
                 yield {
                     "task_name": task_file,
+                    "task_json": task_json,
+                    "category": category,
                     "descriptions_index": i,
                     "test_case_index": j,
                     "total_test_cases": len(test_cases),
@@ -611,7 +690,8 @@ def data_generator(model_name, directory_train, directory_eval, delimiter, promp
                     "solution": solution,
                     "directory": directory,
                     "prompt_oversize_counter": promp_oversize_counter}
-        
+                
+                       
 def change_color_representation(task_original, new_representation):
     task = deepcopy(task_original)
     for test_train in task:
@@ -645,9 +725,10 @@ def grid_to_2D_nparray(grid):
         # Replace single letters with quotes around them
         pattern = re.compile(r'(?<![\'"])([a-zA-Z\.])(?![\'"])')
         grid = pattern.sub(r"'\1'", grid)  
-
+        
         try:
-            return np.array(eval(grid))
+            grid = ast.literal_eval(grid)
+            return np.array(grid)
         except:
             error = "Array found in string but error while converting string to array: " + str(grid)
             return error

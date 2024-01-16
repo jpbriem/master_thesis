@@ -1,20 +1,119 @@
 import os
+from functools import partial
 import openai
 import backoff 
 import datetime
+from tot.methods.arc_config import MAX_TOKEN, MODEL_CONFIG_LLAMA, MODEL_CONFIG_FALCON, GPU
+from tot.methods.credentials import OPENAI_KEY, HF_TOKEN
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
+os.environ['CUDA_DEVICE_ORDER']='PCI_BUS_ID'
+os.environ['CUDA_VISIBLE_DEVICES'] =  GPU
+from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig, pipeline
+from langchain.llms import HuggingFacePipeline
+from auto_gptq import exllama_set_max_input_length, AutoGPTQForCausalLM
+import tiktoken
+import torch
 
 completion_tokens = prompt_tokens = 0
+model = tokenizer = llm = backend = None
+naive_run = False
 
-api_key = os.getenv("OPENAI_API_KEY", "")
-if api_key != "":
-    openai.api_key = api_key
-else:
-    print("Warning: OPENAI_API_KEY is not set")
-    
-api_base = os.getenv("OPENAI_API_BASE", "")
-if api_base != "":
-    print("Warning: OPENAI_API_BASE is set to {}".format(api_base))
-    openai.api_base = api_base
+def initialize_model(args):
+    global model, tokenizer, llm, backend, naive_run
+    backend = args.backend
+    naive_run = args.naive_run
+    if "gpt" in backend:
+        os.environ['OPENAI_API_KEY'] = OPENAI_KEY
+        api_key = os.getenv("OPENAI_API_KEY", "")
+        if api_key != "":
+            openai.api_key = api_key
+        else:
+            print("Warning: OPENAI_API_KEY is not set")
+            
+        api_base = os.getenv("OPENAI_API_BASE", "")
+        if api_base != "":
+            print("Warning: OPENAI_API_BASE is set to {}".format(api_base))
+            openai.api_base = api_base
+            
+        if args.prompt_sample == "standard":
+            response_format = { "type": "text" }
+        else:
+            response_format = { "type": "json_object" }
+        llm = partial(gpt, model=backend, temperature=args.temperature, response_format=response_format)
+        return call_model
+    if not torch.cuda.is_available():
+        print("Warning: CUDA is not available")
+        return None
+    try:
+        if backend in ["TheBloke/Falcon-7B-Instruct-GPTQ", "TheBloke/Falcon-40B-Instruct-GPTQ"]:
+            model, tokenizer = load_falcon(backend, args.model_revision)
+            llm = run_falcon
+        else:
+            tokenizer, model, llm = load_llama(backend, args.model_revision, MAX_TOKEN, MODEL_CONFIG_LLAMA)
+        return call_model
+    except Exception as e:
+        print(e)
+        return None
+
+def get_prompt(prompt):
+    global backend, naive_run
+    if not naive_run:
+        if "chat" in backend and "Llama" in backend:
+            # use prompting template for llama chat models
+            if "system" in prompt:
+                return "[INST] <<SYS>>\n" + prompt["system"] + "\n<</SYS>>\n" + prompt["user"] + "[/INST]"
+            else:
+                return "[INST]\n" + prompt["user"] + "[/INST]\n"
+        elif "Platypus2" in backend:
+            # use prompting template for Platypus2 models
+            if "system" in prompt:
+                return prompt["system"] + "\n\n### Instruction:\n" + prompt["user"] + "\n\n### Response:"
+            else:
+                return "### Instruction:\n" + prompt["user"] + "\n\n### Response:"
+        elif "Falcon" in backend:
+            # use prompting template for Falcon models
+            if "system" in prompt:
+                return prompt["system"] + "\n\nUser: " + prompt["user"] + "\n\nAssistant:"
+            else:
+                return "User: " + prompt["user"] + "\n\nAssistant:"
+        elif "Mistral" in backend or "Mixtral" in backend:
+            # use prompting template for Mistral models
+            if "system" in prompt:
+                return "[INST] " + prompt["system"] + "\n" + prompt["user"] + "\n[/INST]"
+            else:
+                return "[INST] " + prompt["user"] + "\n[/INST]"
+    # use naive prompting template, instead 
+    if "system" in prompt:
+        return prompt["system"] + "\n" + prompt["user"]
+    else:
+        return prompt["user"]
+
+
+def call_model(prompt, max_tokens=2000, n=1, stop=None):
+    global model, tokenizer, llm, completion_tokens, prompt_tokens, backend, naive_run
+    if llm is None:
+        raise Exception("Model is not initialized")
+    if "gpt" in backend:
+        return llm(prompt, max_tokens=max_tokens, n=n, stop=stop)
+    elif backend in ["TheBloke/Falcon-7B-Instruct-GPTQ", "TheBloke/Falcon-40B-Instruct-GPTQ"]:
+        outputs = []
+        prompt = get_prompt(prompt)
+        for i in range(n):
+            output = llm(tokenizer, model, prompt, **MODEL_CONFIG_FALCON)
+            prompt_tokens += count_tokens(prompt, backend, tokenizer)[0]
+            completion_tokens += count_tokens(output, backend, tokenizer)[0]
+            outputs.append(output)
+    else:
+        outputs = []
+        prompt = get_prompt(prompt)
+        for i in range(n):
+            output = llm(prompt)
+            prompt_tokens += count_tokens(prompt, backend, tokenizer)[0]
+            completion_tokens += count_tokens(output, backend, tokenizer)[0]
+            outputs.append(output)
+    return outputs 
+
+#################### OpenAI #####################
 
 class WrongFinishReasonError(Exception):
     pass
@@ -66,8 +165,18 @@ def chatgpt(messages, model="gpt-3.5-turbo-1106", temperature=0.7, response_form
         prompt_tokens += res["usage"]["prompt_tokens"]
     return outputs
     
-def gpt_usage(backend="gpt-4"):
+def gpt_usage(backend="gpt-4", input_tokens=None, output_tokens=None):
     global completion_tokens, prompt_tokens
+
+    if input_tokens is None:
+        input_tokens = prompt_tokens
+    if output_tokens is None:
+        output_tokens = completion_tokens
+
+    if input_tokens != prompt_tokens and output_tokens != completion_tokens:
+        prompt_tokens = input_tokens
+        completion_tokens = output_tokens
+        
     if backend == "gpt-4-1106-preview":
         cost = completion_tokens / 1000 * 0.03 + prompt_tokens / 1000 * 0.01
     elif backend == "gpt-4":
@@ -76,4 +185,98 @@ def gpt_usage(backend="gpt-4"):
         cost = completion_tokens / 1000 * 0.002 + prompt_tokens / 1000 * 0.001
     elif backend == "gpt-3.5-turbo":
         cost = completion_tokens / 1000 * 0.002 + prompt_tokens / 1000 * 0.0015
+    else: 
+        cost = None
     return {"completion_tokens": completion_tokens, "prompt_tokens": prompt_tokens, "cost": cost}
+
+
+#################### Open-Source #############
+# LLama Models
+def load_llama(model_name, revision, max_token, model_config):
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    if tokenizer.model_max_length is None or tokenizer.model_max_length > 9999999999:
+        tokenizer.model_max_length = max_token
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name, trust_remote_code=True, device_map="auto", torch_dtype=torch.float16, revision=revision
+    )
+
+    # # fix bug for certain models - fixed in new Optimum version
+    # if model_name in ["TheBloke/Camel-Platypus2-70B-GPTQ", "TheBloke/Platypus2-70B-GPTQ", "TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ", "TheBloke/Llama-2-70B-GPTQ"]:
+    #     model = exllama_set_max_input_length(model, 4096)
+
+    # make pipeline
+    # Docs for config: https://huggingface.co/docs/transformers/v4.33.3/en/main_classes/configuration#transformers.PretrainedConfig
+    # https://www.promptingguide.ai/introduction/settings
+    generation_config = GenerationConfig.from_pretrained(model_name)
+    generation_config.max_new_tokens = model_config["max_new_tokens"]
+    generation_config.temperature = model_config["temperature"]
+    #generation_config.top_p = 0.9 #  If set to float < 1, only the most probable tokens with probabilities that add up to top_p or higher are kept for generation.
+    generation_config.do_sample = True # Whether or not to use sampling ; use greedy decoding otherwise.
+    generation_config.repetition_penalty = model_config["repetition_penalty"] # 1.0 means no penalty.
+
+    text_pipeline = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        return_full_text=True,
+        generation_config=generation_config,
+        # num_workers = 2, # Default=8, When the pipeline will use DataLoader [..] the number of workers to be used.
+        # batch_size=2, # Default=1, When the pipeline will use DataLoader [..] the size of the batch to use.
+    )
+
+    # make pipeline compatbile with langchain and return
+    hf_pipeline = HuggingFacePipeline(pipeline=text_pipeline) #, model_kwargs={"temperature": 0})
+    return tokenizer, model, hf_pipeline
+
+# Falcon Models
+def load_falcon(model_name, revision):
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    model = AutoGPTQForCausalLM.from_quantized(model_name,
+            model_basename=revision,
+            use_safetensors=True,
+            trust_remote_code=True,
+            #device="cuda:0",
+            use_triton=False,
+            quantize_config=None)
+    # fix bug for certain models - fixed in new Optimum version
+    # if model_name in ["TheBloke/Falcon-40B-Instruct-GPTQ"]:
+    #     model = exllama_set_max_input_length(model, 4096)
+    return model, tokenizer
+
+def run_falcon(tokenizer, model, prompt, max_new_tokens, temperature):
+    input_ids = tokenizer(prompt, return_tensors='pt').input_ids.cuda()
+    output = model.generate(inputs=input_ids, temperature=temperature, max_new_tokens=max_new_tokens)
+    return [tokenizer.decode(output[0])]
+
+
+#################### Utils #####################
+
+def count_tokens(prompt, model_name, tokenizer):
+    if "gpt" in model_name:
+        try:
+            encoding = tiktoken.encoding_for_model(model_name)
+        except KeyError:
+            print("Warning: model not found. Using cl100k_base encoding.")
+            encoding = tiktoken.get_encoding("cl100k_base")
+        num_tokens = 0
+        tokens_per_message = 3 # for model gpt-3.5-turbo-0613 & gpt-4-0613
+        tokens_per_name = 1
+        for message in prompt:
+            num_tokens += tokens_per_message
+            for key, value in message.items():
+                num_tokens += len(encoding.encode(value))
+                if key == "name":
+                    num_tokens += tokens_per_name
+        num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
+        if "gpt-3.5" in model_name:
+            token_limit = 4096
+        elif "gpt-4" in model_name:
+            token_limit = 8192
+        elif "gpt-4-1106-preview" in model_name:
+            token_limit = 128000
+        elif "gpt-3.5-turbo-1106" in model_name:
+            token_limit = 8192
+    else: 
+        num_tokens = len(tokenizer.encode(prompt, add_special_tokens=True))
+        token_limit = tokenizer.model_max_length
+    return num_tokens, token_limit

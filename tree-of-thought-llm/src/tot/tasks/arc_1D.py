@@ -23,14 +23,15 @@ class ARC_1D(ARCTask):
         """
         several subfolders by task type
         """    
-        path = os.path.join(DATA_PATH, 'arc-1D')
-        self.data, self.names, self.categories = load_arc_tasks(path, "arc-1D")
+        path = os.path.join(DATA_PATH, 'arc_1D')
+        self.data, self.names, self.categories = load_arc_tasks(path, "arc_1D")
         self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
         self.stops = [None]*self.steps # TODO: adjust to prompt! 
         self.success = {} # saves success rates for each task
         self.solved_tasks = []
         self.full_success = 0 # counts completely solved tasks
-        self.cat_success = {} # saves success rates for each category
+        self.cat_success, self.cat_failures = {}, {} # saves success rates for each category
+        self.solved_tasks = []
         self.value_cache = {}
 
     
@@ -41,8 +42,10 @@ class ARC_1D(ARCTask):
             prompt_modules = ARC_1D.prompt_modules
         return super().test_output(idx, outputs, prompt_modules, dataset, is_revision, node)
 
-    def test_output_naive(self, idx: int=0, outputs: list=[""], dataset: str="arc-1D"):
-        return super().test_output_naive(idx, outputs, dataset)
+    def test_output_naive(self, idx: int=0, outputs: list=[""], prompt_modules: dict=None, dataset: str="arc_1D"):
+        if prompt_modules is None:
+            prompt_modules = ARC_1D.prompt_modules
+        return super().test_output_naive(idx, outputs, prompt_modules, dataset)
     
     def update_prompt_modules(self, type: str="naive", p: dict=prompt_modules_naive):
         if type == "naive":
@@ -57,17 +60,17 @@ class ARC_1D(ARCTask):
         return ARCTask.update_node(node, prompt_modules)
     
     @staticmethod
-    def standard_prompt_wrap(node, standard_prompt: str=standard_prompt, dataset: str="arc-1D") -> str:
+    def standard_prompt_wrap(node, standard_prompt: str=standard_prompt, dataset: str="arc_1D") -> str:
         return ARCTask.standard_prompt_wrap(node, standard_prompt, dataset)
 
     @staticmethod
-    def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=None, dataset: str="arc-1D") -> str:
+    def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=None, dataset: str="arc_1D") -> str:
         if prompt_modules is None:
             prompt_modules = ARC_1D.prompt_modules
         return ARCTask.cot_prompt_wrap(node, total_steps, cot_prompt, prompt_modules, dataset)
     
     @staticmethod
-    def value_prompt_wrap(node, total_steps: int=1, value_prompt: str=value_prompt, prompt_modules: dict=None, dataset: str="arc-1D") -> str:
+    def value_prompt_wrap(node, total_steps: int=1, value_prompt: str=value_prompt, prompt_modules: dict=None, dataset: str="arc_1D") -> str:
         if prompt_modules is None:
             prompt_modules = ARC_1D.prompt_modules
         return ARCTask.value_prompt_wrap(node, total_steps, value_prompt, prompt_modules, dataset)
@@ -79,7 +82,7 @@ class ARC_1D(ARCTask):
         return ARCTask.value_outputs_unwrap(value_outputs, current_step, prompt_modules)
         
     @staticmethod
-    def failure_analysis_prompt_wrap(node, failure_analysis_prompt: str=failure_analysis_prompt, prompt_modules: dict=None, dataset: str="arc-1D") -> str:
+    def failure_analysis_prompt_wrap(node, failure_analysis_prompt: str=failure_analysis_prompt, prompt_modules: dict=None, dataset: str="arc_1D") -> str:
         if prompt_modules is None:
             prompt_modules = ARC_1D.prompt_modules
         return ARCTask.failure_analysis_prompt_wrap(node, failure_analysis_prompt, prompt_modules, dataset)    
@@ -91,7 +94,7 @@ class ARC_1D(ARCTask):
         return ARCTask.failure_analysis_prompt_unwrap(output, node, prompt_modules)
 
     @staticmethod
-    def revision_prompt_wrap(node, revision_prompt: str=revision_prompt, prompt_modules: dict=None, dataset: str="arc-1D") -> str:
+    def revision_prompt_wrap(node, revision_prompt: str=revision_prompt, prompt_modules: dict=None, dataset: str="arc_1D") -> str:
         if prompt_modules is None:
             prompt_modules = ARC_1D.prompt_modules
         return ARCTask.revision_prompt_wrap(node, revision_prompt, prompt_modules, dataset)

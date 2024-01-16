@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '6,7'
+GPU = '2,3'
 
 #################### OPEN SOURCE ###############
 MAX_TOKEN = 4096
@@ -10,19 +10,19 @@ REVISIONS = []
 #### Llama Chat ####
 # MODEL_NAMES.append("meta-llama/Llama-2-7b")
 # fine-tuned by meta 
-MODEL_NAMES.append("TheBloke/Llama-2-70b-Chat-GPTQ")
-REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-70b-Chat-GPTQ")
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Llama-2-13B-chat-GPTQ") # TODO: Run all tests)
 # REVISIONS.append("main")
-# MODEL_NAMES.append("NousResearch/Llama-2-7b-chat-hf") # TODO: TODO: Replace with Bloke's model & see if differences?!)
-# REVISIONS.append("main")
+MODEL_NAMES.append("NousResearch/Llama-2-7b-chat-hf") # TODO: TODO: Replace with Bloke's model & see if differences?!)
+REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Llama-2-7B-chat-GPTQ") # TODO: Run all tests)
 # fine-tuned by others
 # MODEL_NAMES.append("TheBloke/Llama-2-7B-32K-Instruct-GPTQ") # TODO: Run all tests)
 
 #### Llama pre-trained ####
-MODEL_NAMES.append("TheBloke/Llama-2-70B-GPTQ") # TODO: Run all tests )
-REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-70B-GPTQ") # TODO: Run all tests )
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Llama-2-13B-GPTQ") # TODO: Run all tests )
 # REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Llama-2-7B-GPTQ") # TODO: Run all tests )
@@ -38,8 +38,8 @@ REVISIONS.append("main")
 # REVISIONS.append("main")
 
 #### Mistral ####
-MODEL_NAMES.append("mistralai/Mistral-7B-Instruct-v0.1")
-REVISIONS.append("main")
+# MODEL_NAMES.append("mistralai/Mistral-7B-Instruct-v0.1")
+# REVISIONS.append("main")
 MODEL_NAMES.append("mistralai/Mistral-7B-v0.1")
 REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
@@ -47,6 +47,8 @@ REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
 # REVISIONS.append("gptq-4bit-32g-actorder_True")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-Instruct-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
+# REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
 # REVISIONS.append("main")
 
 #### LLAMA CONFIG ####
@@ -83,23 +85,40 @@ MODEL_CONFIG_GPT = {
 
 #################### Prompt ####################
 CHANGE_REPRESENTATION = True
-NEW_REPRESENTATION = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+NEW_REPRESENTATION = [".", "a", "b", "c", "d", "e", "f", "g", "h", "i"]
 
 POST_TEST_CASE = ""
 DELIMITER = {
-    "item": ", ",
-    "grid_start": "[",
-    "grid_end": "]]\n", # include end of last row
-    "row_start": "[",
-    "row_end": "], ", # except for last row
-    "example_start": "",
-    "example_end": "\n",
-    "task_start": "",
-    "task_end": "",
-    "input_train": "train input:\n",
-    "output_train": "train output:\n",    
-    "input_test": "",
-    "output_test": "", 
+    "arc": {
+        "item": "', '",
+        "grid_start": "[",
+        "grid_end": "']]\n", # include end of last row
+        "row_start": "['",
+        "row_end": "], ", # except for last row
+        "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
+        "example_end": "\n",
+        "task_start": "Test case:\n",
+        "task_end": "",
+        "input_train": "input: ",
+        "output_train": "output: ",    
+        "input_test": "input: ",
+        "output_test": "",
+    },
+    "arc_1D": {
+        "item": "', '",
+        "grid_start": "[",
+        "grid_end": "']\n", # include end of last row
+        "row_start": "'",
+        "row_end": "", # except for last row
+        "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
+        "example_end": "\n",
+        "task_start": "Test case:\n",
+        "task_end": "",
+        "input_train": "input: ",
+        "output_train": "output: ",    
+        "input_test": "input: ",
+        "output_test": "", 
+    }    
 }
 
 #initialize template
@@ -108,6 +127,11 @@ TEMPLATE = PromptTemplate(
     input_variables=["sys", "output_format", "pre_task", "task", "post_task", "instruction_end"],
     template=template,
 )
+SYSTEM_MESSAGE = ""
+OUTPUT_FORMAT = ""
+PRE_TEST_CASE = ""
+POST_TEST_CASE = ""
+INSTRUCTION_END = ""
 
 # SYSTEM_MESSAGE = "[INST] <<SYS>>\nYou are given a puzzle with a series of train input and train output pairs as examples. Your task is to identify the step-by-step pattern to get the output from its input. Then, apply the pattern to the final test input to get the test output. The inputs and outputs are all in the form of rows of letters, representing a 2D grid.\n<</SYS>>\n\n"
 # SYSTEM_MESSAGE = """[INST] <<SYS>>\nYou are to output only the following in json format: {'reflection': 'reflect on the answer', 'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 'instructions': 'describe the transformation actions in detail step by step', 'test_output': "Use the instructions to transform the test input grid and return only the resulting output grid"}.
@@ -135,30 +159,41 @@ TEMPLATE = PromptTemplate(
 
 # The list is not exhaustive. Transformations can be conditional.\n
 # """
-SYSTEM_MESSAGE = """You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
-For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+# SYSTEM_MESSAGE = """You are given a 2D input grid of pixels. The values from 'a' to 'j' represent different colors, where 'a' represents the background. The color mapping is as follows: {'a': 'black', 'b': 'blue', 'c': 'red', 'd': 'green', 'e': 'yellow', 'f': 'gray', 'g': 'magenta', 'h': 'orange', 'i': 'cyan', 'j': 'brown'}.
+# For example, [['a','b','a'],['a','a','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
 
-Furthermore, you are given a description to transform the input grid into its output grid.
+# Furthermore, you are given a description to transform the input grid into its output grid.
 
-You are to output only the following in json format: 
-"""
-OUTPUT_FORMAT = {
-    'input_grid': 'describe the input grid and check if it matches the given description', 
-    'instructions': 'describe the transformation actions step by step provided by the description', 
-    'output_dimension': 'describe the output grid dimension provided by the description',
-    'test_output': 'transform the test input grid and return only the resulting output grid'
-    }
+# You are to output only the following in json format: 
+# """
+# OUTPUT_FORMAT = {
+#     'input_grid': 'describe the input grid and check if it matches the given description', 
+#     'instructions': 'describe the transformation actions step by step provided by the description', 
+#     'output_dimension': 'describe the output grid dimension provided by the description',
+#     'test_output': 'transform the test input grid and return only the resulting output grid'
+#     }
 
-PRE_TEST_CASE = """\nDo not use quotation marks ' or " within the fields.\n
-Test input grid:\n"""
-POST_TEST_CASE = """Please fill the json fields with content and create the corresponding output grid based on the following description:\n"""
+# PRE_TEST_CASE = """\nDo not use quotation marks ' or " within the fields.\n
+# Test input grid:\n"""
+# POST_TEST_CASE = """Please fill the json fields with content and create the corresponding output grid based on the following description:\n"""
 # INSTRUCTION_END = "[/INST]"
-INSTRUCTION_END = ""
 
 #################### Directories ####################
+# DIR = ["ARC_datasets/ARC"] # complete ARC
+# DATASET = "arc"
+# TASK = "arc"
 
-# TASK_DIR_TRAIN = "../ARC/ARC/data/training"
-# TASK_DIR_EVAL = "../ARC/ARC/data/evaluation"
+# DIR = ["ARC_datasets/arc_subset"] # 50 ARC tasks 
+# DATASET = "arc"
+# TASK = "arc"
+
+DIR = ["ARC_datasets/1D-ARC/dataset"]
+DATASET = "arc" # tasks are the same as for 2D ARC
+TASK = "arc_1D"
+
+# DIR = ["ARC_datasets/arc_new"]
+# DATASET = "arc_h_v" 
+# TASK = "arc_h_v"
 
 # TASK_DIR_TRAIN = "ARC_datasets/ARC_solved_tasks/training/"
 # TASK_DIR_EVAL = "ARC_datasets/ARC_solved_tasks/evaluation/"
@@ -166,9 +201,6 @@ INSTRUCTION_END = ""
 # TASK_DIR_TRAIN = "ARC_datasets/ARC_only_two_tasks/training/"
 # TASK_DIR_EVAL = "ARC_datasets/ARC_only_two_tasks/evaluation/"
 
-TASK_DIR_TRAIN = "ARC_datasets/LARC/training/"
-TASK_DIR_EVAL = "ARC_datasets/LARC/evaluation/"
+# TASK_DIR_TRAIN = "ARC_datasets/LARC/training/"
+# TASK_DIR_EVAL = "ARC_datasets/LARC/evaluation/"
 
-######## TODO: DELETE ########
-# TASK_DIR_TRAIN = "ARC_datasets/test_mistral_gptq/training/"
-# TASK_DIR_EVAL = "ARC_datasets/test_mistral_gptq/evaluation/"

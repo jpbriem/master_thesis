@@ -1,7 +1,4 @@
 import os
-OPENAI_KEY = "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"
-os.environ['OPENAI_API_KEY'] = OPENAI_KEY
-
 import random
 import datetime
 import json
@@ -49,21 +46,25 @@ from tot.models import gpt_usage
 
 ########## ARC ##########
 args = argparse.Namespace(
-    backend='gpt-3.5-turbo-1106',       # TODO: Set model!
+    backend='gpt-3.5-turbo-1106',   # TODO: Set model!
     # backend='gpt-4-1106-preview', 
+    # backend='NousResearch/Llama-2-7b-chat-hf',
+    # model_revision='main',
     use_api=False,                       # TODO: Use API?!
     temperature=0.7, 
     # task='arc',                       # TODO: Set task!
-    task='arc-1D',
+    task='arc_1D',
     # task = 'arc_h_v',
-    naive_run=False,                    # TODO: Naive run? TODO: chang in prompts
+    input_representation = None,    # TODO: set input representation
+    # input_representation = 'objects',
+    naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
     prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy',
-    revision=True,                     # TODO: Revision?
+    revision=False,                     # TODO: Revision?
     n_generate_sample=1,                # TODO: Set tree search parameters!
     n_evaluate_sample=1, 
     n_select_sample=1)
@@ -88,14 +89,21 @@ def run(args):
        
     # solve the task
     task = get_task(args.task)
+    # get further task information for logging, if needed
+    task_infos = task.get_task_infos()
+    # set representation of inputs
+    task.set_input_representation(args.input_representation)
+
     indices = list(range(len(task)))
-    #random.shuffle(indices)
+    random.seed(42)
+    random.shuffle(indices)
     count = 0 # TODO: delete!!!
     for idx in indices:
-        if count == 3: # TODO: delete!!!
+        if count == 10: # TODO: delete!!!
             break
         Node.reset_tree()
         task_name = task.names[idx].split(".json")[0]
+        task_category = task.categories[idx]
         # if task_name not in tasks: # TODO: original ARC???
         #     continue
         count += 1 # TODO: delete!!!
@@ -111,18 +119,21 @@ def run(args):
 
         # check best leaf nodes
         if args.naive_run:
-            result_infos = task.test_output_naive(idx, ys)#[task.test_output_naive(idx, y.LLM_answer) for y in ys] 
+            result_infos = task.test_output_naive(idx, ys)
         else:
-            result_infos = task.test_output(idx, ys)#[task.test_output(idx, y.LLM_answer) for y in ys] 
+            result_infos = task.test_output(idx, ys)
 
         #log 
-        infos.update({'idx': idx, 'task': task_name, 'ys': [str(y) for y in ys], 'infos': result_infos, 'usage_so_far': gpt_usage(args.backend)})
+        infos.update({'idx': idx, 'task': task_name, 'category': task_category, 'ys': [str(y) for y in ys], 'result': result_infos, 'usage_so_far': gpt_usage(args.backend)})
         log.append(infos)
         failure_log = save_log_files(log, task_name, directory, failure_log)
                 
             
     # save all task log as json file: Add overall information to log
-    summary = {'date': current_datetime.strftime("%Y-%m-%d_%H-%M-%S"), 'model': args.backend, 'usage_total': gpt_usage(args.backend), 'dataset': args.task, 'num_tasks': len(task), 'solved_tasks': task.full_success, 'success_rate': task.full_success / len(task), 'cat_success_rate': task.cat_success, 'solved_tasks': task.solved_tasks, 'args:': vars(args), 'failure_log': failure_log}
+    summary = {'date': current_datetime.strftime("%Y-%m-%d_%H-%M-%S"), 'model': args.backend, 'usage_total': gpt_usage(args.backend), 'dataset': args.task, 'num_tasks': len(task)} 
+    if task_infos:
+        summary.update(task_infos)
+    summary.update({'success_cnt': task.full_success, 'success_rate': task.full_success / len(task), 'cat_success_cnt': task.cat_success, 'cat_success_rate': {k: v/(v+v2) if v+v2 > 0 else 0 for (k, v), (k2, v2) in zip(task.cat_success.items(), task.cat_failures.items())}, 'solved_tasks': task.solved_tasks, 'args:': vars(args), 'failure_log': failure_log})
     log = [summary] + log
     print(summary)
     try:

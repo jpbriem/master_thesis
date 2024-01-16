@@ -1,7 +1,6 @@
 ################## General Task Explanation ##################
-general_explanation = '''You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 'a' to 'i' representing different colors, and '.' representing the background color. Adjacent pixels of the same color are designated as objects. For example ['.','b','b','.','c'] represents a pixel sequence with the following objects: Object_1: {{color: 'b', position: [1,2], size: 2}}, Object_2: {{color: 'c', position: [4], size: 1}}, with zero-indexing for the position.\n'''
+general_explanation = '''You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 'a' to 'i' representing different colors, and '.' representing the background color. Adjacent pixels of the same color are designated as objects. For example ['.','b','b','.','c'] represents a pixel sequence with the following objects: Object_1: {{color: 'b', start_index: 1, end_index: 2, size: 2}}, Object_2: {{color: 'c', start_index: 4, start_index: 4, size: 1}}, with zero-indexing for the position.\n'''
 human_priors = '''\nThe transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
-- Geometry: Symmetries, mirroring, connecting points.
 - Objects: 
 	- transformations, such as move, hollow, scale, remove, copy, recolor.
 	- relations between objects, such as distance, alignment, overlap, containment.
@@ -286,13 +285,42 @@ prompt_modules_naive = {
 		'generation': {
 			"instruct_task": f'\n\nYou are to infer the simplest possible relation beetween input and output. Then, your task is to transform the test input sequence into its test output sequence.',
 			"output_format": {
-          		'sequence_changes': 'describe if the dimension of the input sequence is different to its output sequence', 
-				'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 
-				'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 
+				# 'objects': {
+				# 	'Example_1': {
+				# 		'input': 'regarding the first example, identify all objects in the input sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+				# 		'output': 'regarding the first example, identify all objects in the output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+				# 		'changes': 'regarding first the example, describe the changes between the input and output objects, focusing on movement, size, position, color'	
+      			# 	},
+				# 	'Example_2': {...},
+    			# 	},
+				'object_description': 'regarding the examples, describe the objects in the input and output sequences, focusing on size, position, colour',
+    			'object_changes': 'regarding the examples, describe the changes between the input and output objects, focusing on movement, object number, size, position, value', 
 				'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
-				'instructions': 'describe the transformation actions in detail step by step', 
-				'test_output': 'Use the instructions to transform the test input sequence and return only the resulting output sequence in numpy array format.'
+				'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 
+				'transformation': {
+        			'input': 'copy the test input sequence from the task',
+           			#'objects': 'regarding the test input sequence, identify all objects by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+					'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, colour',
+					'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, colour',
+                	},
+    			'test_output': 'Use the instructions to transform the test input sequence and return only the resulting output sequence in numpy array format. Mind the sequence length!'
             	},
    		 	},
 		},
-	}
+	} 
+
+# prompt_modules_naive = {
+# 	"0": {
+# 		'generation': {
+# 			"instruct_task": f'\n\nYou are to infer the simplest possible relation beetween input and output. Then, your task is to transform the test input sequence into its test output sequence.',
+# 			"output_format": {
+#     			'object_changes': 'regarding the examples, describe the changes between the input and output objects, focusing on object number, size, position, colour', 
+# 				'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
+# 				'instructions': 'describe the needed transformation actions to transform input objects into output objects, think step by step', 
+# 				'test_output_objects': 'Use the instructions to transform the test input objects and return the resulting output objects.',
+# 				'test_output': 'create the respective output sequence with length {len}, add the objects and fill remaining values with the background colour'
+#             	},
+#    		 	},
+# 		},
+# 	}
+ 

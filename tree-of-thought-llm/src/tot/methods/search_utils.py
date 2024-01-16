@@ -1,8 +1,7 @@
-#from tot.models import gpt
 from tot.methods.tree_nodes import Node
+from tot.models import model 
 
-# declare variable for gpt api call
-gpt = None
+model = None
 
 # read multi line user inputs 
 def read_multiline_input(query):
@@ -37,7 +36,7 @@ def get_value(args, task, child, cache_value=True):
         return task.value_cache[str(value_prompt)], value_prompt
     
     if args.use_api:
-        value_outputs = gpt(value_prompt, n=args.n_evaluate_sample, stop=None)
+        value_outputs = model(value_prompt, n=args.n_evaluate_sample, stop=None)
     else: 
         # get values from chat interface
         value_outputs = []
@@ -83,7 +82,7 @@ def get_votes(task, current_node, n_evaluate_sample):
  
     # voting
     vote_prompt = task.vote_prompt_wrap(current_node, task.steps) # TODO: add params to all calls
-    vote_outputs = gpt(vote_prompt, n=n_evaluate_sample, stop=None)
+    vote_outputs = model(vote_prompt, n=n_evaluate_sample, stop=None)
     values = task.vote_outputs_unwrap(current_node, vote_outputs)
     for value, child in zip(values, current_node.children):
         child.value = value
@@ -105,7 +104,7 @@ def get_samples(args, task, current_node, prompt_sample, stop):
     else:
         raise ValueError(f'prompt_sample {prompt_sample} not recognized')
     if args.use_api:
-        samples = gpt(prompt, n=current_node.n_generate_children, stop=stop)
+        samples = model(prompt, n=current_node.n_generate_children, stop=stop)
     else:
         # get samples from chat interface
         samples = []
@@ -139,7 +138,7 @@ def get_samples(args, task, current_node, prompt_sample, stop):
 def analyse_failure(args, task, node):
     prompt = task.failure_analysis_prompt_wrap(node)             
     if args.use_api:
-        output = gpt(prompt, n=1)
+        output = model(prompt, n=1)
     else:
         # get output from chat interface
         print(prompt["system"] + "\n" + prompt["user"])
@@ -161,7 +160,7 @@ def revise(args, task, node, original_node):
     # revise abstraction
     prompt = task.revision_prompt_wrap(node)
     if args.use_api:
-        output = gpt(prompt, n=1)
+        output = model(prompt, n=1)
     else:
         # get output from chat interface
         print(prompt["system"] + "\n" + prompt["user"])

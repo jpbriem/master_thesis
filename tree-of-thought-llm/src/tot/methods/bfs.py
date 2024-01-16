@@ -1,12 +1,13 @@
 import itertools
 import numpy as np
 from functools import partial
-from tot.models import gpt
+from tot.models import initialize_model
 from tot.methods.tree_nodes import Node
 from tot.methods import search_utils
 
 def solve(args, task, idx, to_print=True):
-    search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature)
+    #search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature)
+    search_utils.model = initialize_model(args)
     x = task.get_input(idx)  # input
     current_best_nodes = [Node(0, x, n_generate_children=args.n_generate_sample, children=[])]
     infos = []
@@ -85,7 +86,12 @@ def solve(args, task, idx, to_print=True):
     
     
 def naive_solve(args, task, idx, to_print=True):
-    search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature, response_format={ "type": "text" })
+    # search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature, response_format={ "type": "text" })
+    # search_utils.model = partial(gpt, model=args.backend, temperature=args.temperature, response_format={ "type": "text" })
+    search_utils.model = initialize_model(args)
+    if search_utils.model is None:
+        print("Model not found!")
+        exit()
     x = task.get_input(idx)  # input
     root = Node(0, x, n_generate_children=args.n_generate_sample, children=[])
     prompt_log = search_utils.get_samples(args, task, root, args.prompt_sample, stop=None)
