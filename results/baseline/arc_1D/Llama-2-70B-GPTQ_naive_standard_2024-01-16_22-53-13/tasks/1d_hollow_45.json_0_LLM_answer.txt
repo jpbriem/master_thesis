@@ -1,0 +1,85 @@
+Input token: 419
+Output token: 770
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.']
+output: ['.', '.', '.', '.', '.', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', 'h', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['c', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['a', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def transform(self, grid: List[str]) -> List[str]:
+        """
+        1. 先找出所有的字符，然后再进行转换。
+        2. 如果是单个字符，则直接返回空格；否则，将其中心位置变为空格，并且向两边延展。
+            a) 如果左右都不存在相同的字符，那么就只需要向两边增加一个空格即可。
+            b）如果左右都存在相同的字符，那么就需要向两边增加两个空格。
+                比如：'abcde' => '.bc.. ', 而不是 '...bcd.'
+            注意：这里的判断条件是左右都存在相同的字符，而不是说左右都存在相同数量的字符。
+        3. 最终返回结果。
+        :return: 转化之后的字符串列表
+        """
+        # 获取到每一个字符的索引值
+        char_indexes = self._get_char_indexes(grid)
+        for index in char_indexes:
+            if len(grid[index]) == 1:
+                continue
+            else:
+                left_is_same = False
+                right_is_same = False
+                # 从左至右遍历
+                for i in range(len(grid)):
+                    if i!= index:
+                        if grid[i] == grid[index][0]:
+                            left_is_same = True
+                        elif grid[i] == grid[index][-1]:
+                            right_is_same = True
+                # 根据情况进行处理
+                if not (left_is_same or right_is_same):
+                    grid[index] = "." + grid[index][1:-1] + "."
+                elif left_is_same and right_is_same:
+                    grid[index] = "..." + grid[index][1:-1] + "...".replace("..", ".")
+                elif left_is_same ^ right_is_same:
+                    grid[index] = "." + grid[index][1:-1].replace("..", ".") + "."
+        return grid
+
+    @staticmethod
+    def _get_char_indexes(grid: List[str]) -> list:
+        """
+        获取到每一个字符的索引值
+        :param grid: 输入的字符串列表
+        :return: 每一个字符的索引值
+        """
+        result = []
+        for i in range(len(grid)):
+            if len(re.findall('[^.]+', grid[i])) > 1:
+                result.append(i)
+        return result
+
+################################################################
+
+Solution:
+['a', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'a', '.', '.', '.', '.']
+

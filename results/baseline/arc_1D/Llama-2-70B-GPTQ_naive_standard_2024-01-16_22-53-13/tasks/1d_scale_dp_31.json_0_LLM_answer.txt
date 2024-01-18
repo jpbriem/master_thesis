@@ -1,0 +1,78 @@
+Input token: 549
+Output token: 657
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', 'd']
+output: ['b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'd']
+
+Example_2:
+input: ['.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'd', '.', '.', '.', '.']
+output: ['.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'd', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', 'd', '.']
+output: ['.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'd', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.', '.', 'd', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', '.', '.', '.']
+"""
+from typing import List, Optional
+
+
+class Solution:
+    def fill(self, grid: List[List[str]], r0: int, c0: int) -> None:
+        if not grid or len(grid) == 0 or len(grid[0]) == 0:
+            return
+
+        # find the first non-dot element in the row
+        for i in range(r0):
+            if grid[i][c0]!= '.':
+                self.fill(grid, i, c0)
+                break
+
+        # find the last non-dot element in the column
+        for j in range(len(grid[0])) - 1, c0 - 1, -1:
+            if grid[r0][j]!= '.':
+                self.fill(grid, r0, j)
+                break
+
+        # check whether there is a dot between two non-dots
+        for k in range(min(r0 + 1, len(grid)), max(-1, r0)):
+            for l in range(max(c0 - 1, 0), min(len(grid[0]), c0 + 1)):
+                if grid[k][l] == '.':
+                    grid[k][l] = grid[r0][c0]
+
+    def floodFill(self, m: str, n: str) -> str:
+        """
+        思路：找到第一个非点的位置，然后向上和向左填充。
+        注意：如果是最右边或者最下面的点，则不能向左或向上填充了。
+        :param m:
+        :return:
+        """
+        rows, cols = len(m), len(n)
+        grid = [['.' for _ in range(cols)] for _ in range(rows)]
+        for i in range(rows):
+            grid[i] = list(map(lambda x: x if x!= '.' else '.', m[i]))
+        for j in range(cols):
+            grid[:, j] = list(map(lambda x: x if x!= '.' else '.', n[j]))
+
+        for i in range(rows):
+            for j in range(cols):
+                if grid[i][j]!= '.':
+                    self.fill(grid, i, j)
+
+        return ''.join([row[col] for col in range(cols) for row in grid])
+
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', '.', '.', '.']
+

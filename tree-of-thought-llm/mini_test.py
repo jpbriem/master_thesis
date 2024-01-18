@@ -46,11 +46,12 @@ from tot.models import gpt_usage
 
 ########## ARC ##########
 args = argparse.Namespace(
-    backend='gpt-3.5-turbo-1106',   # TODO: Set model!
+    # backend='gpt-3.5-turbo-1106',   # TODO: Set model!
     # backend='gpt-4-1106-preview', 
     # backend='NousResearch/Llama-2-7b-chat-hf',
-    # model_revision='main',
-    use_api=False,                       # TODO: Use API?!
+    backend='TheBloke/Llama-2-70b-Chat-GPTQ',
+    model_revision='main',
+    use_api=True,                       # TODO: Use API?!
     temperature=0.7, 
     # task='arc',                       # TODO: Set task!
     task='arc_1D',
@@ -82,31 +83,36 @@ def run(args):
     # directory = "results/"                # TODO: set result directory!
     directory = "Testing_none_official_result/"
     if args.naive_run:
-        directory += f"{args.task}/{args.backend}_naive_{args.prompt_sample}_" + current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+        directory += f"{args.task}/{args.backend.split('/')[-1]}_naive_{args.prompt_sample}_" + current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
     else:
-        directory += f"{args.task}/{args.backend}_" + current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+        directory += f"{args.task}/{args.backend.split('/')[-1]}_" + current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
     os.makedirs(directory+"/tasks", exist_ok=True)
        
-    # solve the task
+    # initialize task
     task = get_task(args.task)
     # get further task information for logging, if needed
     task_infos = task.get_task_infos()
     # set representation of inputs
     task.set_input_representation(args.input_representation)
 
+    # solve the task
     indices = list(range(len(task)))
     random.seed(42)
     random.shuffle(indices)
     count = 0 # TODO: delete!!!
     for idx in indices:
-        if count == 10: # TODO: delete!!!
+        print(f"Task {idx} of {len(task)}")
+        if count == 50: # TODO: delete!!!
             break
         Node.reset_tree()
         task_name = task.names[idx].split(".json")[0]
         task_category = task.categories[idx]
         # if task_name not in tasks: # TODO: original ARC???
         #     continue
-        count += 1 # TODO: delete!!!
+        if 'scale' in task_name or "flip" in task_name or "move_1p" in task_name:
+            count += 1 # TODO: delete!!!
+        else:
+            continue
         if args.search_algo == "bfs":
             search_algo = bfs
         elif args.search_algo == "dfs":

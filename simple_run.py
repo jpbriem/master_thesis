@@ -45,7 +45,7 @@ if __name__ == "__main__":
         # directory = "results/"+current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
         directory = f"Testing_none_official_result/{TASK}/{model_name.split('/')[-1]}_naive_standard_" + current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
         # directory = f"Testing_none_official_result/{TASK}/{model_name}_naive_cot_" + current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
-        os.makedirs(directory, exist_ok=True)
+        os.makedirs(directory+"/tasks", exist_ok=True)
         
         # Load Model and Tokenizer
         try:
@@ -159,7 +159,7 @@ if __name__ == "__main__":
             # save LLM task output as json file
             try:
                 LLM_result_json = get_LLM_result_as_json([row["test_case"]], [output]) 
-                with open(directory+"/"+row["task_name"]+description_id+"_"+str(row["test_case_index"])+"_LLM_result.json", "w") as json_file:
+                with open(directory+"/tasks"+"/"+row["task_name"]+description_id+"_"+str(row["test_case_index"])+"_LLM_result.json", "w") as json_file:
                     json.dump(LLM_result_json, json_file)
             except Exception as e:
                 error = f"Failed to write LLM result as .json file for task {row['task_name']+description_id}. Error:\n{e}"
@@ -179,7 +179,7 @@ if __name__ == "__main__":
                 LLM_answer += f"LLM prompt:\n{row['prompt_llama']}{prompt_gpt}\n################################################################\n\n"
                 LLM_answer += f"LLM answer:\n{output}\n################################################################\n\n"
                 LLM_answer += f"Solution:\n{row['solution']}\n"
-                with open(directory+"/"+row["task_name"]+description_id+"_"+str(row["test_case_index"])+"_LLM_answer.txt", "w") as text_file:
+                with open(directory+"/tasks"+"/"+row["task_name"]+description_id+"_"+str(row["test_case_index"])+"_LLM_answer.txt", "w") as text_file:
                     text_file.write(LLM_answer)
             except Exception as e:
                 error = f"Failed to write LLM answer as .txt file for task {row['task_name']+description_id}. Error:\n{e}"

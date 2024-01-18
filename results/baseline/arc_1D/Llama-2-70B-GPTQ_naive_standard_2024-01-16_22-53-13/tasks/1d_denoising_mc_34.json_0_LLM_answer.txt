@@ -1,0 +1,96 @@
+Input token: 662
+Output token: 936
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', 'e', 'e', 'g', 'e', 'h', 'e', 'c', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'i', 'b', 'b', 'h', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', 'e', 'e', 'e', 'b', 'a', 'e', 'e', 'c', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'h', 'g', 'g', 'e', 'g', 'g', 'g', 'g', 'b', 'g', 'i', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def islandPerimeter(self, grid: List[List[str]]) -> int:
+        """
+        思路：扫描每个格子，如果是水坑则计算周边的陆地数量。
+            - 对于单元格中间的格子，只需要考虑上下左右四个方向；
+            - 对于单元格的边界格子，还需要考虑两侧的边缘情形（不能超过边界）。
+            注意：由于题目限制了输入为字符串，因此无法直接使用二维列表来进行操作，所以这里使用了正则表达式来处理。
+        :param grid:
+        :return:
+        """
+        # 记录每一个格子的周长
+        perimeters = []
+        for i in range(len(grid)):
+            row = []
+            for j in range(len(grid[0])):
+                if grid[i][j] == ".":
+                    continue
+                else:
+                    # 获取当前格子的上、下、左、右四个相邻格子的状态
+                    up = down = left = right = None
+                    try:
+                        up = grid[max(0, i - 1)][j].strip()
+                    except IndexError:
+                        pass
+                    try:
+                        down = grid[min(i + 1, len(grid))](j).strip()
+                    except IndexError:
+                        pass
+                    try:
+                        left = grid[i][max(0, j - 1)]
+                    except IndexError:
+                        pass
+                    try:
+                        right = grid[i][min(j + 1, len(grid[0]) - 1)]
+                    except IndexError:
+                        pass
+                    # 根据上面获得的信息判断当前格子的周边情形
+                    if (up or down or left or right):
+                        # 有任何一条边都存在时，说明该格子位于内部
+                        row.append(4)
+                    elif not any([up, down, left, right]):
+                        # 没有任何一条边存在时，说明该格子位于外部
+                        row.append(8)
+                    else:
+                        # 其他情形都属于边界格子
+                        if up and down and left and right:
+                            # 上下左右全部存在时，说明该格子位于角落
+                            row.append(5)
+                        elif up and down and left or up and down and right \
+                                or up and left and right or down and left and right:
+                            # 上下或者左右两个方向同时存在时，说明该格子位于边缘
+                            row.append(6)
+                        elif up and down or left and right:
+                            # 上下或者左右两个方向同时存在时，说明该格子位于边缘
+                            row.append(7)
+                        else:
+                            raise ValueError("Unexpected situation!")
+            perimeters.append(row)
+        return sum(perimeters)
+
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.']
+

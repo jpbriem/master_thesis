@@ -1,0 +1,83 @@
+Input token: 577
+Output token: 807
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', 'g', 'g', 'g', '.', '.', 'g', '.', '.', '.', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'f', 'f', 'f', '.', '.', 'b', '.', '.', '.', 'e', 'e', '.', '.', '.', 'f', 'f', 'f', '.', '.', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', 'g', '.', '.', 'g', 'g', 'g', '.', 'g', 'g', '.', 'g', 'g', 'g', '.', '.', '.', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'b', '.', '.', 'f', 'f', 'f', '.', 'e', 'e', '.', 'f', 'f', 'f', '.', '.', '.', 'e', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', 'g', '.', '.', '.', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', '.', '.', '.', 'g', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'b', '.', '.', '.', 'e', 'e', '.', '.', '.', 'f', 'f', 'f', '.', '.', '.', 'f', 'f', 'f', '.', '.', '.', 'b', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', 'g', 'g', '.', 'g', '.', '.', '.', 'g', 'g', 'g', '.', '.', 'g', '.', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', 'f', 'f', '.', 'e', '.', '.', '.', 'f', 'f', 'f', '.', '.', 'b', '.', 'e', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def transform(self, grid: List[str]) -> str:
+        """
+        思路：
+            1、找到所有的 g 字符，并将其转换为 f。
+            2、检查每个 f 周围是否存在三个以上的 g，如果是则将其转换为 b。
+            3、检查每个 b 周围是否存在三个以上的 f，如果是则将其转换为 e。
+            4、最后把所有的 e 都变成了 g。
+        """
+        # 步骤一：找到所有的 g 字符，并将其转换为 f。
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == "g":
+                    grid[i][j] = "f"
+
+        # 步骤二：检查每个 f 周围是否存在三个以上的 g，如果是则将其转换为 b。
+        for i in range(len(grid) - 1):
+            for j in range(len(grid[0]) - 1):
+                count = self._count_around("g", i, j, grid)
+                if count >= 3:
+                    grid[i + 1][j + 1] = "b"
+
+        # 步骤三：检查每个 b 周围是否存在三个以上的 f，如果是则将其转换为 e。
+        for i in range(len(grid) - 1):
+            for j in range(len(grid[0]) - 1):
+                count = self._count_around("f", i, j, grid)
+                if count >= 3:
+                    grid[i + 1][j + 1] = "e"
+
+        # 步骤四：最后把所有的 e 都变成了 g。
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == "e":
+                    grid[i][j] = "g"
+
+        return "".join([row for row in grid])
+
+    @staticmethod
+    def _count_around(char: str, x: int, y: int, grid: List[List[str]]) -> int:
+        count = 0
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                if (x + dx < len(grid)) and (y + dy < len(grid[0])) \
+                        and (dx!= 0 or dy!= 0) and (grid[x + dx][y + dy] == char):
+                    count += 1
+        return count
+
+################################################################
+
+Solution:
+['.', 'e', 'e', '.', 'b', '.', '.', '.', 'f', 'f', 'f', '.', '.', 'b', '.', 'e', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+

@@ -1,0 +1,82 @@
+Input token: 666
+Output token: 898
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', '.', 'i', 'i', 'i', 'i', 'g', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'd', 'i', 'i', 'i', 'i', 'i', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', '.', '.', '.']
+
+Example_2:
+input: ['g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'h', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'f', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'i', 'b', 'b', 'b', 'b', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def islandPerimeter(self, grid: List[List[str]]) -> int:
+        """
+        思路：扫描每个格子，如果是海洋则计算周围的陆地数量。
+            - 注意处理边界情形（不能越界）
+                - 对于左右两侧，只需要判断当前行第一和最后一个元素是否为海洋就可以了
+                    因为这种情况下，我们只会在上面或者下面加入邻居
+                - 对于上下两侧，只需要判断当前列第一和最后一个元素是否为海洋就可以了
+                    同样的道理，只会在左边或者右边加入邻居
+            - 注意处理中间部分的情形（不能越界）
+                - 对于左右两侧，只需要判断当前行第一和最后一个元素是否为海洋就可以了
+                    因为这种情况下，我们只会在上面或者下面加入邻居
+                - 对于上下两侧，只需要判断当前列第一和最后一个元素是否为海洋就可以了
+                    同样的道理，只会在左边或者右边加入邻居
+            
+            所以，我们只需要考虑四条边界的情形，其他情形都不用管了
+        复杂度：O(m*n)
+        """
+        m = len(grid)
+        n = len(grid[0]) if m else 0
+        perimeters = []
+        for i in range(m):
+            row = []
+            for j in range(n):
+                if grid[i][j] == "." or (i==0 and j==0) or (i==m-1 and j==0) \
+                   or (i==0 and j==n-1) or (i==m-1 and j==n-1):
+                    continue
+                elif grid[i][j] == ".":
+                    # 处理左右两侧的边界情形
+                    left = right = 0
+                    if i > 0:
+                        left += 1 if grid[i-1][j]!= "." else 0
+                    if i < m-1:
+                        right += 1 if grid[i+1][j]!= "." else 0
+                    row.append(left + right)
+                elif grid[i][j] == "#":
+                    # 处理上下两侧的边界情形
+                    up = down = 0
+                    if j > 0:
+                        up += 1 if grid[i][j-1]!= "." else 0
+                    if j < n-1:
+                        down += 1 if grid[i][j+1]!= "." else 0
+                    row.append(up + down)
+            perimeters.append(row)
+        return sum([sum(x) for x in perimeters])
+
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.']
+

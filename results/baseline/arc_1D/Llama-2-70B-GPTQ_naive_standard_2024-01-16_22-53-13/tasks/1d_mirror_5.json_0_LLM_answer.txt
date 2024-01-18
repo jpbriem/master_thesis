@@ -1,0 +1,88 @@
+Input token: 530
+Output token: 570
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', '.', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'd', '.']
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution:
+    def reverse(self, x):
+        return list(reversed(x))
+
+    def rotate(self, x):
+        return self.reverse(list(zip(*x)))[0]
+
+    def flip(self, x):
+        return self.rotate(self.reverse(x))
+
+    def transform(self, x):
+        return self.flip(self.transform(self.flip(x)))
+
+    def solve(self, s: str) -> str:
+        # 1. split into two parts by "i", then get the index of i
+        idx = s.index("i")
+        left = s[:idx]
+        right = s[idx + 1:]
+
+        # 2. find the first non-dot char in each part
+        lch = next((c for c in left if c!= "."), None)
+        rch = next((c for c in reversed(right) if c!= "."), None)
+
+        # 3. check whether they're equal or not
+        if lch == rch:
+            return s
+
+        # 4. otherwise, we need to swap them
+        else:
+            # 5. get the length of each part
+            ll = len(left) - 1
+            lr = len(right) - 1
+
+            # 6. calculate the number of dots between them
+            nl = (ll - idx) // 2
+            nr = (lr - idx) // 2
+
+            # 7. generate a new string with the correct order
+            res = ""
+            for _ in range(nl):
+                res += "."
+            res += lch * (ll - nl)
+            res += "." * nl
+            res += rch * (nr + 1)
+            res += "." * nr
+            res += lch * (lr - nr - 1)
+            res += "." * lr
+            res += rch * (ll - nl - 1)
+            res += "." * ll
+
+            return res
+
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', '.']
+

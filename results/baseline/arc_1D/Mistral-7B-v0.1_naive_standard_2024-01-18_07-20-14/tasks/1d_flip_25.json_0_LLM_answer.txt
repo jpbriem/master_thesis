@@ -1,0 +1,68 @@
+Input token: 405
+Output token: 450
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['e', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', '.', '.', 'f', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'h', 'f', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', '.', '.', 'd', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'd', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'b', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'b', '.', '.', '.', '.']
+*/
+public class ReorderDataInLogFiles {
+    public String[] reorderLogFiles(String[] logs) {
+        List<String> letterList = new ArrayList<>();
+        List<String> digitList = new ArrayList<>();
+        for (int i=0;i<logs.length;i++) {
+            if (isLetter(logs[i])) {
+                letterList.add(logs[i]);
+            } else {
+                digitList.add(logs[i]);
+            }
+        }
+        Collections.sort(letterList, new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                String[] split1 = o1.split(" ");
+                String[] split2 = o2.split(" ");
+                return split1[1].compareToIgnoreCase(split2[1]) == 0? split1[0].compareTo(split2[0]): split1[1].compareToIgnoreCase(split2[1]);
+            }
+        });
+        Collections.sort(digitList);
+        String[] result = new String[logs.length];
+        int index = 0;
+        for (int i=0;i<result.length;i++) {
+            if (index < letterList.size()) {
+                result[i] = letterList.get(index++);
+            } else {
+                result[i] = digitList.get(i - letterList.size());
+            }
+        }
+        return result;
+    }
+
+    private boolean isLetter(String log) {
+        String[] split = log.split(" ");
+        return!split[1].matches("[0-9]+");
+    }
+}
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'b', '.', '.', '.']
+

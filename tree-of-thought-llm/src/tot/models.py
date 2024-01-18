@@ -3,6 +3,7 @@ from functools import partial
 import openai
 import backoff 
 import datetime
+import json
 from tot.methods.arc_config import MAX_TOKEN, MODEL_CONFIG_LLAMA, MODEL_CONFIG_FALCON, GPU
 from tot.methods.credentials import OPENAI_KEY, HF_TOKEN
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
@@ -15,13 +16,17 @@ import tiktoken
 import torch
 
 completion_tokens = prompt_tokens = 0
-model = tokenizer = llm = backend = None
+model = tokenizer = llm = backend = prompt_sample = None
 naive_run = False
+responses = [] # TODO: Delete
+idx = 0 # TODO: Delete
+date = datetime.datetime.now() # TODO: Delete
 
 def initialize_model(args):
-    global model, tokenizer, llm, backend, naive_run
+    global model, tokenizer, llm, backend, naive_run, prompt_sample
     backend = args.backend
     naive_run = args.naive_run
+    prompt_sample = args.prompt_sample
     if "gpt" in backend:
         os.environ['OPENAI_API_KEY'] = OPENAI_KEY
         api_key = os.getenv("OPENAI_API_KEY", "")
@@ -55,28 +60,30 @@ def initialize_model(args):
         print(e)
         return None
 
-def get_prompt(prompt):
-    global backend, naive_run
-    if not naive_run:
-        if "chat" in backend and "Llama" in backend:
+def prompt_preprocessing_for_model(prompt):
+    global backend, naive_run, prompt_sample
+    if "gpt" in backend:
+        return prompt
+    elif not naive_run or not prompt_sample == "standard":
+        if "chat" in backend.lower() and "llama" in backend.lower():
             # use prompting template for llama chat models
             if "system" in prompt:
                 return "[INST] <<SYS>>\n" + prompt["system"] + "\n<</SYS>>\n" + prompt["user"] + "[/INST]"
             else:
                 return "[INST]\n" + prompt["user"] + "[/INST]\n"
-        elif "Platypus2" in backend:
+        elif "platypus2" in backend.lower():
             # use prompting template for Platypus2 models
             if "system" in prompt:
                 return prompt["system"] + "\n\n### Instruction:\n" + prompt["user"] + "\n\n### Response:"
             else:
                 return "### Instruction:\n" + prompt["user"] + "\n\n### Response:"
-        elif "Falcon" in backend:
+        elif "falcon" in backend.lower():
             # use prompting template for Falcon models
             if "system" in prompt:
                 return prompt["system"] + "\n\nUser: " + prompt["user"] + "\n\nAssistant:"
             else:
                 return "User: " + prompt["user"] + "\n\nAssistant:"
-        elif "Mistral" in backend or "Mixtral" in backend:
+        elif "mistral" in backend.lower() or "mixtral" in backend.lower():
             # use prompting template for Mistral models
             if "system" in prompt:
                 return "[INST] " + prompt["system"] + "\n" + prompt["user"] + "\n[/INST]"
@@ -97,7 +104,6 @@ def call_model(prompt, max_tokens=2000, n=1, stop=None):
         return llm(prompt, max_tokens=max_tokens, n=n, stop=stop)
     elif backend in ["TheBloke/Falcon-7B-Instruct-GPTQ", "TheBloke/Falcon-40B-Instruct-GPTQ"]:
         outputs = []
-        prompt = get_prompt(prompt)
         for i in range(n):
             output = llm(tokenizer, model, prompt, **MODEL_CONFIG_FALCON)
             prompt_tokens += count_tokens(prompt, backend, tokenizer)[0]
@@ -105,7 +111,6 @@ def call_model(prompt, max_tokens=2000, n=1, stop=None):
             outputs.append(output)
     else:
         outputs = []
-        prompt = get_prompt(prompt)
         for i in range(n):
             output = llm(prompt)
             prompt_tokens += count_tokens(prompt, backend, tokenizer)[0]
@@ -150,13 +155,19 @@ def gpt(prompt, model="gpt-3.5-turbo-1106", temperature=0.7, response_format={ "
     return chatgpt(messages, model=model, temperature=temperature, response_format=response_format, max_tokens=max_tokens, n=n, stop=stop)
     
 def chatgpt(messages, model="gpt-3.5-turbo-1106", temperature=0.7, response_format={ "type": "json_object" }, max_tokens=2000, n=1, stop=None) -> list:
-    global completion_tokens, prompt_tokens
+    global completion_tokens, prompt_tokens, responses, idx, date  # TODO: Delete
     outputs = []
     while n > 0:
         cnt = min(n, 20)
         n -= cnt
         try:
             res = completions_with_backoff(model=model, messages=messages, temperature=temperature, response_format=response_format, max_tokens=max_tokens, n=cnt, stop=stop)
+            # TODO: Delete:
+            responses.append({"i": idx, "res": res})
+            path = "error_log/gpt_output_errors/"+date.strftime("%Y-%m-%d_%H-%M-%S")+".json"
+            with open(path, "w") as f:
+                json.dump(responses, f, indent=4)
+            # TODO: Delete
         except:
             res = {"choices": [{"message": {"content": "ERROR"}}], "usage": {"prompt_tokens": 0,"completion_tokens": 0}}
         outputs.extend([choice["message"]["content"] for choice in res["choices"]])

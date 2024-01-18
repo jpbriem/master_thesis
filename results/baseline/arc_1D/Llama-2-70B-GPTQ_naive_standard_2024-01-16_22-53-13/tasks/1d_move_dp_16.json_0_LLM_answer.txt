@@ -1,0 +1,68 @@
+Input token: 457
+Output token: 539
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'b', 'b', 'b', '.', '.', '.', '.', 'i', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'i', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', 'i', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'i', '.']
+
+Example_3:
+input: ['.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', 'i']
+output: ['.', '.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'i']
+
+Test case:
+input: ['.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', '.', '.', '.', 'i']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'i']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def findReplaceString(self, S: str, source: str) -> str:
+        """
+        思路：找到所有的字符串，然后进行转换。
+            - 先抽取出所有的单词，再去重复，得到一个列表。
+                - 注意：这里不能用set()，因为set只保留了最后一次出现的位置，而我们需要每次都记录下来。
+                    比如：['a','a','b','c','c','d','d'] 变成 ['a','b','c','d']
+            - 对于每个单词，判断是否在源字符串中存在，如果存在则将其转化为目标字符串中的相应位置上的字符。
+            
+        时间复杂度：O(n)， n = len(S) + len(source)
+        空间复杂度：O(m), m = len(S) + len(source)
+        """
+        # 获取所有的单词
+        words = self._getWords(S)
+        for word in words:
+            if word in source:
+                index = source.index(word)
+                S = S[:index] + S[index+len(word):]
+        return S
+
+    @staticmethod
+    def _getWords(s: str) -> List[str]:
+        """
+        获取所有的单词
+        :param s: 输入字符串
+        :return: 返回所有的单词
+        """
+        # 正则匹配所有的单词
+        regx = r"\w+"
+        result = re.findall(regx, s)
+        return list(dict.fromkeys(result))
+
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'i']
+

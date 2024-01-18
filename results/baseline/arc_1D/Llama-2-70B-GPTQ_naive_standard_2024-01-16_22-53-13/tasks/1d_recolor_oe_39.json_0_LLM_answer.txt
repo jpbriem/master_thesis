@@ -1,0 +1,99 @@
+Input token: 410
+Output token: 737
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', 'h', 'h', 'h', 'h', 'h', 'h', '.', 'h', '.', 'h', 'h', 'h', '.', 'h', 'h', 'h', '.']
+output: ['.', '.', 'a', 'a', 'a', 'a', 'a', 'a', '.', 'e', '.', 'e', 'e', 'e', '.', 'e', 'e', 'e', '.']
+
+Example_2:
+input: ['.', '.', 'h', 'h', '.', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', 'h', 'h', 'h', 'h', '.', '.']
+output: ['.', '.', 'a', 'a', '.', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', 'a', 'a', 'a', 'a', '.', '.']
+
+Example_3:
+input: ['.', '.', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', 'h', 'h', 'h', '.', '.', '.', '.', '.']
+output: ['.', '.', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', 'e', 'e', 'e', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', 'h', 'h', 'h', 'h', '.', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', 'h', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', 'a', 'a', 'a', 'a', '.', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', 'a', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def transform(self, grid: List[str]) -> str:
+        """
+        1. 先找到所有的'h'，然后再把它们变成'a'或者'e'。
+        2. 如果一个'h'周围都是'h'，那么就变成'a'；否则变成'e'。
+        3. 注意：这里的“周围”包括上下左右四个方向和对角线两个方向。
+        4. 最终输出结果。
+        :param grid:
+        :return:
+        """
+        if not grid or len(grid) == 0:
+            return ""
+
+        # 记录每行中心位置的索引值
+        center_indexes = []
+        for i in range(len(grid)):
+            if "h" in grid[i]:
+                center_indexes.append(i)
+
+        # 遍历每一列，判断每一个元素是不是在中心位置
+        for j in range(len(grid[0])):
+            is_center = False
+            for k in center_indexes:
+                if j == (k - int((len(grid)) / 2)) % len(grid):
+                    is_center = True
+                    break
+            if is_center:
+                continue
+
+            # 获取当前元素的上、下、左、右四个相邻元素
+            up = None
+            down = None
+            left = None
+            right = None
+            try:
+                up = grid[j][max(0, k - 1)]
+            except IndexError as e:
+                pass
+            try:
+                down = grid[j][min(len(grid), k + 2)]
+            except IndexError as e:
+                pass
+            try:
+                left = grid[max(0, k - 1)][j]
+            except IndexError as e:
+                pass
+            try:
+                right = grid[min(len(grid), k + 2)][j]
+            except IndexError as e:
+                pass
+
+            # 判断当前元素是否为'h'
+            if grid[k][j]!= ".":
+                continue
+
+            # 判断当前元素是否被完全包含在'h'之间
+            if all([up == "." or up == "h", down == "." or down == "h", left == "." or left == "h", right == "." or right == "h"]):
+                grid[k][j] = "a"
+            else:
+                grid[k][j] = "e"
+
+        return grid
+
+################################################################
+
+Solution:
+['.', '.', '.', 'a', 'a', 'a', 'a', '.', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', 'e', '.', '.']
+

@@ -1,0 +1,111 @@
+Input token: 334
+Output token: 728
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'c', '.', '.', '.', 'c', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'c', 'c', 'c', 'c', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'c', '.', '.', 'c', '.']
+
+Example_3:
+input: ['.', '.', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'g', '.', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['g', '.', 'g', '.', 'g', '.', 'g', '.', 'g', '.', 'g', '.', '.', '.', '.', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def replaceBlanks(self, board: List[str]) -> str:
+        """
+        1. 先找到所有的空格，然后再去寻找相邻的字符。
+        2. 如果相邻的字符不是同一个字符，那么就将其中一个换成空格。
+            a) 如果相邻的两个字符都是空格，那么就只需要保留一个空格。
+            b) 如果相邻的两个字符都不是空格，那么就只需要保留一个非空格字符。
+            这里我们使用了正则表达式来实现。
+        3. 最后返回结果。
+        :param board:
+        :return:
+        """
+        # 获取所有的空格位置
+        blank_positions = self._get_blank_position(board)
+        if not blank_positions:
+            return board
+
+        for i in range(len(board)):
+            # 从左向右查找
+            left_char = self._find_left_char(i, board)
+            right_char = self._find_right_char(i + 1, board)
+            if left_char!= '' or right_char!= '':
+                if left_char == right_char:
+                    board[i] = '.'
+                else:
+                    board[i] = left_char
+        return board
+
+    @staticmethod
+    def _get_blank_position(board):
+        """
+        获取所有的空格位置
+        :param board:
+        :return:
+        """
+        result = []
+        for i in range(len(board)):
+            if board[i] == '.':
+                result.append(i)
+        return result
+
+    @staticmethod
+    def _find_left_char(index, board):
+        """
+        在指定位置前面查找字符
+        :param index:
+        :param board:
+        :return:
+        """
+        while True:
+            index -= 1
+            if index < 0:
+                break
+            char = board[index]
+            if char!= '.':
+                return char
+        return ''
+
+    @staticmethod
+    def _find_right_char(index, board):
+        """
+        在指定位置后面查找字符
+        :param index:
+        :param board:
+        :return:
+        """
+        while True:
+            index += 1
+            if index >= len(board):
+                break
+            char = board[index]
+            if char!= '.':
+                return char
+        return ''
+
+################################################################
+
+Solution:
+['g', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'g', '.', '.', '.', '.', '.', '.']
+

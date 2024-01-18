@@ -1,0 +1,77 @@
+Input token: 306
+Output token: 408
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', 'd', '.', '.', '.', '.', 'd', '.']
+
+Example_2:
+input: ['.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.']
+output: ['.', 'f', '.', '.', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', 'h', 'h', 'h', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', '.', '.', 'h', '.']
+
+Test case:
+input: ['.', '.', '.', 'g', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+expected output: ['.', '.', '.', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+class Solution(object):
+    def transformToPreorder(self, inorder, postorder):
+        """
+        :type inorder: List[int]
+        :type postorder: List[int]
+        :rtype: List[List[int]]
+        """
+        if not inorder or not postorder:
+            return []
+        
+        root = Node(postorder[-1])
+        stack = [(root, 0)]
+        i = len(inorder) - 1
+        while True:
+            node, index = stack[-1]
+            
+            # pop from stack
+            if index == 0:
+                stack.pop()
+                
+            else:
+                child = node.left if index % 2 == 0 else node.right
+                stack.append((child, index // 2))
+                stack.append((node, index + 1))
+                break
+            
+            # pop from queue
+            elif i >= 0:
+                node.left = Node(inorder[i], None, None)
+                stack.append((node.left, 0))
+                i -= 1
+            else:
+                node.left = None
+                stack.append((node, 1))
+                break
+        return [node.val] + self.transformToPreorder(inorder[:i+1], postorder[:len(postorder)-1])
+
+################################################################
+
+Solution:
+['.', '.', '.', 'g', '.', '.', 'g', '.', '.', '.', '.', '.', '.', '.', '.']
+

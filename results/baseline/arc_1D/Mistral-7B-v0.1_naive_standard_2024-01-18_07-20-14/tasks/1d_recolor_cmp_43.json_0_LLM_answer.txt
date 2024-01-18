@@ -1,0 +1,74 @@
+Input token: 494
+Output token: 630
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', 'b', 'b', '.', '.', '.', '.']
+output: ['.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', 'b', 'b', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', 'b', '.', '.', '.', 'b', 'b', 'b', 'b', '.', 'b', '.', '.', '.', 'b', 'b', 'b', 'b', '.', '.', '.', '.']
+output: ['.', '.', '.', 'b', '.', '.', '.', 'f', 'f', 'f', 'f', '.', 'b', '.', '.', '.', 'f', 'f', 'f', 'f', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', 'b', 'b', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', '.', 'b', 'b', 'b', 'b', 'b', '.', 'b', 'b', '.', '.']
+output: ['.', '.', '.', 'b', 'b', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', '.', 'f', 'f', 'f', 'f', 'f', '.', 'b', 'b', '.', '.']
+
+Test case:
+input: ['.', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.']
+*/
+public class Solution {
+    public String[] updateBoard(String[] board, int[] click) {
+        if (board == null || board.length < 0) return new String[0];
+        int m = board.length;
+        int n = board[0].length();
+        boolean[][] visited = new boolean[m][n];
+        Queue<int[]> queue = new LinkedList<>();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (board[i].charAt(j) == 'M') continue;
+                if (i == click[0] && j == click[1]) {
+                    queue.offer(new int[]{i, j});
+                    visited[i][j] = true;
+                    board[i] = board[i].replace('E', 'B');
+                }
+            }
+        }
+        while (!queue.isEmpty()) {
+            int[] cur = queue.poll();
+            int x = cur[0], y = cur[1];
+            int count = 0;
+            for (int dx = -1; dx <= 1; ++dx) {
+                for (int dy = -1; dy <= 1; ++dy) {
+                    if (dx == 0 && dy == 0) continue;
+                    int nextX = x + dx, nextY = y + dy;
+                    if (nextX >= 0 && nextX < m && nextY >= 0 && nextY < n &&!visited[nextX][nextY]) {
+                        if (board[nextX].charAt(nextY) == 'E') {
+                            ++count;
+                        } else if (board[nextX].charAt(nextY)!= 'M' &&!visited[nextX][nextY]) {
+                            queue.offer(new int[]{nextX, nextY});
+                            visited[nextX][nextY] = true;
+                            board[nextX] = board[nextX].replace('E', 'B');
+                        }
+                    }
+                }
+            }
+            if (count > 0) {
+                board[x] = board[x].substring(0, y) + count + board[x].substring(y + 1);
+            }
+        }
+        return board;
+    }
+}
+################################################################
+
+Solution:
+['.', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.']
+

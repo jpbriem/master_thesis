@@ -1,0 +1,87 @@
+Input token: 563
+Output token: 803
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', 'c', 'c', 'c', '.', '.', 'c', '.', '.', '.', '.', '.', 'c', '.', '.', '.', '.', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'c', 'c', 'c', '.', 'c', 'c', 'c', '.', '.', '.', 'c', 'c', 'c', '.', '.', 'c', 'c', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', 'b', 'b', 'b', '.', '.', '.', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'b', 'b', 'b', '.', '.', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', 'b', 'b', 'b', '.', '.', '.', '.', 'b', '.', '.', '.', '.', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'b', 'b', 'b', '.', '.', '.', 'b', 'b', 'b', '.', '.', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', 'i', 'i', 'i', '.', '.', '.', 'i', '.', '.', '.', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', 'i', 'i', 'i', '.', '.', 'i', 'i', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution:
+    def islandPerimeter(self, grid: List[List[str]]) -> int:
+        """
+        思路：扫描每一个格子，如果是海洋则不计算周围的陆地数量。
+                    如果是陆地，则从该点开始向四个方向进行搜索，直到发现非陆地或者已经访问过的位置为止。
+                    在这个过程中，记录下来所有的边界长度和最终返回结果。
+
+        时间复杂度：O(n)，其中 n 表示输入的网格大小。
+        空间复杂度：O(1)。
+        """
+        # 定义一个字典用于存放每个格子的周围陆地数量
+        perimeters = {}
+
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == "." or (i, j) in perimeters:
+                    continue
+                else:
+                    perimeter = self._get_perimeter(grid, i, j)
+                    perimeters[(i, j)] = perimeter
+
+        return sum(perimeters.values())
+
+    @staticmethod
+    def _get_perimeter(grid: List[List[str]], x: int, y: int):
+        """
+        获取指定位置的周围陆地数量
+        :param grid: 二维列表，表示网格
+        :param x: 第一个参数，表示当前位置的x坐标
+        :param y: 第二个参数，表示当前位置的y坐标
+        :return: 指定位置的周围陆地数量
+        """
+        directions = [(0, -1), (-1, 0), (0, 1), (1, 0)]
+        perimeter = 4
+        visited = set()
+        queue = collections.deque([])
+        queue.append((x, y))
+        while len(queue) > 0:
+            current_position = queue.popleft()
+            if current_position not in visited:
+                visited.add(current_position)
+                for direction in directions:
+                    new_pos = (current_position[0] + direction[0],
+                               current_position[1] + direction[1])
+                    if 0 <= new_pos[0] < len(grid) \
+                            and 0 <= new_pos[1] < len(grid[0]) \
+                            and grid[new_pos[0]][new_pos[1]]!= ".":
+                        queue.append(new_pos)
+                        perimeter -= 1
+        return perimeter
+
+################################################################
+
+Solution:
+['.', '.', 'i', 'i', 'i', '.', '.', 'i', 'i', 'i', '.', '.', 'i', 'i', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+

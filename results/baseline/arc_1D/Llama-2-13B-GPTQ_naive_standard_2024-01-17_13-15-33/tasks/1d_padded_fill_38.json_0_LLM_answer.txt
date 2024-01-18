@@ -1,0 +1,107 @@
+Input token: 1187
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.']
+
+Example_2:
+input: ['.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', '.', 'a', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'a', '.', '.', '.', '.', '.', '.', '.', '.', 'a', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'a', '.', '.', '.', '.', '.', '.', '.', '.', 'a', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'a', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.']
+"""
+from typing import List, Tuple
+import re
+
+class Solution:
+    def flipAndInvert(self, s: str) -> None:
+        """
+        Do not read input, do not print anything, assume input is a string
+        :param s:
+        :return:
+        """
+        if len(s) == 0: return
+        # find all characters in s
+        chars = set()
+        for c in s:
+            if c!= '.':
+                chars.add(c)
+        
+        # build a dictionary of character to index
+        char_to_index = dict()
+        for i, c in enumerate(chars):
+            char_to_index[c] = i
+            
+        # get the length of the longest word
+        max_len = 0
+        for w in self._get_words(s):
+            if len(w) > max_len:
+                max_len = len(w)
+                
+        # iterate over each character in s
+        for i, c in enumerate(s):
+            if c == '.': continue
+            # check if we have reached the end of the current word
+            if i >= max_len: break
+            # get the index of this character
+            idx = char_to_index[c]
+            # swap with the next character
+            temp = s[i+1]
+            s[i+1] = s[idx]
+            s[idx] = temp
+            # invert the character
+            s[i] = chr((ord(s[i]) ^ 9))
+    
+    def _get_words(self, s: str) -> List[str]:
+        """
+        Returns a list of words from s
+        :param s:
+        :return:
+        """
+        words = []
+        start = 0
+        while True:
+            end = s.find('.', start)
+            if end < 0:
+                break
+            words.append(s[start:end])
+            start = end + 1
+        return words
+    
+    def test(self):
+        assert self.flipAndInvert('') == ''
+        assert self.flipAndInvert('a') == 'a'
+        assert self.flipAndInvert('aa') == 'aa'
+        assert self.flipAndInvert('ab') == 'ba'
+        assert self.flipAndInvert('abc') == 'bca'
+        assert self.flipAndInvert('abcd') == 'dcb'
+        assert self.flipAndInvert('abcd.efg') == 'dfga.bcde'
+        assert self.flipAndInvert('abcd.efghi') == 'higaf.ebcd.'
+        assert self.flipAndInvert('abcd.efghijklmnopqrstuvwxyz') == \
+               'zxvuwytrsdpqmnoiljhkacfgb.ehjk'
+        assert self.flipAndInvert('abcd.efghijklmnopqrstuvwxyz') == \
+               'zxvuwytrsdpqmnoiljhkacfgb.ehjk'
+        assert self.flipAndInvert('abcd.efghijklmnopqrstuvwxyz') == \
+               'zxvuwytrsdpqmnoiljhkacfgb.ehjk'
+        assert self.flipAndInvert('abcd.efghijklmnopqrstuvwxyz') == \
+               'zxvuwytrsdpqmnoiljhkacfgb.ehjk'
+        assert self.flipAndInvert('abcd.efghijkl
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.']
+

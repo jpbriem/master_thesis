@@ -1,0 +1,82 @@
+Input token: 543
+Output token: 840
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', 'g', '.', '.', 'g', 'g', 'g', 'g', '.', 'g', 'g', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', '.', 'g', 'g', 'g', '.', 'g', 'g']
+output: ['.', 'g', '.', '.', 'g', 'g', 'g', 'g', '.', 'a', 'a', 'a', 'a', 'a', '.', '.', 'g', 'g', 'g', '.', 'g', 'g', 'g', '.', 'g', 'g']
+
+Example_2:
+input: ['.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', 'g', 'g', 'g', 'g', '.', 'g', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', 'g', 'g', 'g', 'g', '.', 'g', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', 'g', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', 'g', '.', '.', 'g', '.', '.', 'g', '.']
+output: ['.', '.', '.', 'a', 'a', 'a', 'a', '.', '.', 'g', 'g', 'g', '.', '.', '.', 'a', 'a', 'a', 'a', '.', '.', 'g', '.', '.', 'g', '.']
+
+Test case:
+input: ['.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', 'g', 'g', '.', '.', 'g', 'g', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', 'g', 'g', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', 'g', 'g', '.', '.', 'g', 'g', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', 'g', 'g', '.']
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution:
+    def transform(self, grid: List[str]) -> List[str]:
+        """
+        思路：找到所有的 g 点，然后将每个 g 点周围的. 变成 a。
+                注意：如果一个 g 点周围的. 已经全部变成了 a，那么就不要再去修改这个 g 点周围的 a。
+                (因为这样会导致无限递归)
+
+        代码分析：
+            1. 先把所有的 g 点存起来，用 set() 保存，方便查找是否已经处理过。
+            2. 然后从第一行开始，遍历每一列，判断当前位置是否为 g，如果是则进入下面的 for 循环。
+            3. 在 for 循环中，首先判断当前位置是否为 g，如果是则直接 break 出循环。
+            4. 如果不是 g，则说明是 a，需要判断上、左、右三个方向是否都是 g，如果是则更新该位置为 g。
+            5. 最后返回结果。
+
+        复杂度分析：
+            O(n^2), n = len(grid).
+        时间复杂度：O(n^2)
+        空间复杂度：O(n)
+        """
+        if not grid or not isinstance(grid, list):
+            return []
+
+        # 记录所有的 g 点
+        all_gs = set([i for i in range(len(grid))])
+        for j in range(len(grid)):
+            if grid[j][0] == "g":
+                all_gs.add(j * len(grid[0]))
+
+        # 遍历每一行
+        for i in range(len(grid)):
+            # 遍历每一列
+            for j in range(len(grid[0])):
+                # 获取当前位置的值
+                cur_val = grid[i][j]
+                # 如果当前位置是 g，则进入下面的 for 循环
+                if cur_val == "g":
+                    for k in [-1, -len(grid[0]), 1, len(grid[0])]:
+                        # 计算当前位置的四个方向的位置
+                        x, y = i + k // len(grid[0]), j + k % len(grid[0])
+                        # 如果当前位置的四个方向的位置都是 g，则更新该位置为 g
+                        if grid[x][y] == ".":
+                            grid[x][y] = "g"
+                        else:
+                            break
+        return grid
+
+################################################################
+
+Solution:
+['.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', 'g', 'g', '.', '.', 'g', 'g', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', 'g', 'g', '.']
+

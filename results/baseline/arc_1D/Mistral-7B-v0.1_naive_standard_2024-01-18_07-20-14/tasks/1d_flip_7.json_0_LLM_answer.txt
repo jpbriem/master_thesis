@@ -1,0 +1,68 @@
+Input token: 465
+Output token: 398
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', 'e', 'd', 'd', 'd', 'd', 'd', 'd', 'd', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', 'd', 'd', 'd', 'd', 'd', 'd', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'e', '.', '.', '.', '.', '.', '.']
+*/
+class Solution {
+public:
+    vector<int> findOrder(int n, vector<vector<int>>& prerequisites) {
+        // 邻接表
+        unordered_map<int, set<int>> graph;
+        for (auto &p : prerequisites) {
+            int a = p[0], b = p[1];
+            graph[b].insert(a);
+        }
+        // 入度数组
+        vector<int> inDegree(n, 0);
+        for (const auto &p : graph) {
+            for (const auto &q : p.second) {
+                ++inDegree[q];
+            }
+        }
+        queue<int> q;
+        for (int i = 0; i < n; ++i) {
+            if (!inDegree[i]) {
+                q.push(i);
+            }
+        }
+        vector<int> res;
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+            res.push_back(u);
+            for (const auto &v : graph[u]) {
+                --inDegree[v];
+                if (!inDegree[v]) {
+                    q.push(v);
+                }
+            }
+        }
+        return res.size() == n? res : {};
+    }
+};
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'e', '.', '.', '.', '.', '.', '.']
+

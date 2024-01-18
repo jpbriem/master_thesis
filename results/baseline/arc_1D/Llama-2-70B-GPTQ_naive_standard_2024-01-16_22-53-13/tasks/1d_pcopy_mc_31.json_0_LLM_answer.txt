@@ -1,0 +1,108 @@
+Input token: 562
+Output token: 883
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', 'g', 'g', 'g', '.', '.', '.', 'h', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'g', 'g', 'g', '.', '.', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', 'g', 'g', 'g', '.', '.', 'b', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'g', 'g', 'g', '.', 'b', 'b', 'b', '.', '.', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', 'h', 'h', 'h', '.', '.', '.', '.', 'g', '.', '.', '.', '.', 'a', '.', '.', '.', '.', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'h', 'h', 'h', '.', '.', '.', 'g', 'g', 'g', '.', '.', 'a', 'a', 'a', '.', '.', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', 'e', 'e', 'e', '.', '.', '.', '.', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', 'e', 'e', 'e', '.', '.', '.', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution(object):
+    def transform(self, grid: List[str]) -> str:
+        """
+        对于每一个元素，如果它是点，那么就把它变成空格；反之，如果它是空格，那么就把它变成点。
+        然后再进行下面的操作：
+            1、将所有相邻的点连接起来（这里的“相邻”指在水平或者竖直方向上）。
+            2、删除所有不包含任何点的区域中的所有元素。
+            3、重复第 1 和第 2 步，直到没有新的连通组出现为止。
+            (注意：两个元素只能在水平或者竖直方向上相邻)
+        :param grid:
+        :return:
+        """
+        # 初始化
+        width = len(grid)
+        height = len(grid[0]) if width > 0 else 0
+        result = list()
+        for i in range(width * height):
+            result.append('.')
+
+        # 处理
+        while True:
+            # 获取当前状态
+            current_state = self._get_current_state(result=result, width=width, height=height)
+            # 判断是否还需要处理
+            if not current_state['is_need_process']:
+                break
+            # 更新结果
+            result = current_state['result']
+            # 清理已经处理过的数据
+            self._cleanup_data(result=result, width=width, height=height)
+
+        return ''.join(result)
+
+    @staticmethod
+    def _get_current_state(result: List[str], width: int, height: int) \
+            -> Tuple[bool, List[List[str]]]:
+        """
+        获取当前状态
+        :param result:
+        :param width:
+        :param height:
+        :return:
+        """
+        is_need_process = False
+        new_result = list()
+        for y in range(height):
+            row = list()
+            for x in range(width):
+                if result[y*width + x] == '.':
+                    continue
+                elif result[y*width + x] == 'x':
+                    is_need_process = True
+                    continue
+                else:
+                    row.append('o')
+            new_result.append(row)
+        return is_need_process, new_result
+
+    @staticmethod
+    def _cleanup_data(result: List[str], width: int, height: int) -> None:
+        """
+        清理已经处理过的数据
+        :param result:
+        :param width:
+        :param height:
+        :return:
+        """
+        for y in range(height):
+            for x in range(width):
+                if result[y*width + x]!= '.' and result[y*width + x]!= 'o' and result[y*width + x]!= 'x':
+                    result[y*width + x] = '.'
+
+################################################################
+
+Solution:
+['.', '.', 'e', 'e', 'e', '.', '.', '.', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+

@@ -1,0 +1,98 @@
+Input token: 307
+Output token: 807
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def findPath(self, grid: List[str]) -> str:
+        """
+        思路：从左到右，找出第一个不是. 的字符。如果是 f，则向下移动；如果是 h，则向上移动。
+                    这里需要注意的是，当前位置的字符可能会被另外一条路冲破，所以我们需要记录已经访问过的点。
+                    最后返回最长的路径。
+
+        时间复杂度：O(n)，其中 n 为输入数组的长度。
+        空间复杂度：O(n)，其中 n 为输入数组的长度。
+        """
+        if not grid or len(grid) == 0:
+            return ""
+
+        visited = set()
+        for i in range(len(grid)):
+            if grid[i]!= ".":
+                self._find_path(visited, grid, i, 0)
+
+        max_length = 0
+        for i in range(len(grid)):
+            if grid[i]!= "." and (i, 0) not in visited:
+                length = self._get_length(visited, grid, i, 0)
+                if length > max_length:
+                    max_length = length
+
+        return max_length
+
+    @staticmethod
+    def _is_valid(x: int, y: int, grid: List[List], visited: set):
+        x_min, x_max = 0, len(grid) - 1
+        y_min, y_max = 0, len(grid[0]) - 1
+        if x < x_min or x > x_max or y < y_min or y > y_max:
+            return False
+
+        if grid[x][y] == ".":
+            return True
+
+        if (x, y) in visited:
+            return False
+
+        return True
+
+    def _find_path(self, visited: set, grid: List[List], x: int, y: int):
+        if not self._is_valid(x, y, grid, visited):
+            return
+
+        visited.add((x, y))
+        if grid[x][y] == "f":
+            self._find_path(visited, grid, x + 1, y)
+        elif grid[x][y] == "h":
+            self._find_path(visited, grid, x, y + 1)
+
+    def _get_length(self, visited: set, grid: List[List], x: int, y: int):
+        if not self._is_valid(x, y, grid, visited):
+            return 0
+
+        visited.add((x, y))
+        if grid[x][y] == "f":
+            return 1 + self._get_length(visited, grid, x + 1, y)
+        else:
+            return 1 + self._get_length(visited, grid, x, y + 1)
+
+################################################################
+
+Solution:
+['.', '.', '.', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.']
+

@@ -1,0 +1,104 @@
+Input token: 421
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'h', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', 'e', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', '.', 'e', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'e', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'b', 'e', 'e', 'e', 'e', 'e', 'e', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'b', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def reverse(self, s: str) -> str:
+        return s[::-1]
+
+    def rotateString(self, A: str, B: str) -> bool:
+        if len(A)!= len(B):
+            return False
+        for i in range(len(A)):
+            if not self.isRotation(A[:i], B):
+                return False
+        return True
+
+    @staticmethod
+    def isRotation(a: str, b: str) -> bool:
+        return a == b or (a + a).startswith(b)
+
+    def findSubstring(self, s: str, t: str) -> int:
+        n = len(s)
+        m = len(t)
+        if m > n:
+            return 0
+        count = 0
+        for i in range(n - m + 1):
+            if s[i : i + m] == t:
+                count += 1
+        return count
+
+    def minDistance(self, word1: str, word2: str) -> int:
+        """
+        动态规划，dp[i][j]:word1前i个字符和word2前j个字符的最小编辑距离。
+                       dp[i][j] = min{dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost}
+        其中cost为两个单词相同位置上的字符不一样时的替换代价（或者删除代仳）。
+        """
+        m, n = len(word1), len(word2)
+        dp = [[0 for _ in range(m)] for __ in range(n)]
+        for j in range(n):
+            for i in range(m):
+                cost = 1 if word1[i]!= word2[j] else 0
+                dp[j][i] = min(dp[j][i - 1] + 1, dp[j - 1][i] + 1, dp[j - 1][i - 1] + cost)
+        return dp[-1][-1]
+
+    def longestCommonPrefix(self, strs: List[str]) -> str:
+        """
+        动态规划：dp[i][j]:strs[i]前j个字符与strs[j]前j个字符的最长公共前缀。
+                   dp[i][j] = max{min{k: k <= j, strs[i][k] == strs[j][k]}}
+        """
+        res = ""
+        if not strs:
+            return res
+        m = len(strs[0])
+        dp = [[0 for _ in range(m)] for __ in range(m)]
+        for i in range(m):
+            for j in range(i, m):
+                dp[i][j] = max(min(k for k in range(j, i - 1, -1) if strs[i][k] == strs[j][k]), key=abs)
+        for i in range(m):
+            for j in range(i, m):
+                if dp[i][j] == j - i:
+                    res += strs[i][:j - i]
+        return res
+
+    def longestPalindrome(self, s: str) -> str:
+        """
+        动态规划：dp[i][j]:s[i...j]是否为回文串。
+                   dp[i][j] = dp[i+1][j-1] and s[i]==s[j]
+        """
+        n = len(s)
+        dp = [[False for _ in range(n)] for __ in range(n)]
+        for i in range(n // 2, -1, -1):
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'b', '.']
+

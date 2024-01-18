@@ -1,0 +1,66 @@
+Input token: 482
+Output token: 487
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', 'd', 'd', 'd', 'd', 'd', 'd', '.']
+
+Example_3:
+input: ['.', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Explanation:
+The first 5 characters of the output should be replaced by the last 5 characters of the input.
+Note that we cannot overwrite the input array itself, so the modified array must be returned as an answer.
+*/
+public class Solution {
+    public char[] reorganizeString(char[] S) {
+        if (S == null || S.length < 2) return S;
+        Map<Character, Integer> map = new HashMap<>();
+        for (int i = 0; i < S.length; i++) {
+            map.put(S[i], map.getOrDefault(S[i], 0) + 1);
+        }
+        PriorityQueue<Map.Entry<Character, Integer>> pq = new PriorityQueue<>((o1, o2) -> o2.getValue() - o1.getValue());
+        for (Map.Entry<Character, Integer> entry : map.entrySet()) {
+            pq.offer(entry);
+        }
+        int n = S.length / 2;
+        int count = 0;
+        List<Character> list = new ArrayList<>(n);
+        while (!pq.isEmpty()) {
+            Map.Entry<Character, Integer> poll = pq.poll();
+            if (count >= n && poll.getValue() > 1) return new char[0];
+            list.add(poll.getKey());
+            count++;
+            if (count % 2!= 0) {
+                poll.setValue(poll.getValue() - 1);
+                pq.offer(poll);
+            }
+        }
+        char[] res = new char[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            res[i] = list.get(i);
+        }
+        return res;
+    }
+}
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.']
+

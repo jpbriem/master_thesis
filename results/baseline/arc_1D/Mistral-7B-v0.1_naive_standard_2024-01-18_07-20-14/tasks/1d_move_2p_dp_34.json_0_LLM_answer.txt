@@ -1,0 +1,70 @@
+Input token: 314
+Output token: 636
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', '.', '.', 'd', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'd', '.', '.']
+
+Example_2:
+input: ['.', 'b', 'b', 'b', '.', '.', 'd', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'b', 'b', 'b', 'd', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', 'h', 'h', 'h', 'h', 'h', '.', '.', 'd', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'd', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', 'h', 'h', 'h', 'h', 'h', '.', '.', 'd', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'd', '.', '.', '.', '.', '.', '.']
+*/
+public class Solution {
+    public String[] updateBoard(String[] board, int[] click) {
+        if (board == null || board.length < 0) return new String[0];
+        int m = board.length;
+        int n = board[0].length();
+        char[][] matrix = new char[m][n];
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                matrix[i][j] = board[i].charAt(j);
+            }
+        }
+        // 记录点击的位置
+        int x = click[0], y = click[1];
+        // 如果是地雷，则直接返回
+        if (matrix[x][y] == 'M') return board;
+        // 如果不是地雷，则递归查找周围的地雷数量
+        int count = dfs(matrix, x, y);
+        // 将地雷数量填入矩阵中
+        matrix[x][y] = (count > 0? count + '0' : 'B');
+        // 将矩阵转换为字符串数组
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                sb.append(matrix[i][j]);
+            }
+            sb.append('\n');
+        }
+        return sb.toString().split("\n");
+    }
+
+    private int dfs(char[][] matrix, int x, int y) {
+        if (x < 0 || x >= matrix.length || y < 0 || y >= matrix[0].length) return 0;
+        if (matrix[x][y]!= '.') return matrix[x][y] - '0';
+        matrix[x][y] = 'X';
+        int res = dfs(matrix, x - 1, y) + dfs(matrix, x + 1, y) + dfs(matrix, x, y - 1) + dfs(matrix, x, y + 1)
+                   + dfs(matrix, x - 1, y - 1) + dfs(matrix, x - 1, y + 1) + dfs(matrix, x + 1, y - 1) + dfs(matrix, x + 1, y + 1);
+        return res;
+    }
+}
+################################################################
+
+Solution:
+['.', '.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'd', '.', '.', '.', '.', '.']
+

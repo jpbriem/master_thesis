@@ -1,0 +1,83 @@
+Input token: 473
+Output token: 701
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', 'd', 'd', '.', 'd', 'd', 'd', 'd', 'd', 'd', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'd', '.']
+output: ['.', '.', '.', 'd', 'd', '.', 'd', 'd', 'd', 'd', 'd', 'd', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.']
+
+Example_2:
+input: ['.', 'd', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', '.', 'd', 'd', 'd', 'd', '.', '.', '.', 'd', 'd', 'd', '.']
+output: ['.', 'd', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', '.', 'd', 'd', 'd', 'd', '.', '.', '.', 'd', 'd', 'd', '.']
+
+Example_3:
+input: ['.', '.', 'd', 'd', 'd', 'd', '.', 'd', '.', 'd', '.', 'd', 'd', '.', '.', 'd', 'd', '.', 'd', 'd', 'd', 'd']
+output: ['.', '.', 'f', 'f', 'f', 'f', '.', 'd', '.', 'd', '.', 'd', 'd', '.', '.', 'd', 'd', '.', 'f', 'f', 'f', 'f']
+
+Test case:
+input: ['.', '.', '.', 'd', 'd', 'd', 'd', 'd', '.', '.', 'd', 'd', 'd', 'd', '.', '.', '.', 'd', 'd', 'd', 'd', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', 'd', 'd', 'd', 'd', 'd', '.', '.', 'f', 'f', 'f', 'f', '.', '.', '.', 'd', 'd', 'd', 'd', '.'].
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def transform(self, grid: List[str]) -> str:
+        """
+        1. 先找到所有的 d，然后再把它们变成 f。
+        2. 如果一个点周围有两个或者三个邻居是 d，那么就变成 f；否则不变。
+        3. 最终结果只能是 d 和 f 组成的。
+        :param grid:
+        :return:
+        """
+        # 记录每个点的状态：0 -.; 1 - d; 2 - f
+        states = [[0 for _ in range(len(grid))] for _ in range(len(grid))]
+        # 记录每个点的邻居数量
+        neighbors = [[0 for _ in range(len(grid))] for _ in range(len(grid))]
+        # 记录每个点的位置信息
+        positions = []
+        for i in range(len(grid)):
+            for j in range(len(grid[i])):
+                if grid[i][j] == "." or grid[i][j] == ".":
+                    continue
+                elif grid[i][j] == "d":
+                    states[i][j] = 1
+                    positions.append((i, j))
+                else:
+                    assert grid[i][j] == "f", "输入格式错误！"
+                    states[i][j] = 2
+
+        # 计算每个点的邻居数量
+        for position in positions:
+            x, y = position
+            for dx, dy in [(0, 1), (0, -1), (-1, 0), (1, 0)]:
+                try:
+                    neighbor = (x + dx, y + dy)
+                    if states[neighbor[0]][neighbor[1]]!= 0:
+                        neighbors[position[0]][position[1]] += 1
+                except IndexError as e:
+                    pass
+
+        # 根据邻居数量更新状态值
+        for position in positions:
+            x, y = position
+            if neighbors[position[0]][position[1]] >= 2:
+                states[position[0]][position[1]] = 2
+            else:
+                states[position[0]][position[1]] = 0
+
+        return ["." if state == 0 else ("d" if state == 1 else "f") for row in states for state in row]
+
+################################################################
+
+Solution:
+['.', '.', '.', 'f', 'f', 'f', 'f', 'f', '.', '.', 'd', 'd', 'd', 'd', '.', '.', '.', 'd', 'd', 'd', 'd', '.']
+

@@ -1,0 +1,80 @@
+Input token: 276
+Output token: 627
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', 'd', '.', '.', '.', 'd', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', '.']
+output: ['.', '.', '.', '.', 'h', '.', '.', '.', '.', 'h', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', '.', '.', 'h', 'h', 'h', 'h', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', 'h', '.', '.', 'h', '.', '.']
+
+Test case:
+input: ['.', '.', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', 'b', '.', 'b', '.', 'b', '.', '.', '.', '.', '.', '.']
+*/
+public class Solution {
+    public String[] updateBoard(String[] board, int[] click) {
+        if (board == null || board.length < 0) return new String[0];
+        List<int[]> mines = new ArrayList<>();
+        for (int i = 0; i < board.length; ++i) {
+            for (int j = 0; j < board[0].length(); ++j) {
+                if (board[i].charAt(j) == 'M') {
+                    mines.add(new int[]{i, j});
+                }
+            }
+        }
+        dfs(mines, board, click);
+        return board;
+    }
+
+    private void dfs(List<int[]> mines, String[] board, int[] click) {
+        int m = board.length, n = board[0].length(), x = click[0], y = click[1];
+        char c = board[x][y];
+        if (c!= 'E' && c!= 'B') return;
+        if (c == 'E') {
+            board[x][y] = 'B';
+            for (int[] mine : mines) {
+                int dx = Math.abs(mine[0] - x), dy = Math.abs(mine[1] - y);
+                if (dx <= 1 && dy <= 1) {
+                    board[mine[0]][mine[1]] = 'X';
+                }
+            }
+        } else {
+            int count = 0;
+            for (int i = x - 1; i <= x + 1; ++i) {
+                for (int j = y - 1; j <= y + 1; ++j) {
+                    if (i >= 0 && i < m && j >= 0 && j < n &&!Arrays.equals(click, new int[]{i, j})) {
+                        if (board[i][j] == 'M') {
+                            count++;
+                        }
+                    }
+                }
+            }
+            board[x][y] = Integer.toString(count).toCharArray()[0] + "";
+        }
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (board[i][j] == 'E') {
+                    dfs(mines, board, new int[]{i, j});
+                }
+            }
+        }
+    }
+}
+################################################################
+
+Solution:
+['.', '.', 'b', '.', '.', '.', 'b', '.', '.', '.', '.', '.', '.']
+

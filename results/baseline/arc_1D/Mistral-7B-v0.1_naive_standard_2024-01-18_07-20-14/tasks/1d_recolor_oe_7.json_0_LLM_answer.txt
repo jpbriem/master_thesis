@@ -1,0 +1,58 @@
+Input token: 509
+Output token: 457
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', '.', 'e', 'e', '.', '.', 'e', 'e', '.']
+output: ['.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', 'i', 'i', 'i', 'i', 'i', '.', 'c', 'c', '.', '.', 'c', 'c', '.']
+
+Example_2:
+input: ['.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', '.', 'e', 'e', 'e', '.', 'e', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', '.', '.']
+output: ['.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'c', '.', 'i', 'i', 'i', '.', 'i', '.', '.', '.', 'i', 'i', 'i', 'i', 'i', '.', '.']
+
+Example_3:
+input: ['.', 'e', 'e', '.', '.', '.', 'e', '.', 'e', '.', '.', '.', 'e', '.', '.', '.', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.']
+output: ['.', 'c', 'c', '.', '.', '.', 'i', '.', 'i', '.', '.', '.', 'i', '.', '.', '.', 'i', 'i', 'i', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', 'e', 'e', '.', '.', '.', 'e', 'e', 'e', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', '.', 'e', 'e', 'e', 'e', 'e', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', 'c', 'c', '.', '.', '.', 'c', 'c', 'c', '.', '.', '.', 'i', 'i', 'i', 'i', 'i', '.', 'c', 'c', 'c', 'c', 'c', '.']
+*/
+public class Solution {
+    public String[] reorganizeString(String S) {
+        int n = S.length();
+        if (n == 0 || n % 2!= 0) return new String[0];
+        Map<Character, Integer> map = new HashMap<>();
+        for (int i = 0; i < n; ++i) {
+            char c = S.charAt(i);
+            map.put(c, map.getOrDefault(c, 0) + 1);
+        }
+        PriorityQueue<Map.Entry<Character, Integer>> pq = new PriorityQueue<>((a, b) -> a.getValue() - b.getValue());
+        for (Map.Entry<Character, Integer> entry : map.entrySet()) {
+            pq.offer(entry);
+        }
+        List<String> res = new ArrayList<>(n / 2);
+        while (!pq.isEmpty()) {
+            Map.Entry<Character, Integer> e1 = pq.poll(), e2 = pq.poll();
+            if (e1.getValue() > n / 2 || e2.getValue() > n / 2) return new String[0];
+            res.add("" + e1.getKey());
+            res.add("" + e2.getKey());
+            --e1.setValue();
+            --e2.setValue();
+            if (e1.getValue() > 0) pq.offer(e1);
+            if (e2.getValue() > 0) pq.offer(e2);
+        }
+        return res.toArray(new String[res.size()]);
+    }
+}
+################################################################
+
+Solution:
+['.', '.', 'c', 'c', '.', '.', '.', 'i', 'i', 'i', '.', '.', '.', 'i', 'i', 'i', 'i', 'i', '.', 'i', 'i', 'i', 'i', 'i', '.']
+

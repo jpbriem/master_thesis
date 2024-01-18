@@ -1,0 +1,87 @@
+Input token: 412
+Output token: 737
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', 'g', 'g', 'g', '.', '.', 'g', 'g', '.', 'g', 'g', '.', 'g', 'g', 'g', '.', '.']
+output: ['.', '.', '.', 'b', 'b', 'b', '.', '.', 'f', 'f', '.', 'f', 'f', '.', 'b', 'b', 'b', '.', '.']
+
+Example_2:
+input: ['.', '.', 'g', 'g', 'g', 'g', 'g', '.', 'g', 'g', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', 'g']
+output: ['.', '.', 'b', 'b', 'b', 'b', 'b', '.', 'f', 'f', 'f', 'f', '.', '.', '.', 'f', 'f', 'f', 'f']
+
+Example_3:
+input: ['.', '.', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', '.', '.', 'g']
+output: ['.', '.', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', '.', '.', 'b']
+
+Test case:
+input: ['.', '.', 'g', 'g', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', '.', 'g', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', 'b', 'b', 'b', 'b', '.', '.', '.', 'f', 'f', 'f', '.', 'f', '.', '.', '.', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def transform(self, grid: List[str]) -> str:
+        """
+        1. 先找出所有的 g，然后再把它们变成 b。
+        2. 如果一个点周围都是 g，那么就变成 f；否则不变。
+        3. 最后把所有的 g 换成 b。
+        :param grid:
+        :return:
+        """
+        # 记录每个点周围的状态：0 -.; 1 - g; 2 - b; 3 - f
+        status = [[0 for _ in range(len(grid))] for _ in range(len(grid))]
+        for i in range(len(status)):
+            for j in range(len(status[i])):
+                if grid[i][j] == "." or grid[i][j] == ".":
+                    continue
+                elif grid[i][j] == "g":
+                    status[i][j] = 1
+                else:
+                    status[i][j] = 2
+
+        # 遍历所有的点，判断周围的情况
+        for i in range(len(status)):
+            for j in range(len(status[i])):
+                if status[i][j]!= 0:
+                    continue
+                neighbors = self._get_neighborhood(status, i, j)
+                if all([n == 1 for n in neighbors]):
+                    status[i][j] = 3
+                else:
+                    status[i][j] = 4
+
+        # 将所有的 g 和 f 转化为对应的字符
+        for i in range(len(status)):
+            for j in range(len(status[i])):
+                if status[i][j] == 1:
+                    status[i][j] = 2
+                elif status[i][j] == 3:
+                    status[i][j] = 5
+
+        return "".join(["." if s == 0 else chr(ord("b") + s - 1) for s in status[::-1]])
+
+    @staticmethod
+    def _get_neighborhood(status: List[List], x: int, y: int) -> List[int]:
+        neighborhoods = []
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                if (x+dx >= 0 and x+dx < len(status)) \
+                        and (y+dy >= 0 and y+dy < len(status[0])):
+                    neighborhoods.append(status[x+dx][y+dy])
+        return neighborhoods
+
+################################################################
+
+Solution:
+['.', '.', 'f', 'f', 'f', 'f', '.', '.', '.', 'b', 'b', 'b', '.', 'b', '.', '.', '.', '.', '.']
+

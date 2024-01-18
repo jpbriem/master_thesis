@@ -1,0 +1,102 @@
+Input token: 658
+Output token: 854
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'c', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'b', 'd', 'd', 'd', 'd', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['b', 'b', 'e', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'e', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'c', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'g', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'b', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', '.', '.', '.']
+"""
+
+import collections
+
+class Solution(object):
+    def transform(self, grid):
+        """
+        :type grid: List[str]
+        :rtype: List[List[str]]
+        """
+        
+        # 0. check inputs & outputs
+        assert isinstance(grid, list) and len(grid) > 0,\
+            "Input grid should be a non-empty list."
+        for i in range(len(grid)):
+            assert isinstance(grid[i], str),\
+                "Each element of grid should be a string."
+            
+        # 1. process
+        directions = {'.': None}
+        directions['u'] = {'l': -1, 'r': 1}
+        directions['d'] = {'l': 1, 'r': -1}
+        directions['l'] = {'u': -1, 'd': 1}
+        directions['r'] = {'u': 1, 'd': -1}
+        directions['c'] = {'u': 0, 'd': 0}
+        directions['e'] = {'u': 0, 'd': 0}
+        directions['b'] = {'u': 0, 'd': 0}
+        directions['g'] = {'u': 0, 'd': 0}
+        
+        # 2. build graph
+        graph = collections.defaultdict(list)
+        for i in range(len(grid)-1):
+            for j in range(len(grid[0])-1):
+                if grid[i][j] == '.': continue
+                
+                # u
+                if grid[i+1][j]!= '.':
+                    graph[(i, j)] += [(i+1, j), (i, j+1)]
+                    
+                # d
+                if grid[i-1][j]!= '.':
+                    graph[(i, j)] += [(i-1, j), (i, j-1)]
+                    
+                # l
+                if grid[i][j+1]!= '.':
+                    graph[(i, j)] += [(i, j+1), (i-1, j)]
+                    
+                # r
+                if grid[i][j-1]!= '.':
+                    graph[(i, j)] += [(i, j-1), (i+1, j)]
+                    
+        # 3. dfs
+        stack = []
+        visited = set()
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] not in directions or grid[i][j] == '.': continue
+                stack.append((i, j))
+                while stack:
+                    x, y = stack[-1]
+                    stack.pop(-1)
+                    if (x, y) in visited: continue
+                    visited.add((x, y))
+                    for nx, ny in graph[(x, y)]:
+                        if grid[nx][ny] == '.':
+                            grid[nx][ny] = grid[x][y]
+                            stack.append((nx, ny))
+                        elif grid[nx][ny] in directions:
+                            stack.append((nx, ny))
+                        else: break
+        return grid
+
+################################################################
+
+Solution:
+['.', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', '.', '.', '.']
+

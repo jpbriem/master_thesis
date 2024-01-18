@@ -1,0 +1,79 @@
+Input token: 487
+Output token: 602
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', 'e', 'e', 'e', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.']
+output: ['.', 'e', 'e', 'e', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.']
+
+Example_2:
+input: ['.', '.', 'e', '.', 'e', 'e', '.', '.', 'e', 'e', '.', 'e', 'e', 'e', '.', 'e', 'e', 'e', 'e', 'e', '.', '.', '.']
+output: ['.', '.', 'e', '.', 'e', 'e', '.', '.', 'e', 'e', '.', 'e', 'e', 'e', '.', 'g', 'g', 'g', 'g', 'g', '.', '.', '.']
+
+Example_3:
+input: ['.', 'e', 'e', '.', 'e', 'e', '.', 'e', 'e', '.', 'e', 'e', 'e', 'e', '.', '.', 'e', 'e', 'e', '.', '.', '.', '.']
+output: ['.', 'e', 'e', '.', 'e', 'e', '.', 'e', 'e', '.', 'g', 'g', 'g', 'g', '.', '.', 'e', 'e', 'e', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', 'e', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', 'e', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, isEnd=False):
+        self.val = val
+        self.isEnd = isEnd
+        self.next = []
+
+
+class Solution(object):
+    def orangesSquaring(self, grid):
+        """
+        :type grid: List[List[str]]
+        :rtype: void Do not return anything, modify grid in-place instead.
+        """
+        if len(grid) == 0 or len(grid[0]) == 0:
+            return
+        
+        rows = len(grid)
+        cols = len(grid[0])
+        directions = [(i, j) for i in range(-1, 2) for j in range(-1, 2)]
+        directions.remove((0, -1)) # remove up direction
+        directions.append((0, 1)) # add down direction
+        
+        queue = collections.deque()
+        for r in range(rows):
+            for c in range(cols):
+                if grid[r][c] == '.':
+                    continue
+                else:
+                    node = Node(grid[r][c], True)
+                    queue.append([node, (r, c), directions])
+        
+        while queue:
+            node, pos, dirs = queue.popleft()
+            
+            for d in dirs:
+                newPos = tuple(map(sum, zip(*pos))) + d
+                if newPos in ((r, c) for r in range(rows) for c in range(cols)):
+                    if grid[newPos[0]][newPos[1]]!= '.':
+                        if grid[newPos[0]][newPos[1]] == 'e' and node.isEnd:
+                            grid[newPos[0]][newPos[1]] = 'g'
+                        elif grid[newPos[0]][newPos[1]] == 'g' and not node.isEnd:
+                            grid[newPos[0]][newPos[1]] = 'e'
+                        else:
+                            raise Exception('Unexpected error')
+                    
+                    queue.append([Node(grid[newPos[0]][newPos[1]], not node.isEnd), newPos, dirs])
+################################################################
+
+Solution:
+['.', '.', 'e', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.']
+

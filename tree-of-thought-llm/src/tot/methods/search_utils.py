@@ -1,5 +1,5 @@
 from tot.methods.tree_nodes import Node
-from tot.models import model 
+from tot.models import model, prompt_preprocessing_for_model
 
 model = None
 
@@ -36,6 +36,7 @@ def get_value(args, task, child, cache_value=True):
         return task.value_cache[str(value_prompt)], value_prompt
     
     if args.use_api:
+        value_prompt = prompt_preprocessing_for_model(value_prompt)
         value_outputs = model(value_prompt, n=args.n_evaluate_sample, stop=None)
     else: 
         # get values from chat interface
@@ -48,7 +49,11 @@ def get_value(args, task, child, cache_value=True):
     value = task.value_outputs_unwrap(value_outputs, child.level-1)
     if cache_value:
         task.value_cache[str(value_prompt)] = value
-    prompt_log = delimiter.join(["Value Prompt:\n" + "\n\n".join(value_prompt.values()), "Value Outputs:\n" + "\n------\n".join(value_outputs)])
+    
+    if isinstance(value_prompt, dict):
+        prompt_log = delimiter.join(["Value Prompt:\n" + "\n\n".join(value_prompt.values()), "Value Outputs:\n" + "\n------\n".join(value_outputs)])
+    elif isinstance(value_prompt, str):
+        prompt_log = delimiter.join(["Value Prompt:\n" + value_prompt, "Value Outputs:\n" + "\n------\n".join(value_outputs)])
     return value, prompt_log
 
 
@@ -82,6 +87,7 @@ def get_votes(task, current_node, n_evaluate_sample):
  
     # voting
     vote_prompt = task.vote_prompt_wrap(current_node, task.steps) # TODO: add params to all calls
+    vote_prompt = prompt_preprocessing_for_model(vote_prompt)
     vote_outputs = model(vote_prompt, n=n_evaluate_sample, stop=None)
     values = task.vote_outputs_unwrap(current_node, vote_outputs)
     for value, child in zip(values, current_node.children):
@@ -89,8 +95,10 @@ def get_votes(task, current_node, n_evaluate_sample):
         
     #log
     delimiter = "\n###########################################################\n"
-    prompt_log = delimiter + delimiter.join(["Vote Prompt:\n" + "\n\n".join(vote_prompt.values()), "Vote Outputs:\n" + "\n------\n".join(vote_outputs), "Vote Values: "+ str([n.value for n in current_node.children])])
-    
+    if isinstance(vote_prompt, dict):
+        prompt_log = delimiter + delimiter.join(["Vote Prompt:\n" + "\n\n".join(vote_prompt.values()), "Vote Outputs:\n" + "\n------\n".join(vote_outputs), "Vote Values: "+ str([n.value for n in current_node.children])])
+    elif isinstance(vote_prompt, str):
+        prompt_log = delimiter + delimiter.join(["Vote Prompt:\n" + vote_prompt, "Vote Outputs:\n" + "\n------\n".join(vote_outputs), "Vote Values: "+ str([n.value for n in current_node.children])])
     return prompt_log
 
 
@@ -104,6 +112,7 @@ def get_samples(args, task, current_node, prompt_sample, stop):
     else:
         raise ValueError(f'prompt_sample {prompt_sample} not recognized')
     if args.use_api:
+        prompt = prompt_preprocessing_for_model(prompt)
         samples = model(prompt, n=current_node.n_generate_children, stop=stop)
     else:
         # get samples from chat interface
@@ -118,7 +127,10 @@ def get_samples(args, task, current_node, prompt_sample, stop):
             
     # log
     delimiter = "\n###########################################################\n"
-    prompt_log = delimiter.join(["Sample Prompt:\n" + "\n\n".join(prompt.values()), "Sample Outputs:\n" + "\n------\n".join(samples)])
+    if isinstance(prompt, dict):
+        prompt_log = delimiter.join(["Sample Prompt:\n" + "\n\n".join(prompt.values()), "Sample Outputs:\n" + "\n------\n".join(samples)])
+    elif isinstance(prompt, str):
+        prompt_log = delimiter.join(["Sample Prompt:\n" + prompt, "Sample Outputs:\n" + "\n------\n".join(samples)])
     
     # turn samples in nodes
     if current_node.level+1 == task.steps:
@@ -138,6 +150,7 @@ def get_samples(args, task, current_node, prompt_sample, stop):
 def analyse_failure(args, task, node):
     prompt = task.failure_analysis_prompt_wrap(node)             
     if args.use_api:
+        prompt = prompt_preprocessing_for_model(prompt)
         output = model(prompt, n=1)
     else:
         # get output from chat interface
@@ -151,8 +164,11 @@ def analyse_failure(args, task, node):
     
     # log
     delimiter = "\n###########################################################\n"
-    analysis_log = delimiter.join(["Analysis Prompt:\n" + "\n".join(prompt.values()),"Analysis Result:\n" + str(output)])    
-    
+    if isinstance(prompt, dict):
+        analysis_log = delimiter.join(["Analysis Prompt:\n" + "\n".join(prompt.values()),"Analysis Result:\n" + str(output)])    
+    elif isinstance(prompt, str):
+        analysis_log = delimiter.join(["Analysis Prompt:\n" + prompt,"Analysis Result:\n" + str(output)])
+        
     return analysis_log
 
 # Revision: revise abstraction
@@ -160,6 +176,7 @@ def revise(args, task, node, original_node):
     # revise abstraction
     prompt = task.revision_prompt_wrap(node)
     if args.use_api:
+        prompt = prompt_preprocessing_for_model(prompt)
         output = model(prompt, n=1)
     else:
         # get output from chat interface
@@ -176,7 +193,10 @@ def revise(args, task, node, original_node):
     
     # log
     delimiter = "\n###########################################################\n"
-    revision_log = delimiter.join(["Revision Prompt:\n" + "\n".join(prompt.values()),"Revision Result:\n" + str(output)])    
+    if isinstance(prompt, dict):
+        revision_log = delimiter.join(["Revision Prompt:\n" + "\n".join(prompt.values()),"Revision Result:\n" + str(output)])    
+    elif isinstance(prompt, str):
+        revision_log = delimiter.join(["Revision Prompt:\n" + prompt,"Revision Result:\n" + str(output)])
     revision_log += delimiter + replacement_log 
     
     return revision_log

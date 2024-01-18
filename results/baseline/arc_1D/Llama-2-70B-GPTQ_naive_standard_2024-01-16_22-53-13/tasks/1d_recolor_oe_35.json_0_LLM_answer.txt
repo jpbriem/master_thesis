@@ -1,0 +1,109 @@
+Input token: 644
+Output token: 954
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', 'd', 'd', 'd', 'd', '.', '.', 'd', '.', 'd', 'd', 'd', 'd', 'd', '.', '.', 'd', 'd', 'd', 'd', '.', '.', '.', 'd', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'h', 'h', 'h', 'h', '.', '.', 'a', '.', 'a', 'a', 'a', 'a', 'a', '.', '.', 'h', 'h', 'h', 'h', '.', '.', '.', 'a', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', 'd', 'd', 'd', 'd', 'd', '.', 'd', 'd', '.', '.', 'd', 'd', 'd', 'd', 'd', '.', 'd', '.', 'd', 'd', 'd', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'a', 'a', 'a', 'a', 'a', '.', 'h', 'h', '.', '.', 'a', 'a', 'a', 'a', 'a', '.', 'a', '.', 'a', 'a', 'a', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', '.', '.', '.', 'd', 'd', 'd', '.', '.', 'd', 'd', 'd', 'd', 'd', '.', '.', '.', 'd', 'd', 'd', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', 'a', 'a', 'a', '.', '.', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', 'a', 'a', 'a', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', 'd', 'd', 'd', 'd', 'd', '.', 'd', 'd', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', '.', '.', '.', 'd', 'd', '.', '.', 'd', 'd', 'd', 'd', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', 'h', 'h', 'h', 'h', 'h', '.', 'a', 'a', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', 'a', 'a', '.', '.', 'a', 'a', 'a', 'a', '.', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def transform(self, grid: List[str]) -> str:
+        """
+        思路：
+            1、找到所有的 d 和 a，并将其转换为 h。
+            2、对于每个 h，如果它周围的元素都是.，那么就将它变成 a。
+            3、重复第二步直到不再发生变化。
+        """
+        # 记录已经处理过的点
+        processed = set()
+        while True:
+            # 获取所有的 d 和 a
+            ds = self._get_ds(grid)
+            as_ = self._get_as_(grid)
+            if not (ds or as_):
+                break
+            for i in range(len(grid)):
+                for j in range(len(grid[0])):
+                    if grid[i][j] == "." and \
+                            ((i, j) in ds or (i, j) in as_) and \
+                            all([grid[k][l] == "." for k in range(max(0, i - 1), min(i + 2, len(grid))) for l in range(max(0, j - 1), min(j + 2, len(grid[0])))]):
+                        grid[i][j] = "h"
+            # 更新已经处理过的点
+            processed |= {(i, j) for i in range(len(grid)) for j in range(len(grid[0]))}
+            # 获取所有的 h
+            hs = self._get_hs(grid)
+            if not hs:
+                break
+            for i in range(len(grid)):
+                for j in range(len(grid[0])):
+                    if grid[i][j] == "h":
+                        grid[i][j] = "a"
+        return "".join("".join(row) for row in grid)
+
+    @staticmethod
+    def _get_ds(grid: List[str]) -> Set[Tuple[int, int]]:
+        ds = set()
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == ".":
+                    continue
+                elif grid[i][j] == "d":
+                    ds.add((i, j))
+                else:
+                    raise ValueError("Unexpected character.")
+        return ds
+
+    @staticmethod
+    def _get_as_(grid: List[str]) -> Set[Tuple[int, int]]:
+        as_ = set()
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == ".":
+                    continue
+                elif grid[i][j] == "a":
+                    as_.add((i, j))
+                else:
+                    raise ValueError("Unexpected character.")
+        return as_
+
+    @staticmethod
+    def _get_hs(grid: List[str]) -> Set[Tuple[int, int]]:
+        hs = set()
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == ".":
+                    continue
+                elif grid[i][j] == "h":
+                    hs.add((i, j))
+                else:
+                    raise ValueError("Unexpected character.")
+        return hs
+
+################################################################
+
+Solution:
+['.', '.', '.', 'a', 'a', 'a', 'a', 'a', '.', 'h', 'h', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', 'h', 'h', '.', '.', 'h', 'h', 'h', 'h', '.', '.', '.']
+

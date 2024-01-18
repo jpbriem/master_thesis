@@ -1,0 +1,89 @@
+Input token: 314
+Output token: 849
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', '.', '.', '.', 'c', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'c', '.']
+
+Example_2:
+input: ['.', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', 'c', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'c', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.', '.', 'c']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'c']
+
+Test case:
+input: ['.', '.', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.', 'c', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'c']
+*/
+public class Solution {
+    public String[] updateBoard(String[] board, int[] click) {
+        if (board == null || board.length < 0) return new String[0];
+        int m = board.length;
+        int n = board[0].length();
+        char[][] matrix = new char[m][n];
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                matrix[i][j] = board[i].charAt(j);
+            }
+        }
+        // 记录点击的位置
+        int x = click[0], y = click[1];
+        // 如果是地雷，则直接返回
+        if (matrix[x][y] == 'M') return board;
+        // 如果不是地雷，则将该位置标记为已经被点击过了
+        else matrix[x][y] = 'B';
+        // 计算周围八个方向上的坐标
+        int[] dx = { -1, -1, 0, 1, 1, 1, 0, -1 };
+        int[] dy = { 0, 1, 1, 1, 0, -1, -1, -1 };
+        // 遍历周围八个方向上的坐标
+        for (int k = 0; k < 8; ++k) {
+            int tx = x + dx[k], ty = y + dy[k];
+            // 如果在边界之外或者已经被点击过了，则跳过
+            if (tx < 0 || tx >= m || ty < 0 || ty >= n || matrix[tx][ty]!= '.') continue;
+            // 如果是地雷，则将该位置标记为已经被点击过了
+            if (matrix[tx][ty] == 'M') {
+                matrix[tx][ty] = 'X';
+            }
+            // 否则递归调用updateBoard函数
+            else {
+                int count = getCount(matrix, tx, ty);
+                if (count > 0) {
+                    matrix[tx][ty] = (char)(count + '0');
+                }
+            }
+        }
+        // 将矩阵中的字符转换成字符串数组并返回
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                sb.append(matrix[i][j]);
+            }
+            sb.append('\n');
+        }
+        return sb.toString().split("\n");
+    }
+
+    private int getCount(char[][] matrix, int x, int y) {
+        int count = 0;
+        for (int k = 0; k < 8; ++k) {
+            int tx = x + dx[k], ty = y + dy[k];
+            if (tx < 0 || tx >= matrix.length || ty < 0 || ty >= matrix[0].length || matrix[tx][ty] == 'M') continue;
+            if (matrix[tx][ty] == 'E' || matrix[tx][ty] == 'B') count++;
+        }
+        return count;
+    }
+}
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'c', '.', '.', '.']
+

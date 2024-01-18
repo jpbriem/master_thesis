@@ -1,0 +1,93 @@
+Input token: 555
+Output token: 716
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', 'd', 'd', 'd', '.', '.', '.', '.', 'd', '.', '.', '.', 'd', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'd', 'd', 'd', '.', '.', '.', 'd', 'd', 'd', '.', 'd', 'd', 'd', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', 'c', 'c', 'c', '.', '.', '.', '.', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'c', 'c', 'c', '.', '.', '.', 'c', 'c', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', 'b', 'b', 'b', '.', '.', '.', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'b', 'b', 'b', '.', '.', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', 'h', 'h', 'h', '.', '.', 'h', '.', '.', '.', 'h', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', 'h', 'h', 'h', '.', '.', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution(object):
+    def transformToHighestMountain(self, grid: List[List[str]]) -> List[List[str]]:
+        """
+        :type grid: List[List[str]]
+        :rtype: List[List[str]]
+        """
+        # 0. one-pass
+        # Time complexity: O(n). Space complexity: O(1)
+        # 1. two-pass
+        # Time complexity: O(n^2). Space complexity: O(1)
+        # 2. dfs
+        # Time complexity: O(n^2). Space complexity: O(n)
+        return self._transformToHighestMountain(grid)
+
+    def _transformToHighestMountain(self, grid: List[List[str]]) -> List[List[str]]:
+        if not grid or len(grid) == 0:
+            return []
+
+        m = len(grid)
+        n = len(grid[0])
+
+        directions = [(i, j) for i in range(-1, 2) for j in range(-1, 2)]
+        directions.remove((0, -1))
+        directions.remove((0, 1))
+
+        visited = [[False] * (m + 2) for _ in range(n + 2)]
+        queue = collections.deque()
+        for i in range(len(visited)):
+            visited[i][1:-1].extend([True] * m)
+        for j in range(len(visited[0])):
+            visited[0][j].append(True)
+            visited[-1][j].append(True)
+
+        for i in range(1, m + 1):
+            for j in range(1, n + 1):
+                if grid[i][j]!= '.':
+                    continue
+                visited[i][j] = True
+                queue.append((i, j))
+
+        while queue:
+            x, y = queue.popleft()
+            for dx, dy in directions:
+                newx, newy = x + dx, y + dy
+                if 0 <= newx < m and 0 <= newy < n \
+                        and not visited[newx][newy]:
+                    visited[newx][newy] = True
+                    queue.append((newx, newy))
+
+        result = [[None] * (n + 2) for _ in range(m + 2)]
+        for i in range(m):
+            for j in range(n):
+                if grid[i][j] == '.':
+                    continue
+                result[i][j] = grid[i][j]
+        return result
+
+################################################################
+
+Solution:
+['.', '.', 'h', 'h', 'h', '.', 'h', 'h', 'h', '.', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+

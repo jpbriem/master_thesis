@@ -1,0 +1,86 @@
+Input token: 375
+Output token: 637
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', 'a', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'a', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['a', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['e', 'e', 'e', 'e', 'e', 'e', 'a', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', 'b', 'b', 'b', 'b', 'b', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'h', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', 'h', 'h', 'h', 'e', '.', '.', '.', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def findReplaceString(self, S: str, source: str) -> str:
+        """
+        思路：找到所有的字符，然后进行转换。
+            - 先抽取出所有的字符串，再去重复，最后按照顺序进行转换。
+                - 注意：如果是单个字母，则不需要转换。
+                    因为这种情况下，只会发生一次转换，而且不存在重复问题。
+            时间复杂度：O(n)
+            空间复杂度：O(n)
+        """
+        # 获得所有的字符串
+        all_str = self._getAllStr(S)
+        if not all_str:
+            return S
+
+        # 去除重复元素
+        unique_all_str = list(set(all_str))
+
+        # 对于每一个字符串，都进行转换
+        for s in unique_all_str:
+            # 判断是否是单个字母
+            if len(s) == 1:
+                continue
+
+            # 查找该字符串的位置
+            pos = [i for i, c in enumerate(source) if c == s[0]]
+            if not pos:
+                continue
+
+            # 将该字符串放入目标字符串中
+            target_pos = []
+            for p in pos:
+                target_pos += range(p + len(s), p + len(s) * 2, len(s))
+            target_pos = sorted(target_pos)
+            for t in reversed(target_pos):
+                source = source[:t] + s[-1:] + source[t+len(s)-1:-1] + s[:-1] + source[t:]
+        return source
+
+    @staticmethod
+    def _getAllStr(s: str) -> List[Optional[str]]:
+        """
+        获得所有的字符串
+        :param s: 输入字符串
+        :return: 返回所有的字符串
+        """
+        result = []
+        for m in re.finditer('([^.]+)', s):
+            result.append(m.group())
+        return result
+
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', 'h', 'h', 'h', 'e', '.', '.', '.', '.', '.']
+

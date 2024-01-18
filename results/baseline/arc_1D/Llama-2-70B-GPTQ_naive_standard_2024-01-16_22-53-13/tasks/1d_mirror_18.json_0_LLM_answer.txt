@@ -1,0 +1,112 @@
+Input token: 390
+Output token: 897
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', 'f', 'f', 'f', 'f', 'f', '.', '.']
+
+Example_2:
+input: ['.', '.', 'g', 'g', 'g', 'g', 'g', '.', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', '.', 'g', 'g', 'g', 'g', 'g', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', 'e', 'e', 'e', 'e', 'e', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def reverse(self, s: str) -> str:
+        return s[::-1]
+
+    def rotateString(self, A: str, B: str) -> bool:
+        if len(A)!= len(B):
+            return False
+        for i in range(len(A)):
+            if not self.reverse(A[:i]) == self.reverse(B[-i:]):
+                return False
+        return True
+
+    def isRotation(self, A: str, B: str) -> bool:
+        if len(A) > len(B):
+            return self.isRotation(B, A)
+        elif len(A) < len(B):
+            return False
+        else:
+            return self.rotateString(A, B)
+
+    def findIsland(self, grid: List[List[str]]) -> int:
+        m = len(grid)
+        n = len(grid[0])
+        island_count = 0
+        for i in range(m):
+            for j in range(n):
+                if grid[i][j] == "I":
+                    island_count += self._findIsland(grid, i, j)
+        return island_count
+
+    def _findIsland(self, grid: List[List[str]], x: int, y: int) -> int:
+        m = len(grid)
+        n = len(grid[0])
+        directions = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+        count = 0
+        visited = set()
+        queue = []
+        queue.append((x, y))
+        while queue:
+            x, y = queue.pop(0)
+            if (x, y) in visited or grid[x][y]!= "I":
+                continue
+            visited.add((x, y))
+            count += 1
+            for dx, dy in directions:
+                if 0 <= dx < m and 0 <= dy < n and (dx, dy) not in visited and grid[dx][dy] == "I":
+                    queue.append((dx, dy))
+        return count
+
+    def numEnclaves(self, grid: List[List[int]]) -> int:
+        m = len(grid)
+        n = len(grid[0])
+        enclave_nums = {}
+        for i in range(m):
+            for j in range(n):
+                if grid[i][j]:
+                    enclave_nums[(i, j)] = self._enclaveNum(grid, i, j)
+        return sum([v for v in enclave_nums.values()])
+
+    def _enclaveNum(self, grid: List[List[int]], x: int, y: int) -> int:
+        m = len(grid)
+        n = len(grid[0])
+        directions = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+        count = 0
+        queue = []
+        queue.append((x, y))
+        while queue:
+            x, y = queue.pop(0)
+            if grid[x][y] == 0:
+                continue
+            count += 1
+            for dx, dy in directions:
+                if 0 <= dx < m and 0 <= dy < n and grid[dx][dy] == 1:
+                    queue.append((dx, dy))
+        return count
+
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'i', '.', 'b', 'b', 'b', 'b', 'b', '.', '.', '.']
+

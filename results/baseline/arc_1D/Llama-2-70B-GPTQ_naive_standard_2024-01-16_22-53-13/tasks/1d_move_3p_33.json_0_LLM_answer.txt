@@ -1,0 +1,85 @@
+Input token: 376
+Output token: 527
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.']
+
+Example_2:
+input: ['.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', '.', '.', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'f', 'f', 'f', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, isEnd):
+        self.val = val
+        self.isEnd = isEnd
+        self.next = []
+
+
+class Solution(object):
+    def wiggleSort(self, nums):
+        """
+        :type nums: List[int]
+        :rtype: void Do not return anything, modify nums in-place instead.
+        """
+        if len(nums) <= 0 or len(nums) == 1:
+            return
+        
+        # find all the peaks
+        peaks = []
+        for i in range(len(nums)):
+            if (i > 0 and nums[i - 1] < nums[i]) \
+                and (i + 1 < len(nums) and nums[i + 1] >= nums[i]):
+                    peaks.append((i, nums[i]))
+            
+        # sort the peaks by value
+        peaks.sort(key=lambda x:x[1], reverse=True)
+        
+        # build the linked list
+        head = None
+        tail = None
+        for peak in peaks:
+            node = Node(peak[1], True)
+            if head is None:
+                head = node
+                tail = node
+            else:
+                tail.next.append(node)
+                tail = node
+        
+        # add the rest of the numbers to the end of the list
+        for i in range(len(nums)):
+            if i not in peaks:
+                node = Node(nums[i], False)
+                tail.next.append(node)
+                tail = node
+        
+        # rebuild the array from the linked list
+        newNums = []
+        while head!= None:
+            newNums.insert(0, head.val)
+            head = head.next[0]
+        
+        nums[:] = newNums
+################################################################
+
+Solution:
+['.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', '.', '.', '.']
+

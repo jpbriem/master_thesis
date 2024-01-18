@@ -1,0 +1,69 @@
+Input token: 344
+Output token: 577
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', 'b', 'b', 'b', '.', '.', 'b', 'b', '.', '.', 'b', '.', '.', 'b', '.']
+output: ['.', '.', 'h', 'h', 'h', '.', '.', 'a', 'a', '.', '.', 'i', '.', '.', 'i', '.']
+
+Example_2:
+input: ['.', 'b', 'b', '.', 'b', '.', 'b', 'b', 'b', '.', '.', 'b', 'b', '.', '.', '.']
+output: ['.', 'a', 'a', '.', 'i', '.', 'h', 'h', 'h', '.', '.', 'a', 'a', '.', '.', '.']
+
+Example_3:
+input: ['.', 'b', 'b', '.', '.', '.', 'b', 'b', 'b', '.', '.', '.', 'b', '.', 'b', 'b']
+output: ['.', 'a', 'a', '.', '.', '.', 'h', 'h', 'h', '.', '.', '.', 'i', '.', 'a', 'a']
+
+Test case:
+input: ['.', '.', 'b', 'b', '.', '.', '.', 'b', 'b', 'b', '.', '.', 'b', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', 'h', 'h', '.', '.', '.', 'a', 'a', 'a', '.', '.', 'i', '.', '.',.]
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def transform(self, s: str) -> str:
+        """
+        思路：正则表达式匹配，替换字符串。
+            - 先将所有的“.”转化为空格（' '）；
+            - 再将所有的“b”转化为“h”或者“a”；
+                - “bb”转化为“hh”；
+                - “b”转化为“a”；
+                - “bbb”转化为“aa”；
+            - 最后去除所有的空格。
+            注意：由于正则表达式中不支持反向引用，因此需要使用预编译模式进行匹配和替换操作。
+                    例如：
+                    >>> re.sub('(?<!^)(?=.)',' ',s)
+                    Traceback (most recent call last):
+                      File "<stdin>", line 1, in <module>
+                      File "/usr/local/lib/python3.7/re.py", line 408, in sub
+                        return _compile(pattern, *args).sub(repl, string, count)
+                      File "./__init__.py", line 965, in sub
+                        return self._subx(string, template, repl, count)
+                      File "./__init__.py", line 1021, in _subx
+                        raise error, v # raise exception if no fixup
+                    TypeError: expected string or bytes-like object
+                    >>> re.compile("(?<!^)(?=.)").sub(' ',s)
+                   '  hh aah aa'
+        :param s:
+        :return:
+        """
+        s = re.compile("(?<!^)(?=.)").sub(' ', s)
+        s = re.compile("\bb\b").sub('hh', s)
+        s = re.compile("\bb\b").sub('aa', s)
+        s = re.compile("\bb\b").sub('a', s)
+        return re.compile('\s+').sub('', s)
+
+################################################################
+
+Solution:
+['.', '.', 'a', 'a', '.', '.', '.', 'h', 'h', 'h', '.', '.', 'i', '.', '.', '.']
+

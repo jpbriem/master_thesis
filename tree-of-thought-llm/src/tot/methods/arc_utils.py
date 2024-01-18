@@ -128,6 +128,32 @@ def count_tokens(prompt, model_name, tokenizer):
     return num_tokens, token_limit
 
 def replace_quotes_in_text(res, json_format):  
+    # preprocess json format
+    if isinstance(json_format, dict):
+        output_format = {}
+        for key, value in json_format.items():
+            if "Example_1" in json_format:
+                for i in range(2, 11): # do for 10 examples
+                    k = "Example_" + str(i)
+                    output_format.update({k: ""})
+            output_format.update({key: ""})
+            if isinstance(value, dict):
+                if "Example_1" in value:
+                    for i in range(2, 11): # do for 10 examples
+                        k = "Example_" + str(i)
+                        output_format.update({k: ""})
+                for key2, value2 in value.items():
+                    output_format.update({key2: ""})
+                    if isinstance(value2, dict):
+                        if "Example_1" in value2:
+                            for i in range(2, 11): # do for 10 examples
+                                k = "Example_" + str(i)
+                                output_format.update({k: ""})
+                        for key3, value3 in value2.items():
+                            output_format.update({key3: ""}) 
+        keys = list(output_format.keys())
+    elif isinstance(json_format, list):
+        keys = json_format
     # do some regex to remove unwanted single aprostrophes
     res = res.replace("'", '"')
     res = res.replace("\n", " ")
@@ -138,18 +164,25 @@ def replace_quotes_in_text(res, json_format):
     res = re.sub(pattern, r'\1"\2"\3', res)
 
     # replace only single aprostrophe at the end of a word
-    # pattern = r'\b(?<!")(\w+)"\s'
-    # res = re.sub(pattern, r'\1 ', res)
-    # print(res)
+    pattern = r'\b(?<!")(\w+)"\s*(?!\s*(,|}))'
+    res = re.sub(pattern, r'\1 ', res)
 
     # add back double quotes to header names
-    if isinstance(json_format, dict):
-        keys = list(json_format.keys())
-    elif isinstance(json_format, list):
-        keys = json_format
+    def replace_match(match):
+        # Check the preceding character
+        preceding_char = match.group(1)
+        if preceding_char in ['{', ',']:
+            # If it's '{' or ',', return the match without replacement
+            return match.group(0)
+        else:
+            # Otherwise, replace 'key' # ], ] "objec
+            new_string = match.group(1)+","+str(match.group(0))[1:]
+            return new_string
     for key in keys+["Choice"]:
         pattern = fr"'({key}(?:_\d+)?)'"
         res = re.sub(pattern, r'"\1"', res)
+        pattern = r'(.)\s*"' + re.escape(key)
+        res = re.sub(pattern, replace_match, res)
 
     # ensure that we don't replace away aprostophes in text 
     res = re.sub(r"(\w)\"(\w)", r"\1'\2", res)
@@ -162,10 +195,13 @@ def replace_quotes_in_text(res, json_format):
     pattern = r"(\\[^nt])"
     res = re.sub(pattern, "", res)
 
-    # In case the test output is an array but with letters w/o double quotes
-    pattern = r'('+keys[-1]+'":\s*)(\[.*?)(})'
-    res = re.sub(pattern, r'\1"\2"\3', res)
-    
+    # In case any output is an array but with letters w/o double quotes
+    for k in keys:
+        pattern = r'('+k+'":\s*)(\[.*?)(],\s*")('+'|'.join(keys)+r'")'
+        res = re.sub(pattern, lambda m: m.group(1) +'"'+ str(m.group(2)).replace('"', "'") +']", "'+ m.group(4), res)
+        pattern = r'('+k+'":\s*)(\[.*?)(})'
+        res = re.sub(pattern, lambda m: m.group(1) +'"'+ str(m.group(2)).replace('"', "'") +'"'+ m.group(3), res)
+
     # # replace newline and tabs
     # res = res.replace("\n", "\\n").replace("\t", "\\t")
     return res
@@ -187,7 +223,10 @@ def get_json_from_text(string, json_format):
         list_of_jsons.append(string[json_start:json_end])
         indices.append((json_start, json_end))
         string = string[json_start+1:json_end-1]
-
+        try:
+            return json.loads(string)
+        except:
+            pass
         previous_segment = None
         for i, json_segment in reversed(list(enumerate(list_of_jsons))):
             if previous_segment:

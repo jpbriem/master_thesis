@@ -1,0 +1,82 @@
+Input token: 584
+Output token: 723
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', 'c', 'c', 'c', '.', '.', 'b', '.', '.', '.', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'c', 'c', 'c', '.', 'b', 'b', 'b', '.', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', 'f', 'f', 'f', '.', '.', 'e', '.', '.', '.', '.', '.', 'h', '.', '.', '.', '.', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'f', 'f', 'f', '.', 'e', 'e', 'e', '.', '.', '.', 'h', 'h', 'h', '.', '.', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', 'b', 'b', 'b', '.', '.', '.', '.', 'f', '.', '.', '.', '.', '.', 'd', '.', '.', '.', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'b', 'b', 'b', '.', '.', '.', 'f', 'f', 'f', '.', '.', '.', 'd', 'd', 'd', '.', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', 'd', 'd', 'd', '.', '.', 'd', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', 'd', 'd', 'd', '.', '.', 'd', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution(object):
+    def transform(self, grid: List[str]) -> str:
+        """
+        对于每一个点，如果它的周边有相同颜色的点，那么就把这些点变成自己的颜色。
+        然后再次迭代，直到不能进行转换为止。
+        :param grid: 矩阵
+        :return: 最终结果
+        """
+        result = []
+        for i in range(len(grid)):
+            result.append([])
+            for j in range(len(grid[0])):
+                if grid[i][j] == '.':
+                    continue
+                else:
+                    result[i].append(grid[i][j])
+        while True:
+            new_result = [[None for _ in range(len(grid))] for _ in range(len(grid))]
+            for i in range(len(new_result)):
+                for j in range(len(new_result[0])):
+                    if new_result[i][j] is None or new_result[i][j]!= result[i][j]:
+                        continue
+                    else:
+                        neighbors = self._get_neighborhoods(i, j)
+                        if all(x == y for x, y in zip(result[i], neighbors)) \
+                                and not any(x == y for x, y in zip(result[i], neighbors + (result[i][j],))):
+                            new_result[i][j] = result[i][j]
+                            break
+            if new_result == result:
+                return "".join("." if x is None else x for x in new_result[0])
+            else:
+                result = new_result
+
+    @staticmethod
+    def _get_neighborhoods(row: int, col: int) -> List[Tuple[int, int]]:
+        neighborhoods = [(row - 1, col), (row + 1, col)]
+        if row > 0:
+            neighborhoods += [(row - 1, col - 1), (row - 1, col + 1)]
+        if row < len(neighborhoods) - 1:
+            neighborhoods += [(row + 1, col - 1), (row + 1, col + 1)]
+        if col > 0:
+            neighborhoods += [(row, col - 1)]
+        if col < len(neighborhoods[0]) - 1:
+            neighborhoods += [(row, col + 1)]
+        return neighborhoods
+
+################################################################
+
+Solution:
+['.', '.', 'd', 'd', 'd', '.', 'd', 'd', 'd', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+

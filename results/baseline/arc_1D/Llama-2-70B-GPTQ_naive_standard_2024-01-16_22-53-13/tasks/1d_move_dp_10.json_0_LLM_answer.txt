@@ -1,0 +1,85 @@
+Input token: 458
+Output token: 782
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', 'a', '.', '.']
+output: ['.', '.', '.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', '.', '.', '.', '.', '.', '.', 'a', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', 'a', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', 'a', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', '.', '.']
+
+Test case:
+input: ['.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'a']
+################################################################
+
+LLM answer:
+
+output: ['.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def transform(self, grid: List[str]) -> str:
+        """
+        1. 先找到所有的字母，然后再去处理每一个字母。
+        2. 如果是单个字母，则直接将其移动到最前面；
+            否则，就需要进行转换操作：
+                1）首先判断该字符串中是否存在非字母（即点或者空格），若不存在，则直接返回该字符串；
+                2）若存在，则从左向右遍历该字符串，并且记录下来每次出现的字母以及相应的位置信息；
+                    注意：这里的位置信息指的是字符串中第一个字母的索引值，而不是字符串本身的索引值！
+                3）之后，我们可以通过上述的位置信息，得知了每一个字母对应的位置信息，因此，我们只需要根据这些位置信息，
+                    重新组装一个字符串，即可完成转换操作。
+        3. 最后，将所有的字母都放到最前面，即可得到最终结果。
+        :param grid:
+        :return:
+        """
+        # 获取所有的字母
+        letters = self._get_letters(grid)
+        if not letters:
+            return grid
+
+        # 将所有的字母放到最前面
+        for letter in letters:
+            # 获取当前字母的位置信息
+            pos = self._find_letter_positions(grid, letter)
+            if len(pos) == 0 or len(set(pos)) > 1:
+                continue
+            else:
+                # 将当前字母移动到最前面
+                new_grid = list(reversed([c for c in grid if c!= letter])) + [letter] * (len(pos) - 1) + [letter]
+                grid = new_grid[:pos[0]] + grid[pos[0]:] + new_grid[pos[0]+1:]
+
+        return "".join(grid)
+
+    @staticmethod
+    def _get_letters(grid):
+        letters = []
+        for i, char in enumerate(grid):
+            if char.isalpha():
+                letters.append((char, i))
+        return sorted(letters, key=lambda x: x[1])
+
+    @staticmethod
+    def _find_letter_positions(grid, letter):
+        positions = set()
+        for i, char in enumerate(grid):
+            if char == letter:
+                positions.add(i)
+        return positions
+
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a']
+

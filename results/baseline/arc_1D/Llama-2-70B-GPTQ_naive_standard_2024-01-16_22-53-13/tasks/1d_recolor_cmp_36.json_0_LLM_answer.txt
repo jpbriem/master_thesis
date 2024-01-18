@@ -1,0 +1,83 @@
+Input token: 635
+Output token: 713
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', 'b', '.', 'b', 'b', 'b', '.', '.', '.', 'b', 'b', 'b', 'b', '.', '.', 'b', 'b', 'b', 'b', '.', '.', '.', 'b', '.', '.', 'b', 'b', '.', '.', '.']
+output: ['.', '.', '.', 'b', '.', 'b', 'b', 'b', '.', '.', '.', 'c', 'c', 'c', 'c', '.', '.', 'c', 'c', 'c', 'c', '.', '.', '.', 'b', '.', '.', 'b', 'b', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', 'b', 'b', '.', 'b', '.', 'b', 'b', 'b', '.', '.', '.', 'b', 'b', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', 'b', 'b', '.', '.']
+output: ['.', '.', 'b', 'b', '.', 'b', '.', 'b', 'b', 'b', '.', '.', '.', 'b', 'b', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', 'b', 'b', '.', '.']
+
+Example_3:
+input: ['.', 'b', 'b', 'b', 'b', 'b', '.', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', 'b', 'b', '.', '.', '.', 'b', 'b', 'b', '.']
+output: ['.', 'c', 'c', 'c', 'c', 'c', '.', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', 'b', 'b', '.', '.', '.', 'b', 'b', 'b', '.']
+
+Test case:
+input: ['.', '.', '.', 'b', 'b', 'b', 'b', '.', 'b', '.', '.', '.', 'b', 'b', 'b', 'b', '.', '.', '.', 'b', 'b', '.', 'b', 'b', 'b', '.', '.', '.', 'b', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', 'b', 'b', 'b', 'b', '.', 'b', '.', '.', '.', 'b', 'b', 'b', 'b', '.', '.', '.', 'b', 'b', '.', 'b', 'b', 'b', '.', '.', '.', 'b', '.', '.', '.']
+"""
+
+__author__ = "Sebastian Schindler"
+__email__ = "sebsch@informatik.uni-freiburg.de"
+
+import sys
+from typing import List, Tuple
+
+def main() -> None:
+    """Main function."""
+    # Read input from stdin.
+    input_string = sys.stdin.readline().strip()
+    # Split into list of strings (one per line).
+    lines: List[str] = input_string.splitlines()
+    # Convert to a list of lists.
+    grid: List[List[str]] = [[x for x in l if x!= '\n'] for l in lines]
+    # Get width and height of grid.
+    width: int = len(grid[0])
+    height: int = len(grid)
+    # Initialize result as copy of original grid.
+    result: List[List[str]] = [l[:] for l in grid]
+    # Loop over all rows.
+    for y in range(height):
+        # Loop over all columns.
+        for x in range(width):
+            # Check whether current cell is a bullseye.
+            if grid[y][x] == 'b':
+                # If so, check its neighbors.
+                # Left neighbor.
+                left_neighbor: str = ''
+                if 0 <= x - 1 < width:
+                    left_neighbor = grid[y][x - 1]
+                # Right neighbor.
+                right_neighbor: str = ''
+                if 0 <= x + 1 < width:
+                    right_neighbor = grid[y][x + 1]
+                # Top neighbor.
+                top_neighbor: str = ''
+                if 0 <= y - 1 < height:
+                    top_neighbor = grid[y - 1][x]
+                # Bottom neighbor.
+                bottom_neighbor: str = ''
+                if 0 <= y + 1 < height:
+                    bottom_neighbor = grid[y + 1][x]
+                # Check whether there are at least two other bullseyes among the four neighbors.
+                num_other_bulleyes: int = sum([1 for n in [left_neighbor, right_neighbor, top_neighbor, bottom_neighbor] if n == 'b'])
+                if num_other_bulleyes >= 2:
+                    # Replace current cell with c.
+                    result[y][x] = 'c'
+    print('\n'.join([''.join(row) for row in result]))
+
+if __name__ == '__main__':
+    main()
+################################################################
+
+Solution:
+['.', '.', '.', 'c', 'c', 'c', 'c', '.', 'b', '.', '.', '.', 'c', 'c', 'c', 'c', '.', '.', '.', 'b', 'b', '.', 'b', 'b', 'b', '.', '.', '.', 'b', '.', '.', '.']
+

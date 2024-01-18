@@ -1,0 +1,70 @@
+Input token: 395
+Output token: 572
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', 'a', 'a', 'a', '.', 'a', '.', '.', '.', 'a', 'a', '.', '.', '.', 'a', '.', 'a', 'a', '.']
+output: ['.', 'e', 'e', 'e', '.', 'b', '.', '.', '.', 'i', 'i', '.', '.', '.', 'b', '.', 'i', 'i', '.']
+
+Example_2:
+input: ['.', 'a', 'a', 'a', '.', 'a', 'a', '.', 'a', '.', '.', '.', 'a', 'a', '.', 'a', '.', '.', '.']
+output: ['.', 'e', 'e', 'e', '.', 'i', 'i', '.', 'b', '.', '.', '.', 'i', 'i', '.', 'b', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', 'a', '.', 'a', 'a', '.', '.', 'a', 'a', 'a', '.', '.', '.', 'a', 'a', '.', 'a']
+output: ['.', '.', '.', 'b', '.', 'i', 'i', '.', '.', 'e', 'e', 'e', '.', '.', '.', 'i', 'i', '.', 'b']
+
+Test case:
+input: ['.', '.', 'a', '.', 'a', 'a', 'a', '.', '.', '.', 'a', 'a', '.', '.', '.', 'a', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', 'b', '.', 'i', 'i', '.', '.', 'e', 'e', 'e', '.', '.', '.', 'i', 'i', '.', 'b']
+"""
+
+import sys
+from collections import deque, defaultdict
+from functools import reduce
+from itertools import islice
+from operator import itemgetter
+from random import shuffle
+
+class Solution(object):
+    def findKthLargest(self, nums, k):
+        """
+        :type nums: List[int]
+        :type k: int
+        :rtype: List[int]
+        """
+        
+        # 排序，并将数组分成两部分：前半部分和后半部分。
+        nums = sorted(nums)
+        mid = len(nums) // 2 + 1 if len(nums) % 2 == 0 else (len(nums) - 1)// 2 + 1
+        left = nums[:mid]
+        right = nums[mid:]
+        
+        # 计算每个元素的最大值，并将其存入到 dict 中。
+        max_val = reduce(lambda x, y: max(x,y), right)
+        max_index = right.index(max_val)
+        max_value = right[max_index]
+        max_dict = {k: max_value for k in range(left.size())}
+        
+        # 对左边部分进行遍历，判断当前元素是否超过了右边部分的最大值，如果超过则更新 dict 中的 key 值。
+        for i in range(left.size()):
+            if left[i] > max_value:
+                max_dict[i+1] = left[i]
+                
+        # 对右边部分进行遍历，判断当前元素是否小于或等于左边部分的最大值，如果小于或等于则更新 dict 中的 key 值。
+        for j in reversed(range(right.size())):
+            if right[j] <= max_value:
+                max_dict[j] = right[j]
+            
+        return list(map(itemgetter(-1), max_dict.items()))
+################################################################
+
+Solution:
+['.', '.', 'b', '.', 'e', 'e', 'e', '.', '.', '.', 'i', 'i', '.', '.', '.', 'b', '.', '.', '.']
+

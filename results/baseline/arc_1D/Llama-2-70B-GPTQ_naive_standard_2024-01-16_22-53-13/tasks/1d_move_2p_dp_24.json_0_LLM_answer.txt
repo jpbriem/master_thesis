@@ -1,0 +1,86 @@
+Input token: 545
+Output token: 711
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', 'c', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'c', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', 'c', '.', '.', '.']
+output: ['.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'c', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', 'c', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'c', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', 'c', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'c', '.', '.', '.']
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution:
+    def findReplaceString(self, S: str, T: str) -> str:
+        """
+        思路：找到最长的字符串，然后在这个字符串中寻找T的位置。
+            - 如果没有找到，则返回S
+            - 否则，将T放入对应位置，并且缩小S和T的长度，重复上述过程直到不能再进行操作为止
+            注意：因为是从左向右查找，所以要保持S和T的长度一样
+                    也就是说，每次都要去除S和T的第一个元素（或者说，移动指针）
+        :param S:
+        :param T:
+        :return:
+        """
+        if not T or len(T) > len(S): return S
+
+        # 记录已经处理的字符串
+        processed = []
+        for i in range(len(S)):
+            if S[i] == T[0]:
+                # 当前字符与T的首字符相同时，开始比较
+                j = 0
+                while i + j < len(S) and j < len(T):
+                    if S[i+j]!= T[j]: break
+                    else: j += 1
+                if j == len(T):
+                    # 完全匹配了，那么就可以更新结果
+                    result = self._updateResult(processed, S[:i], T, S[i+j:])
+                    if result is None: continue
+                    else: return result
+                elif j > 0:
+                    # 部分匹配了，那么就需要更新已经处理的字符串
+                    processed.append((S[i:i+j], T))
+        return S
+
+    @staticmethod
+    def _updateResult(processed: List[Tuple[str, str]], prefix: str, t: str, suffix: str) -> str:
+        """
+        根据已经处理的字符串，更新结果
+        :param processed:
+        :param prefix:
+        :param t:
+        :param suffix:
+        :return:
+        """
+        result = ''
+        for p in reversed(processed):
+            result += p[0][::-1]
+        result += t[::-1]
+        result += suffix
+        return result
+
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'c', '.', '.', '.']
+

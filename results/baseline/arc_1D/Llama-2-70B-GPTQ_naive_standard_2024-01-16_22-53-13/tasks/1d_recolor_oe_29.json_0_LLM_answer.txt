@@ -1,0 +1,86 @@
+Input token: 528
+Output token: 957
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', 'g', 'g', '.', '.', '.', 'g', '.', 'g', 'g', 'g', '.', 'g', '.', '.', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'h', 'h', '.', '.', '.', 'f', '.', 'f', 'f', 'f', '.', 'f', '.', '.', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', 'g', 'g', '.', '.', 'g', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', '.', 'g', '.', '.', 'g', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'h', 'h', '.', '.', 'f', 'f', 'f', '.', '.', '.', 'f', 'f', 'f', '.', 'f', '.', '.', 'f', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', 'g', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', 'g', 'g', '.', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', 'g', '.', '.', '.', '.']
+output: ['.', '.', 'h', 'h', 'h', 'h', '.', '.', 'f', 'f', 'f', 'f', 'f', '.', 'h', 'h', '.', '.', '.', 'h', 'h', 'h', 'h', '.', '.', '.', '.']
+
+Test case:
+input: ['.', 'g', 'g', 'g', '.', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', 'g', 'g', '.', '.', '.', 'g', 'g', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', 'h', 'h', 'h', '.', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', 'h', 'h', '.', '.', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def transform(self, grid: List[str]) -> str:
+        """
+        思路：
+            1、找到所有的 g 字符，并将其转换为 h。
+            2、如果一个 g 字符周围有两个或者三个 g 字符，则将该 g 字符转换为 f。
+            3、如果一个 g 字符周围只有一个 g 字符，则不变化。
+            4、最后返回结果。
+        :type grid: list of str
+        :rtype: str
+        """
+        # 记录每个点的状态
+        status = {}
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == "." or grid[i][j] == "g":
+                    status[(i, j)] = {"state": None}
+
+        # 遍历所有的点
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j]!= ".":
+                    continue
+                # 获取当前点的上下左右四个方向的点
+                up = (i - 1, j) if i > 0 else None
+                down = (i + 1, j) if i < len(grid) - 1 else None
+                left = (i, j - 1) if j > 0 else None
+                right = (i, j + 1) if j < len(grid[0]) - 1 else None
+                # 判断是否已经处理过了
+                if status[up].get("state") is not None \
+                        and status[down].get("state") is not None \
+                        and status[left].get("state") is not None \
+                        and status[right].get("state") is not None:
+                    continue
+                # 计算出当前点的上下左右四个方向的点的数量
+                count = sum([status[point].get("state", False) == "g" for point in [up, down, left, right]])
+                # 根据数量进行转换
+                if count >= 2:
+                    status[up]["state"] = "h" if status[up].get("state") is None else status[up]["state"]
+                    status[down]["state"] = "h" if status[down].get("state") is None else status[down]["state"]
+                    status[left]["state"] = "h" if status[left].get("state") is None else status[left]["state"]
+                    status[right]["state"] = "h" if status[right].get("state") is None else status[right]["state"]
+                elif count == 1:
+                    status[up]["state"] = "f" if status[up].get("state") is None else status[up]["state"]
+                    status[down]["state"] = "f" if status[down].get("state") is None else status[down]["state"]
+                    status[left]["state"] = "f" if status[left].get("state") is None else status[left]["state"]
+                    status[right]["state"] = "f" if status[right].get("state") is None else status[right]["state"]
+
+        return "".join(map(lambda x: "." if x == "None" else x, map(lambda x: status[x].get("state"), status)))
+
+################################################################
+
+Solution:
+['.', 'f', 'f', 'f', '.', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', 'h', 'h', '.', '.', '.', '.']
+

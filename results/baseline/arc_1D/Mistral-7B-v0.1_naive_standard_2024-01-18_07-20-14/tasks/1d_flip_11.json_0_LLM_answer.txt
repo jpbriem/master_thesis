@@ -1,0 +1,81 @@
+Input token: 296
+Output token: 612
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', 'g', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'f', 'f', 'f', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', 'h', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.']
+output: ['.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'h', '.', '.', '.', '.']
+
+Example_3:
+input: ['g', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['f', 'f', 'f', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', 'd', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', 'e', 'e', 'e', 'd', '.', '.', '.', '.', '.', '.', '.']
+*/
+public class Solution {
+    public char[] pushDominoes(char[] dominoes) {
+        int n = dominoes.length;
+        if (n == 0 || n == 1) return dominoes;
+        // 记录每个位置的状态，0表示未知，1表示左边是竖直的，2表示右边是竖直的
+        int[] status = new int[n];
+        for (int i = 0; i < n; ++i) {
+            if (dominoes[i]!= '.') {
+                status[i] = 1;
+            } else {
+                status[i] = 0;
+            }
+        }
+        // 从两端开始向中间扫描，遇到不同的状态就更新相邻的状态
+        for (int i = 0, j = n - 1; i <= j; ) {
+            while (status[i] == status[j]) {
+                if (status[i] == 0 && dominoes[i] == '.') {
+                    status[i] = 1;
+                }
+                if (status[j] == 0 && dominoes[j] == '.') {
+                    status[j] = 2;
+                }
+                ++i; --j;
+            }
+            if (status[i] == 1) {
+                updateStatus(status, i + 1);
+            }
+            if (status[j] == 2) {
+                updateStatus(status, j - 1);
+            }
+        }
+        // 将状态转换为输出结果
+        for (int i = 0; i < n; ++i) {
+            if (status[i] == 1) {
+                dominoes[i] = 'L';
+            } else if (status[i] == 2) {
+                dominoes[i] = 'R';
+            }
+        }
+        return dominoes;
+    }
+
+    private void updateStatus(int[] status, int index) {
+        if (index >= 0 && index < status.length) {
+            if (status[index] == 0) {
+                status[index] = status[index - 1] == 1? 1 : 2;
+            }
+        }
+    }
+}
+################################################################
+
+Solution:
+['.', '.', '.', 'e', 'e', 'e', 'd', '.', '.', '.', '.', '.', '.', '.']
+

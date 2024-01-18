@@ -1,0 +1,82 @@
+Input token: 577
+Output token: 837
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', 'g', 'g', 'g', '.', '.', 'g', '.', '.', '.', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'f', 'f', 'f', '.', '.', 'b', '.', '.', '.', 'e', 'e', '.', '.', '.', 'f', 'f', 'f', '.', '.', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', 'g', '.', '.', 'g', 'g', 'g', '.', 'g', 'g', '.', 'g', 'g', 'g', '.', '.', '.', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'b', '.', '.', 'f', 'f', 'f', '.', 'e', 'e', '.', 'f', 'f', 'f', '.', '.', '.', 'e', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', 'g', '.', '.', '.', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', '.', '.', '.', 'g', 'g', 'g', '.', '.', '.', 'g', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'b', '.', '.', '.', 'e', 'e', '.', '.', '.', 'f', 'f', 'f', '.', '.', '.', 'f', 'f', 'f', '.', '.', '.', 'b', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', 'g', 'g', '.', 'g', '.', '.', '.', 'g', 'g', 'g', '.', '.', 'g', '.', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', 'b', 'f', '.', 'e', '.', '.', '.', 'f', 'f', 'f', '.', '.', 'f', '.', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+"""
+
+from typing import List, Tuple
+import re
+
+class Solution:
+    def letterCasePermutation(self, S: str) -> List[str]:
+        if not S or len(S) == 0: return []
+        
+        # find all substrings of length 2
+        subs = set()
+        for i in range(len(S)):
+            subs.add((S[i], S[i+1]))
+            
+        # build a dictionary to store the mapping between each pair of letters and their index
+        d = {}
+        for s in subs:
+            d[(s[0], s[1])] = len(d)
+        
+        # get the first character
+        c = S[0]
+        
+        # iterate over the rest of the string
+        out = []
+        for i in range(1, len(S)):
+            # get the next character
+            nc = S[i]
+            
+            # check whether we have seen this combination before
+            if (nc, c) in d:
+                # add it to the output list
+                out.append(S[:i] + "".join([chr(ord(x)+1) for x in S[i:]]) )
+                
+            else:
+                # otherwise, append the current character as is
+                out.append(S[:i] + nc)
+                
+            # update the dictionary with the new character
+            d[(nc, c)] = len(out) - 1
+            
+            # update the current character
+            c = nc
+            
+        return out
+
+if __name__ == "__main__":
+    assert Solution().letterCasePermutation("") == [""]
+    assert Solution().letterCasePermutation(".") == ["."]
+    assert Solution().letterCasePermutation("a") == ["a"]
+    assert Solution().letterCasePermutation("aa") == ["aa", "ba", "ab", "bb", "ca", "cb", "cc", "da", "db", "dc", "fa", "fb", "fc", "ga", "gb", "gc", "ha", "hb", "hc", "ja", "jb", "jc", "ka", "kb", "kc", "la", "lb", "lc", "ma", "mb", "mc", "na", "nb", "nc", "oa", "ob", "oc", "pa", "pb", "pc", "qa", "qb", "qc", "ra", "rb", "rc", "sa", "sb", "sc", "ta", "tb", "tc", "ua", "ub", "uc", "va", "vb", "vc", "wa", "wb", "wc", "ya", "yb", "yc", "za", "zb", "zc"]
+    assert Solution().letterCasePermutation("abcdefghijklmnopqrstuvwxyz") == ["abcdefghijklmnopqrstuvwxyz"]
+    assert Solution().letterCasePermutation("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") == ["abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"]
+################################################################
+
+Solution:
+['.', 'e', 'e', '.', 'b', '.', '.', '.', 'f', 'f', 'f', '.', '.', 'b', '.', 'e', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+

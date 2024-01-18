@@ -1,0 +1,91 @@
+Input token: 349
+Output token: 711
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', 'f', 'f', 'f', 'f', '.', '.', 'f', '.', '.', 'f', 'f', 'f', '.', '.', '.']
+output: ['.', 'e', 'e', 'e', 'e', '.', '.', 'c', '.', '.', 'c', 'c', 'c', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', 'f', 'f', '.', '.', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.']
+output: ['.', '.', '.', 'e', 'e', '.', '.', 'c', 'c', 'c', 'c', 'c', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', 'f', 'f', 'f', '.', 'f', 'f', '.', 'f', 'f', 'f', 'f', '.', '.']
+output: ['.', '.', '.', 'c', 'c', 'c', '.', 'e', 'e', '.', 'e', 'e', 'e', 'e', '.', '.']
+
+Test case:
+input: ['.', '.', '.', 'f', 'f', 'f', 'f', '.', '.', 'f', 'f', 'f', '.', '.', 'f', 'f']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', 'c', 'c', 'c', 'c', '.', '.', 'e', 'e', 'e', '.', '.', 'c', 'c']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, isEnd=False):
+        self.val = val
+        self.isEnd = isEnd
+        self.next = []
+
+
+class Solution(object):
+    def flipAndInvertImage(self, image):
+        """
+        :type image: List[List[str]]
+        :rtype: List[List[str]]
+        """
+        
+        # 0. check corner cases & preprocess
+        if not image or len(image) == 0 or len(image[0]) == 0: return None
+        rows = len(image)
+        cols = len(image[0])
+        directions = [(i, j) for i in range(-rows + 1, rows - 1) for j in range(-cols + 1, cols - 1)]
+        directions = set([(i,j) for (i,j) in directions if abs(i)+abs(j)==1])
+        directions = list(directions)
+        directions.sort()
+        directions.reverse()
+        
+        # 1. process each direction
+        for i, j in directions:
+            for r in range(rows):
+                for c in range(cols):
+                    if image[r][c]!= '.': continue
+                    
+                    node = Node('.', True)
+                    queue = [node]
+                    while queue:
+                        curNode = queue.pop(0)
+                        if curNode.val == '.' or curNode.val == 'f' or curNode.val == 'c':
+                            curNode.val = 'e'
+                            
+                        else:
+                            curNode.val = 'c'
+                            
+                        if curNode.val == 'e':
+                            curNode.isEnd = False
+                        elif curNode.val == 'c':
+                            curNode.isEnd = True
+                            
+                        if curNode.val == 'e':
+                            curNode.next = [[curNode.row+i, curNode.col+j], [curNode.row-i, curNode.col-j]]
+                        elif curNode.val == 'c':
+                            curNode.next = [[curNode.row-i, curNode.col+j], [curNode.row+i, curNode.col-j]]
+                            
+                        for nextRow, nextCol in curNode.next:
+                            if nextRow < 0 or nextRow >= rows or nextCol < 0 or nextCol >= cols: continue
+                            if image[nextRow][nextCol] == '.':
+                                queue.append(Node(image[nextRow][nextCol]))
+                            else:
+                                queue.append(Node(image[nextRow][nextCol], True))
+                                
+        return image
+################################################################
+
+Solution:
+['.', '.', '.', 'e', 'e', 'e', 'e', '.', '.', 'c', 'c', 'c', '.', '.', 'e', 'e']
+

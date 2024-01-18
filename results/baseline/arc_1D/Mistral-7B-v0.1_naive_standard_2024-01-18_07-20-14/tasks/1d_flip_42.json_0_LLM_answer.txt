@@ -1,0 +1,74 @@
+Input token: 446
+Output token: 482
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'h', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'h', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'h', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.']
+*/
+public class ReorderDataInLogFiles {
+    public String[] reorderLogFiles(String[] logs) {
+        List<String> letterList = new ArrayList<>();
+        List<String> digitList = new ArrayList<>();
+        for (int i=0;i<logs.length;i++){
+            if (isLetter(logs[i])){
+                letterList.add(logs[i]);
+            }else{
+                digitList.add(logs[i]);
+            }
+        }
+        Collections.sort(letterList,new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                String[] split1 = o1.split(" ");
+                String[] split2 = o2.split(" ");
+                //compare letters first
+                if (!o1.equals(o2)){
+                    return split1[1].compareTo(split2[1]);
+                }else{
+                    //if equal then compare digits
+                    return Integer.parseInt(split1[0]) - Integer.parseInt(split2[0]);
+                }
+            }
+        });
+        Collections.sort(digitList);
+        String[] result = new String[logs.length];
+        int index = 0;
+        for (int i=0;i<result.length;i++){
+            if (index < letterList.size()){
+                result[i] = letterList.get(index++);
+            }else{
+                result[i] = digitList.get(i-letterList.size());
+            }
+        }
+        return result;
+    }
+
+    private boolean isLetter(String log){
+        String[] split = log.split(" ");
+        return!split[1].matches("[0-9]+");
+    }
+}
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', '.', '.', '.']
+

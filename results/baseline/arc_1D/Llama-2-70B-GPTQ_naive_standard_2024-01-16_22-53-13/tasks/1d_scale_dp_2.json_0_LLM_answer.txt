@@ -1,0 +1,77 @@
+Input token: 592
+Output token: 592
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.', 'c', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.', '.', '.', 'c']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'c']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, isEnd):
+        self.val = val
+        self.isEnd = isEnd
+        self.next = []
+
+
+class Solution(object):
+    def orangesSinking(self, grid):
+        """
+        :type grid: List[List[str]]
+        :rtype: void Do not return anything, modify grid in-place instead.
+        """
+        if len(grid) == 0 or len(grid[0]) == 0:
+            return
+        
+        directions = [(0,-1), (0,1), (-1,0), (1,0)]
+        queue = deque()
+        for i in range(len(grid)):
+            for j in range(len(grid[i])):
+                if grid[i][j] =='s':
+                    queue.append((i, j))
+                    
+        while queue:
+            size = len(queue)
+            for _ in range(size):
+                curPos = queue.popleft()
+                curNode = Node('o', False)
+                for direction in directions:
+                    newX = curPos[0]+direction[0]
+                    newY = curPos[1]+direction[1]
+                    if newX >= 0 and newX < len(grid) and newY >= 0 and newY < len(grid[newX]) and grid[newX][newY]!= '#' and grid[curPos[0]][curPos[1]]!= '*':
+                        node = Node(grid[newX][newY], True)
+                        curNode.next.append(node)
+            
+            for child in curNode.next:
+                if child.isEnd:
+                    continue
+                else:
+                    queue.append((child.val - 97 + ord('a'), child.val - 97 + ord('a') * len(grid)))
+                    grid[child.val - 97 + ord('a')][child.val - 97 + ord('a') * len(grid)] = '.'
+                    child.isEnd = True
+                    break
+
+################################################################
+
+Solution:
+['.', '.', '.', '.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'c']
+

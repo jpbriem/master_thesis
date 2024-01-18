@@ -1,0 +1,82 @@
+Input token: 568
+Output token: 479
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', 'i', 'i', 'i', '.', '.', '.', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'i', 'i', 'i', '.', '.', '.', 'i', 'i', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', 'i', 'i', 'i', '.', '.', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'i', 'i', 'i', '.', 'i', 'i', 'i', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', 'c', 'c', 'c', '.', '.', '.', 'c', '.', '.', '.', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'c', 'c', 'c', '.', '.', 'c', 'c', 'c', '.', 'c', 'c', 'c', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', 'g', 'g', 'g', '.', '.', '.', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+'''
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+class Solution(object):
+    def transformToPreorder(self, inorder, postorder):
+        """
+        :type inorder: List[int]
+        :type postorder: List[int]
+        :rtype: TreeNode
+        """
+        
+        if not inorder or not postorder: return None
+        root = Node(postorder[-1])
+        stack = []
+        i = 0
+        while True:
+            node = postorder[len(inorder)-i-1]
+            
+            # find the index of current node in inorder list
+            j = -1
+            for k in range(len(inorder)):
+                if inorder[k] == node:
+                    j = k
+                    break
+            assert j!= -1
+            
+            # pop from stack until we meet the parent of current node
+            while len(stack) > 0 and stack[-1].val < node:
+                tmp = stack.pop()
+                if tmp.left is not None:
+                    tmp.left.parent = root
+                else:
+                    tmp.right.parent = root
+            # add to stack
+            if stack and stack[-1].val == node:
+                stack.append(root)
+            elif not stack:
+                stack.append(root)
+            else:
+                stack[-1].right = root
+                root.parent = stack[-1]
+            i += 1
+            if i >= len(inorder):
+                break
+        return root
+################################################################
+
+Solution:
+['.', 'g', 'g', 'g', '.', '.', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+

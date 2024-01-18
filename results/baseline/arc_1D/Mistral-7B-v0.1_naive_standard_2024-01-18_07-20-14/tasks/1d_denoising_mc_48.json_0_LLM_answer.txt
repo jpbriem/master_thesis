@@ -1,0 +1,120 @@
+Input token: 698
+Output token: 902
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'h', 'c', 'c', 'c', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', '.']
+
+Example_2:
+input: ['.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'c', 'd', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'f', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'f', 'e', 'b', 'b', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['i', 'i', 'i', 'i', 'i', 'i', 'i', 'c', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'f', 'i', 'i', 'i', 'i', '.', '.', '.', '.', '.', '.', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', '.', '.', '.', '.', '.', '.', '.']
+
+Constraints:
+0 <= len(s) <= 5 * 10^4
+s consists of only lowercase English letters, digits, and/or one of the special characters: '.', '#', '@', or '!'.
+ */
+public class RemoveInvalidParentheses {
+    public List<String> removeInvalidParentheses(String s) {
+        int left = 0;
+        int right = 0;
+        for (char c : s.toCharArray()) {
+            if (c == '(') {
+                ++left;
+            } else if (c == ')') {
+                ++right;
+            }
+        }
+        if (left > right) {
+            return new ArrayList<>();
+        }
+        char[] chars = s.toCharArray();
+        boolean[] visited = new boolean[chars.length];
+        Queue<int[]> queue = new LinkedList<>();
+        queue.offer(new int[]{0, 0});
+        while (!queue.isEmpty()) {
+            int[] cur = queue.poll();
+            int index = cur[0], count = cur[1];
+            if (index >= chars.length || count < left) {
+                continue;
+            }
+            if (count == left && isValid(chars)) {
+                return getResult(chars);
+            }
+            if (chars[index]!= ')' &&!visited[index]) {
+                visited[index] = true;
+                queue.offer(new int[]{index + 1, count});
+            }
+            if (chars[index] == '(') {
+                visited[index] = true;
+                queue.offer(new int[]{index + 1, count - 1});
+            }
+        }
+        return new ArrayList<>();
+    }
+
+    private boolean isValid(char[] chars) {
+        int left = 0;
+        for (char c : chars) {
+            if (c == '(') {
+                ++left;
+            } else if (c == ')') {
+                --left;
+            }
+            if (left < 0) {
+                return false;
+            }
+        }
+        return left == 0;
+    }
+
+    private List<String> getResult(char[] chars) {
+        List<String> res = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        dfs(res, sb, chars, 0);
+        return res;
+    }
+
+    private void dfs(List<String> res, StringBuilder sb, char[] chars, int startIndex) {
+        if (sb.length() == chars.length) {
+            res.add(sb.toString());
+            return;
+        }
+        for (int i = startIndex; i < chars.length; ++i) {
+            if (isVisited(chars, i)) {
+                continue;
+            }
+            sb.append(chars[i]);
+            dfs(res, sb, chars, i + 1);
+            sb.deleteCharAt(sb.length() - 1);
+        }
+    }
+
+    private boolean isVisited(char[] chars, int index) {
+        for (int i = 0; i < index; ++i) {
+            if (chars[i] == '(' && chars[index] == ')') {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+################################################################
+
+Solution:
+['i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', '.', '.', '.', '.', '.', '.', '.', '.']
+

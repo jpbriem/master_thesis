@@ -1,0 +1,85 @@
+Input token: 463
+Output token: 764
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', 'h', 'h', 'h', 'h', '.', '.', 'h', 'h', '.', '.', '.', 'h', 'h', 'h', '.', '.', 'h', 'h', '.']
+output: ['.', '.', '.', 'g', 'g', 'g', 'g', '.', '.', 'h', 'h', '.', '.', '.', 'h', 'h', 'h', '.', '.', 'h', 'h', '.']
+
+Example_2:
+input: ['.', '.', 'h', 'h', 'h', '.', 'h', 'h', 'h', '.', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', 'h', 'h', 'h', '.']
+output: ['.', '.', 'h', 'h', 'h', '.', 'h', 'h', 'h', '.', 'g', 'g', 'g', 'g', 'g', '.', '.', '.', 'h', 'h', 'h', '.']
+
+Example_3:
+input: ['.', '.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', '.', 'h', 'h', '.', '.', '.', 'h', 'h', '.', '.', '.']
+output: ['.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.', 'h', 'h', '.', '.', '.', 'h', 'h', '.', '.', '.']
+
+Test case:
+input: ['.', '.', 'h', '.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', '.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', 'g', '.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', '.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', '.']
+*/
+public class Solution {
+    public String[] updateBoard(String[] board, int[] click) {
+        if (board == null || board.length < 0) return new String[0];
+        int m = board.length;
+        int n = board[0].length();
+        boolean[][] visited = new boolean[m][n];
+        Queue<int[]> queue = new LinkedList<>();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (board[i].charAt(j) == 'M') continue;
+                if (i == click[0] && j == click[1]) {
+                    queue.offer(new int[]{i, j});
+                    visited[i][j] = true;
+                    board[i] = board[i].replace('E', 'B');
+                }
+            }
+        }
+        while (!queue.isEmpty()) {
+            int[] cur = queue.poll();
+            int x = cur[0], y = cur[1];
+            int count = getCount(x, y, board);
+            if (count > 0) {
+                board[x] = board[x].substring(0, y) + count + board[x].substring(y + 1);
+            } else {
+                board[x] = board[x].substring(0, y) + "X" + board[x].substring(y + 1);
+                for (int dx = -1; dx <= 1; ++dx) {
+                    for (int dy = -1; dy <= 1; ++dy) {
+                        if (dx == 0 && dy == 0) continue;
+                        int nextX = x + dx, nextY = y + dy;
+                        if (nextX >= 0 && nextX < m && nextY >= 0 && nextY < n &&!visited[nextX][nextY]) {
+                            queue.offer(new int[]{nextX, nextY});
+                            visited[nextX][nextY] = true;
+                        }
+                    }
+                }
+            }
+        }
+        return board;
+    }
+
+    private int getCount(int x, int y, String[] board) {
+        int count = 0;
+        for (int dx = -1; dx <= 1; ++dx) {
+            for (int dy = -1; dy <= 1; ++dy) {
+                if (dx == 0 && dy == 0) continue;
+                int nextX = x + dx, nextY = y + dy;
+                if (nextX >= 0 && nextX < board.length && nextY >= 0 && nextY < board[0].length() && board[nextX].charAt(nextY) == 'M') {
+                    ++count;
+                }
+            }
+        }
+        return count;
+    }
+}
+################################################################
+
+Solution:
+['.', '.', 'h', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.']
+

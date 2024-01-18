@@ -1,0 +1,102 @@
+Input token: 314
+Output token: 586
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', 'a']
+output: ['.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a']
+
+Example_2:
+input: ['.', '.', 'b', 'b', 'b', '.', '.', 'a', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', 'b', 'b', 'b', 'a', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', 'a', '.']
+output: ['.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'a', '.']
+
+Test case:
+input: ['b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', '.', '.', 'a', '.']
+################################################################
+
+LLM answer:
+
+output: ['b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, isEnd):
+        self.val = val
+        self.isEnd = isEnd
+        self.next = []
+
+
+class Solution(object):
+    def wiggleSort(self, nums):
+        """
+        :type nums: List[int]
+        :rtype: void Do not return anything, modify nums in-place instead.
+        """
+        if len(nums) <= 0 or len(nums) == 1:
+            return
+        
+        # find all the end points
+        ends = []
+        for i in range(len(nums)):
+            if nums[i]!= ".":
+                ends.append((i, nums[i]))
+            
+        # sort by value
+        ends.sort()
+        
+        # build linked list
+        head = None
+        tail = None
+        for (idx, val) in ends:
+            node = Node(val, True)
+            if idx > 0:
+                node.prev = Node("", False)
+                
+            if head is None:
+                head = node
+                tail = node
+            else:
+                tail.next.append(node)
+                tail = node
+        
+        # reverse the middle part of the list
+        mid = int(len(ends)/2) - 1
+        for i in range(mid+1, len(ends)-mid-1):
+            tmp = ends[i][0]
+            ends[i][0] = ends[-i-1][0]
+            ends[-i-1][0] = tmp
+        
+        # rebuild the linked list
+        head = None
+        tail = None
+        for (idx, val) in ends:
+            node = Node(val, True)
+            if idx > 0:
+                node.prev = Node("", False)
+                
+            if head is None:
+                head = node
+                tail = node
+            else:
+                tail.next.append(node)
+                tail = node
+        
+        # add back to original array
+        newNums = []
+        while head is not None:
+            newNums.append(head.val)
+            head = head.next[0].next
+        
+        nums[:] = newNums
+################################################################
+
+Solution:
+['.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', '.']
+

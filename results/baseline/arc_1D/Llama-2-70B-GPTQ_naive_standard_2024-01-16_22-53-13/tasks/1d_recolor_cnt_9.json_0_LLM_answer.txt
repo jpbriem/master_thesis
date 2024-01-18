@@ -1,0 +1,97 @@
+Input token: 372
+Output token: 959
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['.', '.', '.', 'c', 'c', '.', 'c', 'c', 'c', '.', '.', '.', 'c', '.', '.', 'c', '.', '.']
+output: ['.', '.', '.', 'd', 'd', '.', 'h', 'h', 'h', '.', '.', '.', 'f', '.', '.', 'f', '.', '.']
+
+Example_2:
+input: ['.', '.', 'c', 'c', '.', 'c', '.', '.', 'c', 'c', 'c', '.', '.', '.', 'c', 'c', '.', '.']
+output: ['.', '.', 'd', 'd', '.', 'f', '.', '.', 'h', 'h', 'h', '.', '.', '.', 'd', 'd', '.', '.']
+
+Example_3:
+input: ['.', '.', 'c', 'c', 'c', '.', '.', '.', 'c', 'c', '.', '.', '.', 'c', '.', 'c', '.', '.']
+output: ['.', '.', 'h', 'h', 'h', '.', '.', '.', 'd', 'd', '.', '.', '.', 'f', '.', 'f', '.', '.']
+
+Test case:
+input: ['.', '.', '.', 'c', '.', '.', 'c', 'c', '.', '.', 'c', 'c', 'c', '.', 'c', 'c', '.', '.']
+################################################################
+
+LLM answer:
+
+output: ['.', '.', '.', 'e', '.', '.', 'g', 'g', '.', '.', 'i', 'i', 'i', '.', 'k', 'k', '.', '.']
+"""
+
+import re
+from typing import List, Optional
+
+
+class Solution:
+    def transform(self, grid: List[str]) -> str:
+        """
+        1. 先找到所有的字母，然后再进行转换。
+        2. 注意：不要忘记去除重复元素！
+            a) 如果是单个字符，则直接返回该字符；
+            b) 如果是两个相邻的字符，则将第一个字符变成下标为 (a+b)/2 的字母，而第二个字符变成下标为 (a+b+1)/2 的字母；
+            c) 如果是三个或更多连续的字符，则将最左侧和最右侧的字符分别变成下标为 (a+b)/2 和 (a+b+1)/2 的字母，中间的字符保持原样。
+            例如：'abc' => 'def'，'abcd' => 'ghj'，'abcde' => 'ifmr'。
+        3. 注意：如果出现了非法输入（比如没有任何字母），那么请返回空字符串。
+        """
+        if not any([x in "abcdefghijklmnopqrstuvwxyz" for x in grid]):
+            return ""
+
+        # 获取所有的字母
+        letters = []
+        for i, letter in enumerate(grid):
+            if letter in "abcdefghijklmnopqrstuvwxyz":
+                letters.append((letter, i))
+
+        # 对于每组字母，按照规则进行转化
+        result = []
+        while len(letters) > 0:
+            # 从头开始选取字母
+            first_letter, first_index = letters[0]
+            second_letter, second_index = None, None
+            third_letter, third_index = None, None
+            for index, (letter, _) in enumerate(letters[1:]):
+                if letter == first_letter or letter == second_letter:
+                    continue
+
+                if second_letter is None:
+                    second_letter, second_index = letter, index + 1
+                elif third_letter is None:
+                    third_letter, third_index = letter, index + 1
+                else:
+                    break
+
+            if second_letter is None:
+                # 只有一个字母
+                result.extend([first_letter])
+            elif third_letter is None:
+                # 只有两个字母
+                result.extend([
+                    chr(ord("a") + ((ord(first_letter) - ord('a') + ord(second_letter) - ord('a')) // 2)),
+                    chr(ord("a") + ((ord(first_letter) - ord('a') + ord(second_letter) - ord('a')) // 2) + 1),
+                    ])
+            else:
+                # 有三个以上字母
+                result.extend([
+                    chr(ord("a") + ((ord(first_letter) - ord('a') + ord(third_letter) - ord('a')) // 2)),
+                    *list(reversed(result[:len(result)-1]))[::-1],
+                    chr(ord("a") + ((ord(first_letter) - ord('a') + ord(third_letter) - ord('a')) // 2) + 1),
+                    ])
+
+            del letters[0]
+            del letters[second_index]
+            del letters[third_index]
+
+        return "".join(result)
+
+################################################################
+
+Solution:
+['.', '.', '.', 'f', '.', '.', 'd', 'd', '.', '.', 'h', 'h', 'h', '.', 'd', 'd', '.', '.']
+
