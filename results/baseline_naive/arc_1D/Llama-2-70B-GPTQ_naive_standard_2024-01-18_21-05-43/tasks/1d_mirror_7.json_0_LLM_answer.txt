@@ -1,0 +1,85 @@
+Input token: 334
+Output token: 501
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'h', 'h', 'h', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'j', 'a', 'h', 'h', 'h', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'e', 'e', 'e', 'a', 'j', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'e', 'e', 'e', 'a']
+
+Example_3:
+input: ['g', 'g', 'g', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'j', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'b', 'b', 'b', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'b', 'b', 'b', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def buildTree(s):
+    if not s or len(s) == 0: return None
+    root = Node()
+    stack = [root]
+    i = 0
+    while True:
+        node = stack[-1]
+        if i >= len(s): break
+        char = s[i]
+        if char in node.meta:
+            node.meta[char].append(Node())
+            stack.append(node.meta[char][-1])
+        else:
+            node.addChild(Node(), char)
+            stack.append(node.getChildrenDict().get(char)[-1])
+        i += 1
+    return root
+
+def getMeta(node):
+    meta = {}
+    for child in node.getChildren():
+        meta[child.val] = []
+        for grandchild in child.getChildren():
+            meta[grandchild.val].append(grandchild)
+    return meta
+
+def transform(tree, meta):
+    newRoot = Node()
+    stack = [newRoot]
+    i = 0
+    while True:
+        node = stack[-1]
+        if i >= len(meta): break
+        char = meta[i]
+        if char in node.meta:
+            node.meta[char].append(Node())
+            stack.append(node.meta[char][-1])
+        else:
+            node.addChild(Node(), char)
+            stack.append(node.getChildrenDict().get(char)[-1])
+        i += 1
+    return newRoot
+
+if __name__ == "__main__":
+    tree = buildTree("aaabbcc")
+    print(transform(tree, {"a":"bb", "c":"ccc"}))
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'b', 'b', 'b', 'a', 'a']
+

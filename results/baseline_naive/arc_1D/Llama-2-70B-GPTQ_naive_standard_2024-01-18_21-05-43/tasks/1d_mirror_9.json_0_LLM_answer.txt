@@ -1,0 +1,122 @@
+Input token: 523
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['d', 'd', 'd', 'd', 'd', 'd', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['c', 'c', 'c', 'c', 'c', 'c', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a']
+
+Test case:
+input: ['a', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path):
+    if node is None or len(path) == 0: return []
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"):
+        node.meta["count"] = 0
+    count = node.meta["count"] + 1
+    node.meta["count"] = count
+    result = [node]
+    for child in node.children:
+        result += dfs(child, path[:])
+    return result
+
+def bfs(root, path):
+    queue = collections.deque()
+    queue.append((root, path))
+    while queue:
+        node, path = queue.popleft()
+        yield (node, path)
+        for child in node.children:
+            queue.append((child, path[:]))
+
+def transform(tree, path):
+    if tree is None: return []
+    if not hasattr(tree, "meta") or not hasattr(tree.meta, "count"):
+        tree.meta["count"] = 0
+    count = tree.meta["count"] + 1
+    tree.meta["count"] = count
+    result = [(tree, path)]
+    for child in tree.children:
+        result += transform(child, path[:])
+    return result
+
+def buildTree(nodes):
+    root = Node(-1)
+    stack = [root]
+    for i in range(len(nodes)):
+        currentNode = nodes[i]
+        parentNode = stack[-1]
+        if currentNode!= -1:
+            newChild = Node(currentNode)
+            parentNode.addChildren(newChild)
+            stack.append(newChild)
+        else:
+            stack.pop()
+    return root
+
+def addChildren(parent, *args):
+    parent.children = list(args)
+
+def getMetaCount(node):
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"):
+        node.meta["count"] = 0
+    return node.meta["count"]
+
+def getPath(node, path):
+    if not hasattr(node, "meta") or not hasattr(node.meta, "path"):
+        node.meta["path"] = ""
+    if node.val == -1:
+        node.meta["path"] = "/"
+    elif node.val >= 97 and node.val <= 122:
+        node.meta["path"] = chr(node.val+32)+"/";
+    else:
+        node.meta["path"] = str(node.val)+"/";
+    if len(node.children) > 0:
+        node.meta["path"] += getPath(node.children[0], path[:])
+    return node.meta["path"]
+
+def getInputOutputPairs(inputNodes, outputNodes):
+    inputNodes = sorted(list(set(inputNodes)), key=lambda x:x.val)
+    outputNodes = sorted(list(set(outputNodes)), key=lambda x:x.val)
+    inputIndexes = {n.val:i for i, n in enumerate(inputNodes)}
+    outputIndexes = {n.val:i for i, n in enumerate(outputNodes)}
+    inputToOutputMapping = {}
+    for i in range(min(len(inputNodes), len(outputNodes))):
+        inputToOutputMapping[inputIndexes[inputNodes[i].val]] = outputIndexes[outputNodes[i].val]
+    return inputToOutputMapping
+
+def getTransformedSequence(inputNodes, outputNodes, inputToOutputMapping):
+    transformedSequence = []
+    for i in range(max(len(inputNodes), len(outputNodes))):
+        if i in inputToOutputMapping:
+            transformedSequence.append(outputNodes[inputToOutputMapping[i]])
+        else:
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a']
+

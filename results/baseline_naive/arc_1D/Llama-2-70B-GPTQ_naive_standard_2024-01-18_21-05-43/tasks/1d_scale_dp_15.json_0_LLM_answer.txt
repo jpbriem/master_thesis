@@ -1,0 +1,110 @@
+Input token: 313
+Output token: 747
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['b', 'b', 'b', 'b', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a']
+output: ['b', 'b', 'b', 'b', 'b', 'b', 'h', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'h', 'a']
+output: ['i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'h', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'h']
+output: ['a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'h']
+
+Test case:
+input: ['e', 'e', 'e', 'e', 'e', 'a', 'a', 'h', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'h', 'e', 'e', 'e', 'e']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path):
+    if node is None or len(path) == 0: return []
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"):
+        node.meta["count"] = 0
+    count = node.meta["count"] + 1
+    node.meta["count"] = count
+    result = [node]
+    for child in node.children:
+        result += dfs(child, path[:])
+    return result
+
+def bfs(root, path):
+    queue = collections.deque()
+    queue.append((root, path))
+    while queue:
+        node, path = queue.popleft()
+        yield (node, path)
+        for child in node.children:
+            queue.append((child, path[:]))
+
+def transform(nodes, path):
+    if nodes[0].val!= nodes[-1].val:
+        return False
+    elif len(set([n.val for n in nodes])) > 1:
+        return False
+    else:
+        return True
+
+def find_transformations(nodes, path):
+    transformations = set()
+    for i in range(len(nodes)):
+        if transform(nodes[i:], path[:]):
+            transformations.add(tuple(map(lambda x: x.val, nodes[i:])))
+    return transformations
+
+def get_transformation_pattern(nodes, path):
+    transformations = find_transformations(nodes, path)
+    if len(transformations) == 0:
+        return None
+    elif len(transformations) == 1:
+        return list(transformations)[0][::-1]
+    else:
+        return sorted(list(transformations), key=lambda t: -len(t))[0][::-1]
+
+def transform_string(str_, pattern):
+    transformed = []
+    for c in str_:
+        transformed.extend(pattern[c])
+    return transformed
+
+def main():
+    # Start building tree from root to leaf
+    root = Node("r", [], {"count": 0})
+    current = root
+    for char in s:
+        current.children.append(Node(char, [], {"count": 0}))
+        current = current.children[-1]
+    
+    # Find all possible patterns of transformation
+    transformations = {}
+    for node in bfs(root, ["r"]):
+        transformations[node[0]] = get_transformation_pattern(dfs(node[0], node[1]), node[1])
+
+    # Transform string using found patterns
+    transformed = []
+    for char in t:
+        transformed.extend(transformations[char][char])
+    print(''.join(transformed))
+
+if __name__ == "__main__":
+    main()
+################################################################
+
+Solution:
+['e', 'e', 'e', 'e', 'e', 'e', 'e', 'h', 'a', 'a', 'a', 'a']
+

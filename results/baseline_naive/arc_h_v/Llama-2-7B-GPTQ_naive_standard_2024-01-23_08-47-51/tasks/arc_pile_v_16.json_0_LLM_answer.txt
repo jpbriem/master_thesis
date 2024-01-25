@@ -1,0 +1,83 @@
+Input token: 494
+Output token: 547
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', 'h', '.', '.', 'e], ['f', 'h', '.', 'i', 'e], ['.', '.', '.', 'i', '.], ['f', '.', '.', '.', '.], ['.', '.', '.', 'i', '.']]
+output: [['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', '.', '.', 'i', '.], ['f', 'h', '.', 'i', 'e], ['f', 'h', '.', 'i', 'e']]
+
+Example_2:
+input: [['a', '.', '.', '.], ['.', 'h', '.', '.], ['.', 'h', '.', '.], ['.', '.', 'b', 'f']]
+output: [['.', '.', '.', '.], ['.', '.', '.', '.], ['.', 'h', '.', '.], ['a', 'h', 'b', 'f']]
+
+Example_3:
+input: [['.', 'd', '.', '.', 'f', '.], ['.', 'd', 'h', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', 'd', '.', 'e', '.', '.], ['.', '.', 'h', 'e', '.', 'g], ['.', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', 'd', '.', '.', '.', '.], ['.', 'd', 'h', 'e', '.', '.], ['.', 'd', 'h', 'e', 'f', 'g']]
+
+Test case:
+input: [['g', '.', '.', '.], ['.', '.', 'c', '.], ['g', '.', 'c', 'e], ['g', 'b', '.', 'e']]
+################################################################
+
+LLM answer:
+
+output: [['g', '.', '.', '.], ['.', '.', 'c', '.], ['g', '.', 'c', 'e'], ['g', 'b', '.', 'e']]
+"""
+
+import sys
+from collections import deque, defaultdict
+from typing import List, Optional, Tuple
+
+
+def get_next(current_state: str) -> Tuple[str, int]:
+    """Return next state and index of current state."""
+    if len(current_state) == 0:
+        return "", -1
+    elif current_state[-1] in "ae":
+        return current_state[:-1], -1
+    else:
+        return current_state + ".", -1
+
+
+class Solution:
+    def findTheDifference(self, words: List[str]) -> None:
+        """
+        Do not change code. Read explanation from description!
+        :type words: List[str]
+        :rtype: None
+        """
+        # type: (List[str]) -> None
+        # dp = [[0 for _ in range(len(words))] for _ in range(len(words))][:]
+        # dp = [[0 for _ in range(len(words))] for _ in range(len(words))][::-1]
+        dp = []
+        for i in range(len(words)):
+            dp.append([0] * len(words))
+        for i in range(len(words)):
+            for j in range(len(words)):
+                if words[j].startswith("."):
+                    continue
+                if words[j]!= words[i]:
+                    break
+                if words[j][-1] == "." or words[i][-1] == ".":
+                    dp[i][j] += 1
+                else:
+                    dp[i][j] -= 1
+        diffs = set()
+        for i in range(len(dp)):
+            for j in range(len(dp[i])):
+                if dp[i][j] > 0:
+                    diffs.add((i, j))
+        print(diffs)
+
+
+if __name__ == "__main__":
+    solution = Solution()
+    words = ["g","h","e"]
+    result = solution.findTheDifference(words)
+
+################################################################
+
+Solution:
+[['.', '.', '.', '.], ['g', '.', '.', '.], ['g', '.', 'c', 'e], ['g', 'b', 'c', 'e']]
+

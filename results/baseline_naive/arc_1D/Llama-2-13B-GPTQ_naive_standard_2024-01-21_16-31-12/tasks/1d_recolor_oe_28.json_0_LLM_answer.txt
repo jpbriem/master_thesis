@@ -1,0 +1,88 @@
+Input token: 334
+Output token: 737
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 7, 7, 7, 7, 7, 7, 0, 0, 0, 7, 7, 7]
+output: [0, 5, 5, 5, 5, 5, 5, 0, 0, 0, 3, 3, 3]
+
+Example_2:
+input: [0, 7, 7, 7, 7, 7, 7, 0, 0, 7, 0, 0, 0]
+output: [0, 5, 5, 5, 5, 5, 5, 0, 0, 3, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 7, 7, 7, 0, 7, 7, 7, 7, 0, 0, 0]
+output: [0, 0, 3, 3, 3, 0, 5, 5, 5, 5, 0, 0, 0]
+
+Test case:
+input: [0, 0, 0, 7, 7, 7, 7, 7, 0, 0, 0, 7, 7]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0, 5, 5]
+"""
+
+import unittest
+from typing import List
+
+class Solution:
+    def findMaxForm(self, nums: List[int]) -> int:
+        if len(nums) < 4: return -1
+        
+        # 1. Find all possible subarrays that have at least one 0 in them.
+        # 2. For each of these subarrays, calculate their sum.
+        # 3. Sort the sums from smallest to largest.
+        # 4. Return the index of the first element with a nonzero value.
+        # 5. If there is no such element, return -1.
+        
+        # Step 1.
+        subarrays = []
+        for i in range(len(nums)):
+            if nums[i] == 0:
+                subarrays.append([nums[j] for j in range(max(i, 0), min(i+4, len(nums)) )])
+                
+        # Step 2.
+        sums = {}
+        for subarray in subarrays:
+            sum = sum(subarray)
+            if sum not in sums:
+                sums[sum] = []
+            
+            sums[sum].append(subarray)
+        
+        # Step 3.
+        sortedSums = sorted(sums.items(), key=lambda x:x[1][0], reverse=True)
+        
+        # Step 4.
+        maxIndex = None
+        for idx, (_, subarrays) in enumerate(sortedSums):
+            if any(map(bool, subarrays)):
+                maxIndex = idx
+                break
+        
+        # Step 5.
+        return maxIndex
+    
+class TestCase(unittest.TestCase):
+    def test_example_1(self):
+        self.assertEqual(Solution().findMaxForm([0, 7, 7, 7, 7, 7, 7, 0, 0, 0, 7, 7, 7]), 5)
+    
+    def test_example_2(self):
+        self.assertEqual(Solution().findMaxForm([0, 7, 7, 7, 7, 7, 7, 0, 0, 7, 0, 0, 0]), 5)
+    
+    def test_example_3(self):
+        self.assertEqual(Solution().findMaxForm([0, 0, 7, 7, 7, 0, 7, 7, 7, 7, 0, 0, 0]), 3)
+    
+    def test_example_4(self):
+        self.assertEqual(Solution().findMaxForm([0, 0, 0, 7, 7, 7, 7, 7, 0, 0, 0, 7, 7]), 5)
+    
+if __name__ == '__main__':
+    unittest.main()
+################################################################
+
+Solution:
+[0, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0, 5, 5]
+

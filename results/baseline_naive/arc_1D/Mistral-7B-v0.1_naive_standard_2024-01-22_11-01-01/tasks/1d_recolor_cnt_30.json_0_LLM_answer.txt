@@ -1,0 +1,76 @@
+Input token: 460
+Output token: 551
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 5, 0, 0, 5, 5, 5, 0, 0, 5, 5, 0, 0, 0, 5, 5, 5]
+output: [0, 0, 0, 9, 0, 0, 2, 2, 2, 0, 0, 1, 1, 0, 0, 0, 2, 2, 2]
+
+Example_2:
+input: [0, 0, 5, 5, 5, 0, 5, 5, 0, 0, 0, 5, 0, 0, 5, 0, 0, 0, 0]
+output: [0, 0, 2, 2, 2, 0, 1, 1, 0, 0, 0, 9, 0, 0, 9, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 5, 5, 0, 0, 5, 0, 0, 5, 5, 5, 0, 0, 0, 5, 5, 0, 0, 0]
+output: [0, 1, 1, 0, 0, 9, 0, 0, 2, 2, 2, 0, 0, 0, 1, 1, 0, 0, 0]
+
+Test case:
+input: [0, 0, 5, 0, 0, 5, 5, 5, 0, 5, 5, 0, 0, 5, 0, 0, 0, 5, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 2, 0, 0, 9, 2, 2, 0, 1, 1, 0, 0, 1, 0, 0, 0, 2, 0]
+
+Constraints:
+1 <= arr.length <= 10^4
+arr[i] is either 0 or 5
+ */
+public class Solution {
+    public int[] reorganizeArray(int[] nums) {
+        if (nums == null || nums.length < 2) return nums;
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int i : nums) {
+            map.put(i, map.getOrDefault(i, 0) + 1);
+        }
+        PriorityQueue<Map.Entry<Integer, Integer>> pq = new PriorityQueue<>((a, b) -> a.getValue() - b.getValue());
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+            pq.offer(entry);
+        }
+        List<Integer> list = new ArrayList<>();
+        while (!pq.isEmpty()) {
+            Map.Entry<Integer, Integer> first = pq.poll();
+            if (list.size() > 0 && list.get(list.size() - 1).equals(first.getKey())) {
+                continue;
+            }
+            list.add(first.getKey());
+            if (--first.getValue()!= 0) {
+                pq.offer(first);
+            }
+            if (pq.peek().getValue() == 0) {
+                break;
+            }
+            Map.Entry<Integer, Integer> second = pq.poll();
+            list.add(second.getKey());
+            if (--second.getValue()!= 0) {
+                pq.offer(second);
+            }
+        }
+        if (list.size() % 2 == 1) {
+            return new int[0];
+        } else {
+            int[] res = new int[list.size() / 2];
+            for (int i = 0; i < res.length; ++i) {
+                res[i] = list.get(i * 2);
+            }
+            return res;
+        }
+    }
+}
+################################################################
+
+Solution:
+[0, 0, 9, 0, 0, 2, 2, 2, 0, 1, 1, 0, 0, 9, 0, 0, 0, 9, 0]
+

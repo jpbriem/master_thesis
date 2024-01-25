@@ -1,0 +1,74 @@
+Input token: 439
+Output token: 416
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'a', 'a']
+output: ['a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'g', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'a', 'a', 'a', 'b', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path=''):
+    if node is None or not hasattr(node, "children") or len(node.children) == 0:
+        return []
+    res = [path] + [dfs(child, path+[node.val]) for child in node.children]
+    return res
+
+def bfs(root, queue):
+    while queue:
+        curNode = queue.popleft()
+        yield curNode
+        for child in root.children:
+            queue.append([curNode.val]+list(child))
+
+class Solution(object):
+    def transformToHighestBits(self, arr):
+        """
+        :type arr: List[int]
+        :rtype: List[int]
+        """
+        # Write your code here
+        root = Node(arr[0])
+        for i in range(len(arr)):
+            if i > 0:
+                root.addChild(Node(arr[i]))
+        queue = deque()
+        queue.append(root)
+        ans = []
+        while queue:
+            curNode = queue.popleft()
+            if curNode.val!= max(curNode.getChildrenVal()):
+                continue
+            ans += list(bfs(curNode, queue))
+        return ans
+        
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'a']
+

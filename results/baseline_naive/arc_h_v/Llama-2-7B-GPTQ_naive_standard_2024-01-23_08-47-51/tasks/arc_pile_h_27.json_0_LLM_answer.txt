@@ -1,0 +1,67 @@
+Input token: 546
+Output token: 365
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', 'd], ['.', '.', 'a', '.', '.], ['.', '.', 'b', '.', 'b], ['f', '.', '.', '.', '.], ['.', 'g', '.', '.', '.']]
+output: [['d', '.', '.', '.', '.], ['a', '.', '.', '.', '.], ['b', 'b', '.', '.', '.], ['f', '.', '.', '.', '.], ['g', '.', '.', '.', '.']]
+
+Example_2:
+input: [['e', '.', '.', 'e', '.], ['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['b', '.', '.', 'b', '.], ['.', 'd', '.', 'd', 'd']]
+output: [['e', 'e', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['b', 'b', '.', '.', '.], ['d', 'd', 'd', '.', '.']]
+
+Example_3:
+input: [['.', 'b', '.', '.', '.', 'b], ['i', '.', 'i', '.', '.', 'i], ['.', '.', 'f', '.', 'f', 'f], ['.', '.', '.', '.', '.', '.], ['c', '.', '.', '.', 'c', '.], ['d', 'd', '.', '.', '.', '.']]
+output: [['b', 'b', '.', '.', '.', '.], ['i', 'i', 'i', '.', '.', '.], ['f', 'f', 'f', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['c', 'c', '.', '.', '.', '.], ['d', 'd', '.', '.', '.', '.']]
+
+Test case:
+input: [['.', '.', 'c', 'c', 'c], ['e', '.', '.', '.', '.], ['.', '.', '.', 'd', '.], ['.', 'b', 'b', '.', '.], ['.', '.', 'i', 'i', 'i']]
+################################################################
+
+LLM answer:
+
+output: [['c', 'c', 'c', '.', '.', '.], ['e', '.', '.', '.', '.], ['.', '.', '.', 'd', '.], ['.', 'b', 'b', '.', '.], ['i', 'i', 'i', '.', '.']]
+"""
+
+import sys
+from collections import deque, defaultdict
+from typing import List, Optional, Tuple
+
+
+def get_next(current_state):
+    """Returns next state given current state."""
+    if len(current_state) == 0:
+        return "."
+    elif current_state[0][0] == ".":
+        return "." + get_next(current_state[1])
+    else:
+        return "." + get_next([current_state[0]])
+
+
+class Solution:
+    def findTheDifference(self, words: List[str]) -> int:
+        # type: (List[str]) -> int
+        dp = defaultdict(lambda: 0)
+        for word in words:
+            dp[word] += 1
+        res = 0
+        for i in range(len(words)):
+            if words[i].startswith("."):
+                continue
+            if words[i] not in dp or dp[words[i]] > 1:
+                continue
+            res += dp[words[i]] - 1
+        return res
+
+
+if __name__ == "__main__":
+    s = Solution()
+    print(s.findTheDifference(['a']))
+
+################################################################
+
+Solution:
+[['c', 'c', 'c', '.', '.], ['e', '.', '.', '.', '.], ['d', '.', '.', '.', '.], ['b', 'b', '.', '.', '.], ['i', 'i', 'i', '.', '.']]
+

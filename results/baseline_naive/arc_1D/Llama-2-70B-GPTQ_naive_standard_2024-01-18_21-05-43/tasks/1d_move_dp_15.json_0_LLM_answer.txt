@@ -1,0 +1,151 @@
+Input token: 313
+Output token: 1023
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'h']
+
+Example_2:
+input: ['i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'h', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'h', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'h', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'h', 'a']
+
+Test case:
+input: ['e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'h', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'h']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def buildTree(s):
+    if not s or len(s) == 0: return None
+    root = Node()
+    stack = [root]
+    i = 0
+    while True:
+        node = stack[-1]
+        if i >= len(s): break
+        char = s[i]
+        if char in node.meta:
+            node.meta[char].append(Node())
+            stack.append(node.meta[char][-1])
+        else:
+            node.addChild(char, Node())
+            stack.append(node.getChildrenDict()[char])
+        i += 1
+    return root
+
+def getMeta(node):
+    meta = {}
+    for child in node.getChildren():
+        meta[child.val] = []
+    return meta
+
+def addToMeta(node, meta):
+    for key in meta:
+        if key in node.meta:
+            node.meta[key].extend(meta[key])
+        else:
+            node.meta[key] = meta[key]
+
+def addChild(node, parentVal, child):
+    if parentVal in node.meta:
+        node.meta[parentVal].append(child)
+    else:
+        node.meta[parentVal] = [child]
+
+def getChildren(node):
+    return node.children
+
+def getChildrenDict(node):
+    d = {}
+    for child in node.children:
+        d[child.val] = child
+    return d
+
+def getParent(node):
+    return node.parent
+
+def isLeaf(node):
+    return len(node.children) == 0
+
+def getSiblings(node):
+    siblingList = []
+    parent = node.parent
+    if parent!= None:
+        for child in parent.children:
+            if child!= node:
+                siblingList.append(child)
+    return siblingList
+
+def getAncestors(node):
+    ancestorList = []
+    current = node
+    while current.parent!= None:
+        ancestorList.insert(0, current.parent)
+        current = current.parent
+    return ancestorList
+
+def getDescendants(node):
+    descendantList = []
+    queue = deque([node])
+    while queue:
+        current = queue.popleft()
+        for child in current.children:
+            descendantList.append(child)
+            queue.append(child)
+    return descendantList
+
+def printTree(node):
+    if node == None: return
+    print("{}:".format(node.val), end=' ')
+    if isinstance(node.meta, dict):
+        for k, v in sorted(node.meta.items(), key=lambda x:x[0]):
+            print('{}'.format(k), end=' ')
+            print(*v, sep=" ")
+    elif isinstance(node.meta, list):
+        print(*node.meta, sep=" ")
+    if not isLeaf(node):
+        for child in node.children:
+            printTree(child)
+
+def transform(tree):
+    transformed = []
+    queue = deque([tree])
+    while queue:
+        current = queue.popleft()
+        if isinstance(current.meta, dict):
+            for k, v in sorted(current.meta.items(), key=lambda x:x[0]):
+                transformed.append(k)
+                queue.extend(v)
+        elif isinstance(current.meta, list):
+            transformed.extend(current.meta)
+        if not isLeaf(current):
+            queue.extend(reversed(list(current.children)))
+    return transformed
+
+if __name__ == "__main__":
+    # Testing code here...
+    tree = buildTree(['a','a','a','f','f','f','f','a','a','a','h','a'])
+    printTree(tree)
+    print(transform(tree))
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'h', 'a']
+

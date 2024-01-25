@@ -1,0 +1,80 @@
+Input token: 732
+Output token: 558
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'j', 'a', 'a], ['g', 'c', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'j', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'i', 'a], ['a', 'a', 'a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'j', 'a', 'a], ['g', 'c', 'a', 'j', 'i', 'a']]
+
+Example_2:
+input: [['a', 'a', 'a', 'a', 'a', 'i], ['a', 'a', 'a', 'j', 'g', 'a], ['a', 'a', 'a', 'j', 'g', 'a], ['c', 'a', 'd', 'a', 'g', 'i], ['c', 'a', 'd', 'a', 'a', 'i], ['a', 'a', 'd', 'j', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'd', 'j', 'g', 'i], ['c', 'a', 'd', 'j', 'g', 'i], ['c', 'a', 'd', 'j', 'g', 'i']]
+
+Example_3:
+input: [['a', 'a', 'a', 'b', 'j], ['d', 'a', 'f', 'a', 'a], ['d', 'i', 'f', 'a', 'a], ['a', 'a', 'a', 'b', 'a], ['d', 'i', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['d', 'a', 'a', 'a', 'a], ['d', 'i', 'f', 'b', 'a], ['d', 'i', 'f', 'b', 'j']]
+
+Test case:
+input: [['a', 'a', 'g', 'f', 'a], ['a', 'a', 'g', 'a', 'a], ['j', 'a', 'a', 'f', 'b], ['a', 'a', 'a', 'a', 'a], ['a', 'd', 'g', 'a', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'g', 'f', 'a], ['a', 'a', 'g', 'a', 'a'], ['j', 'a', 'a', 'f', 'b'], ['a', 'a', 'a', 'a', 'a]]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_input(filename):
+    with open(filename) as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def get_output(filename):
+    with open(filename) + '.out' as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def solve(inputs: List[List[str]], output: str = None) -> int:
+    if not isinstance(inputs, list):
+        inputs = [get_input(filename) for filename in sys.argv]
+    if not isinstance(output, str):
+        outputs = [get_output(filename) for filename in sys.argv]
+    if len(inputs)!= 6 or len(outputs)!= 6:
+        raise ValueError("Input/Output length must be equal to 6")
+
+    # Partitioning
+    n = len(inputs) // 6
+    dp = [[0 for _ in range(n)] for _ in range(n)]
+    for i in range(len(inputs)):
+        dp[i % n][int((inputs[i])[-1]) - 1] += 1
+
+    # Recursion
+    def dfs(dp, idx=None):
+        if idx == n:
+            return sum([dp[idx]])
+        else:
+            for j in range(n):
+                if (not dp[idx]).__contains__(j):
+                    continue
+                elif dp[idx].__contains__(j):
+                    dp[idx+1][j] += 1
+                    dfs(dp, idx+1)
+                    dp[idx][j] -= 1
+                    dp[idx+1][j] -= 1
+
+    dfs(dp)
+    return sum([dp[idx] for idx in range(n)])
+
+
+if __name__ == "__main__":
+    print(solve(*sys.argv))
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['a', 'a', 'g', 'a', 'a], ['a', 'a', 'g', 'f', 'a], ['j', 'd', 'g', 'f', 'b']]
+

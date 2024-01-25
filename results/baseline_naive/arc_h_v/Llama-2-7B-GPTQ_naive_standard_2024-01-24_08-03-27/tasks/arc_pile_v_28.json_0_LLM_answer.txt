@@ -1,0 +1,82 @@
+Input token: 591
+Output token: 705
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'g', 'b', 'i], ['a', 'a', 'e', 'g', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'j', 'e', 'a', 'a', 'i], ['a', 'j', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'b', 'i']]
+output: [['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'i], ['a', 'j', 'e', 'g', 'b', 'i], ['a', 'j', 'e', 'g', 'b', 'i']]
+
+Example_2:
+input: [['a', 'd', 'b', 'e], ['a', 'a', 'b', 'a], ['a', 'a', 'b', 'a], ['a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a], ['a', 'a', 'b', 'a], ['a', 'a', 'b', 'a], ['a', 'd', 'b', 'e']]
+
+Example_3:
+input: [['h', 'b', 'a', 'a], ['a', 'b', 'a', 'f], ['h', 'b', 'a', 'a], ['h', 'a', 'a', 'f']]
+output: [['a', 'a', 'a', 'a], ['h', 'b', 'a', 'a], ['h', 'b', 'a', 'f], ['h', 'b', 'a', 'f']]
+
+Test case:
+input: [['i', 'a', 'd', 'a', 'a', 'e], ['i', 'h', 'a', 'a', 'a', 'e], ['i', 'h', 'd', 'a', 'a', 'e], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'f', 'g', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a']]
+"""
+import sys
+from collections import defaultdict, deque
+from typing import List, Tuple
+
+
+def get_input(filename):
+    with open(filename) as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def get_output(filename):
+    with open(filename) + '.out' as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def main():
+    filename = sys.argv[1] if len(sys.argv) > 1 else "input.txt"
+    input_list = get_input(filename)
+    output_list = get_output(filename)
+
+    # 0. 입력과 출력의 길이를 비교하여 확인한다.
+    assert len(input_list) == len(output_list)
+
+    # 1. 첫 번째 줄에서 최대 수가 나오는 경우를 구별해보자.
+    max_len = 0
+    for i in range(len(input_list)):
+        if len(input_list[i]) >= max_len:
+            max_len = len(input_list[i])
+
+    # 2. 총 개수만큼 반복문을 돌고 실제로 연산을 진행한다.
+    for i in range(max_len - 1):
+        for j in range(max_len - 1):
+            if (input_list[i][j]!= input_list[i+1][j] or
+                    input_list[i][j]!= input_list[i][j+1]):
+                break
+            elif input_list[i][j] == input_list[i+1][j]:
+                if input_list[i][j] not in ('a', 'b'):
+                    continue
+                elif input_list[i][j] == 'a':
+                    if input_list[i][j+1] == 'a':
+                        pass
+                    elif input_list[i][j+1] == 'b':
+                        print("Case 1")
+                        break
+                elif input_list[i][j] == 'b':
+                    if input_list[i][j+1] == 'a':
+                        print("Case 2")
+                        break
+
+if __name__ == '__main__':
+    main()
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['i', 'a', 'a', 'a', 'a', 'e], ['i', 'h', 'd', 'a', 'a', 'e], ['i', 'h', 'd', 'f', 'g', 'e']]
+

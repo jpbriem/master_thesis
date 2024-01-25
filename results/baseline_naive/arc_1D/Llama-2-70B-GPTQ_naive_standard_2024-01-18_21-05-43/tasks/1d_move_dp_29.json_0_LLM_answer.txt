@@ -1,0 +1,79 @@
+Input token: 271
+Output token: 424
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'f', 'a']
+output: ['a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'f', 'a']
+
+Example_2:
+input: ['e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'f']
+output: ['a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'f']
+
+Example_3:
+input: ['i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'f']
+output: ['a', 'a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'f']
+
+Test case:
+input: ['g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'f', 'a']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, children=None):
+        self.val = val
+        self.children = children
+
+
+class Solution(object):
+    def transformToPreorder(self, inorder, postorder):
+        """
+        :type inorder: List[int]
+        :type postorder: List[int]
+        :rtype: List[List[int]]
+        """
+        if not inorder or not postorder:
+            return []
+        
+        root = None
+        stack = [postorder[-1]]
+        for i in range(len(inorder)):
+            node = Node(inorder[i])
+            
+            while len(stack) > 0 and stack[-1].val >= node.val:
+                parent = stack.pop()
+                
+                if parent.children is None:
+                    parent.children = [node]
+                else:
+                    parent.children.append(node)
+                    
+            stack.append(parent)
+            
+            if root is None:
+                root = node
+        
+        return self._buildTreeFromPostOrder(root, postorder[:-1], stack)
+    
+    def _buildTreeFromPostOrder(self, root, postorder, stack):
+        if not postorder or not stack:
+            return []
+        
+        currentNode = postorder.pop()
+        leftChilds = self._buildTreeFromPostOrder(currentNode, postorder, stack)
+        rightChilds = self._buildTreeFromPostOrder(currentNode, postorder, stack)
+        
+        return [currentNode] + leftChilds + rightChilds
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'f', 'a']
+

@@ -1,0 +1,75 @@
+Input token: 271
+Output token: 425
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'c', 'a', 'a', 'c', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['e', 'a', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'h', 'a', 'h', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'd', 'a', 'a', 'd', 'a', 'a']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'a']
+"""
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path=''):
+    if node is None or not hasattr(node, "children") or len(node.children) == 0:
+        return []
+    res = [path] + [dfs(child, path+[child.val]) for child in node.children]
+    return res
+
+def bfs(root, queue):
+    while queue:
+        curNode = queue.pop()
+        yield curNode
+        for child in root.children:
+            queue.append([curNode.val]+list(child))
+
+def get_next_node(nodes, i):
+    nextNodes = nodes[:i] + list(reversed(nodes[i+1:]))
+    return nextNodes
+
+def transform(root, path):
+    if root is None or not hasattr(root, "children") or len(root.children) == 0:
+        return []
+    if len(path) > 1:
+        newPath = path[-len(path)-1:] + path[:-len(path)]
+    else:
+        newPath = path
+    return [transform(child, newPath) for child in root.children]
+
+def main():
+    # Input
+    s = Solution()
+    print("Input:", s.get_input())
+
+    # Output
+    result = s.run()
+    print("Output:", result)
+
+if __name__ == '__main__':
+    main()
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'a', 'a']
+

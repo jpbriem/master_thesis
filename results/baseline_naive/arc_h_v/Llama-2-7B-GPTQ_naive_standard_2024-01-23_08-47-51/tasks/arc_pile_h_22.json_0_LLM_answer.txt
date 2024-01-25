@@ -1,0 +1,123 @@
+Input token: 519
+Output token: 885
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', 'd', '.', '.', '.], ['.', '.', 'i', '.', '.', '.], ['.', '.', 'b', '.', '.', 'b], ['h', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['d', '.', '.', '.', '.', '.], ['i', '.', '.', '.', '.', '.], ['b', 'b', '.', '.', '.', '.], ['h', '.', '.', '.', '.', '.']]
+
+Example_2:
+input: [['.', '.', 'h', 'h', 'h], ['.', 'd', '.', 'd', '.], ['b', 'b', 'b', '.', '.], ['.', '.', '.', '.', '.], ['.', 'f', '.', '.', '.']]
+output: [['h', 'h', 'h', '.', '.], ['d', 'd', '.', '.', '.], ['b', 'b', 'b', '.', '.], ['.', '.', '.', '.', '.], ['f', '.', '.', '.', '.']]
+
+Example_3:
+input: [['a', 'a', '.', 'a', '.], ['c', '.', '.', '.', '.], ['.', '.', 'd', '.', '.], ['h', '.', 'h', '.', '.], ['.', 'f', 'f', '.', '.']]
+output: [['a', 'a', 'a', '.', '.], ['c', '.', '.', '.', '.], ['d', '.', '.', '.', '.], ['h', 'h', '.', '.', '.], ['f', 'f', '.', '.', '.']]
+
+Test case:
+input: [['.', '.', '.', 'e], ['.', '.', 'g', '.], ['f', '.', 'f', '.], ['a', 'a', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', 'e'], ['.', '.', 'g', '.], ['f', '.', 'f', '.], ['a', 'a', '.', '.']]
+"""
+
+import sys
+from collections import deque, defaultdict
+from typing import List, Optional, Tuple
+
+
+def get_next(current_state):
+    """Returns next state given current state."""
+    if len(current_state) == 0:
+        return "."
+    elif current_state[0][0] == ".":
+        return "." + get_next(current_state[1])
+    else:
+        return "." + get_next(current_state[1]) + current_state[0]
+
+
+class StateMachine:
+    def __init__(self, initial_state=None):
+        self._initial = initial_state or [""]
+        self._states = {}
+        for i in range(len(self._initial)):
+            self._states[(self._initial[i],)] = (i,)
+
+    def add_transition(self, from_, to, symbol="."):
+        """Add transition between states."""
+        if not isinstance(to, tuple):
+            raise TypeError("Transition must be a tuple.")
+        if not all((isinstance(x, int) for x in to)):
+            raise ValueError("Transitions must be integers.")
+        if from_ not in self._states:
+            raise KeyError("State does not exist")
+        if to not in self._states:
+            raise KeyError("State does not exist")
+        self._states[(from_, )].append(to)
+
+    def run(self, input_str=""):
+        """Run the machine on an input string."""
+        current_state = self._initial
+        while True:
+            if input_str!= "":
+                current_state = get_next(current_state)
+                input_str += "\n"
+            yield current_state
+
+    def __iter__(self):
+        return iter(self.run())
+
+    def __getitem__(self, index):
+        return self.run()[index]
+
+    def __reversed__(self):
+        return reversed(list(self))
+
+    def __len__(self):
+        return len(self.run())
+
+    def __eq__(self, other):
+        return type(other) == type(self) and list(self) == list(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(tuple(self.run()))
+
+    def __contains__(self, key):
+        return key in self._states
+
+    def __getattr__(self, name):
+        if name in ("__iter__", "__reversed__", "__len__", "__eq__", "__ne__", "__hash__", "__contains__"):
+            return object.__getattribute__(self, name)
+        elif name == "add_transition":
+            return lambda *args, **kwargs: self.add_transition(*args, **kwargs)
+        elif name == "run":
+            return self.run
+        elif name == "__iter__":
+            return self.run
+        elif name == "__reversed__":
+            return reversed(list(self.run()))
+        elif name == "__len__":
+            return len(self.run())
+        elif name == "__eq__":
+            return self.__eq__
+        elif name == "__ne__":
+            return self.__ne__
+        elif name == "__hash__":
+            return hash(tuple(self.run()))
+        elif name == "__contains__":
+            return self.__contains__
+        else:
+            raise AttributeError(name)
+
+################################################################
+
+Solution:
+[['e', '.', '.', '.], ['g', '.', '.', '.], ['f', 'f', '.', '.], ['a', 'a', '.', '.']]
+

@@ -1,0 +1,94 @@
+Input token: 586
+Output token: 510
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0]
+output: [0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0]
+
+Example_2:
+input: [0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0]
+output: [0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0]
+
+Test case:
+input: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+"""
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=None, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+class Solution(object):
+    def transformToPreorder(self, inp):
+        """
+        :type inp: List[int]
+        :rtype: List[int]
+        """
+        if not inp or len(inp) == 0:
+            return []
+        
+        root = Node()
+        stack = [(root, None)]
+        i = 0
+        while True:
+            node, parent = stack[-1]
+            
+            if i >= len(inp):
+                break
+                
+            if inp[i]!= 0:
+                node.val = inp[i]
+                i += 1
+                continue
+            
+            if parent is None:
+                # root node
+                stack.append((node, None))
+                stack.pop(-1)
+                continue
+            
+            if parent.left is None:
+                parent.left = node
+                stack.append((parent.left, parent))
+                stack.pop(-1)
+                continue
+            
+            if parent.right is None:
+                parent.right = node
+                stack.append((parent.right, parent))
+                stack.pop(-1)
+                continue
+            
+            stack.append((node, parent))
+            stack.pop(-1)
+    
+        res = []
+        while root:
+            cur = root
+            while cur.left is not None:
+                cur = cur.left
+            res.insert(0, cur.val)
+            cur = cur.right
+            while cur.right is not None:
+                cur = cur.right
+            root = cur.left
+        return res
+################################################################
+
+Solution:
+[0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+

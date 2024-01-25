@@ -1,0 +1,98 @@
+Input token: 418
+Output token: 638
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a']
+
+Example_2:
+input: ['g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, level):
+    if node is None or len(node) == 0: return []
+    result = [node[level]]
+    for child in node[:]:
+        if child not in result:
+            result += dfs(child, level + 1)
+    return result
+
+class Solution(object):
+    def transformToHighestBits(self, arr):
+        """
+        :type arr: List[int]
+        :rtype: List[int]
+        """
+        
+        # 1. build tree from array
+        root = Node()
+        for i in range(len(arr)):
+            curNode = Node(arr[i])
+            if i > 0:
+                curNode.parent = root
+            root.append(curNode)
+            
+        # 2. find all leaves of the tree
+        leaves = set([])
+        while True:
+            newLeaves = set([])
+            for leaf in leaves:
+                for child in leaf.children:
+                    if child not in leaves:
+                        newLeaves.add(child)
+            leaves |= newLeaves
+            if len(leaves) == len(root): break
+        print("leaves", leaves)
+        
+        # 3. get highest bit value of each leaf
+        maxBitValues = {}
+        for leaf in leaves:
+            maxBitValue = 0
+            for bit in range(8 * (leaf.depth - 1), leaf.depth):
+                if leaf.getValAtLevel(bit)!= 0:
+                    maxBitValue = bit
+            maxBitValues[leaf] = maxBitValue
+        print("maxBitValues", maxBitValues)
+        
+        # 4. update values at each level
+        for leaf in leaves:
+            for bit in range(8 * (leaf.depth - 1), leaf.depth):
+                if bit < maxBitValues[leaf]:
+                    leaf.setValAtLevel(bit, 0)
+                else:
+                    leaf.setValAtLevel(bit, 1)
+        print("updated tree")
+        
+        # 5. rebuild array from updated tree
+        result = []
+        for leaf in leaves:
+            result += dfs(leaf, 0)
+        return result
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a']
+

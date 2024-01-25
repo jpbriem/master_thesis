@@ -18,7 +18,8 @@ class ARC_1D(ARCTask):
     
     # class variable
     prompt_modules = prompt_modules
-    
+    few_shot_ex = few_shot_ex
+
     def __init__(self):
         """
         several subfolders by task type
@@ -64,10 +65,12 @@ class ARC_1D(ARCTask):
         return ARCTask.standard_prompt_wrap(node, standard_prompt, dataset)
 
     @staticmethod
-    def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=None, dataset: str="arc_1D") -> str:
+    def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=None, few_shot_ex: dict=None, dataset: str="arc_1D") -> str:
         if prompt_modules is None:
             prompt_modules = ARC_1D.prompt_modules
-        return ARCTask.cot_prompt_wrap(node, total_steps, cot_prompt, prompt_modules, dataset)
+        if few_shot_ex is None:
+            few_shot_ex = ARC_1D.few_shot_ex
+        return ARCTask.cot_prompt_wrap(node, total_steps, cot_prompt, prompt_modules, few_shot_ex, dataset)
     
     @staticmethod
     def value_prompt_wrap(node, total_steps: int=1, value_prompt: str=value_prompt, prompt_modules: dict=None, dataset: str="arc_1D") -> str:

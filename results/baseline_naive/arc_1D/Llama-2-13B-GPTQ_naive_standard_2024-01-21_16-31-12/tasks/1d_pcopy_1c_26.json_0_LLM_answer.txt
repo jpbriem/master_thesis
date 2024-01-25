@@ -1,0 +1,82 @@
+Input token: 754
+Output token: 775
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 9, 9, 9, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 9, 9, 9, 0, 0, 0, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 8, 8, 8, 0, 0, 8, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 8, 8, 8, 0, 8, 8, 8, 0, 0, 0, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 5, 5, 5, 0, 0, 5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 5, 5, 5, 0, 5, 5, 5, 0, 0, 5, 5, 5, 0, 0, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 2, 2, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 2, 2, 2, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+"""
+
+import unittest
+from typing import List
+
+class Solution:
+    def findMaxForm(self, nums: List[int]) -> List[List[int]]:
+        if len(nums) < 4: return []
+        
+        # 1. Find all possible sublists of length 4 or more that have at least one repeated element
+        # 2. For each such sublist, check whether it is a valid maxform by checking its prefixes
+        # 3. If so, add it to the result list
+        result = []
+        for i in range(len(nums)-3):
+            sublist = nums[i:i+4]
+            if len(sublist) >= 4 and any([x == y for x,y in zip(sublist[:-1], sublist[1:])]):
+                prefixes = self._findPrefixes(sublist)
+                if prefixes:
+                    result.append(sublist)
+        return result
+    
+    def _findPrefixes(self, sublist: List[int]) -> List[List[int]]:
+        """
+        Returns a list of lists containing all prefixes of `sublist`
+        """
+        result = []
+        for prefix in self._prefixes(sublist):
+            result.extend(self._prefixes(prefix))
+        return result
+    
+    def _prefixes(self, prefix: List[int]) -> List[List[int]]:
+        """
+        Returns a list of all prefixes of `prefix`, including itself
+        """
+        result = [prefix]
+        while True:
+            newPrefix = prefix[:]
+            newPrefix[-1] += 1
+            result.append(newPrefix)
+            if not newPrefix[-1]: break
+        return result
+
+class TestCase(unittest.TestCase):
+    def test_solution(self):
+        solution = Solution()
+        self.assertEqual(
+            solution.findMaxForm([0, 0, 2, 2, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            [[0, 0, 2, 2, 2, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
+            "Solution does not work")
+
+if __name__ == '__main__':
+    unittest.main()
+################################################################
+
+Solution:
+[0, 0, 2, 2, 2, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+

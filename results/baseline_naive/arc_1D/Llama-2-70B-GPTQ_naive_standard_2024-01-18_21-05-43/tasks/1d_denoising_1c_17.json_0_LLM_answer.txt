@@ -1,0 +1,120 @@
+Input token: 754
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'i', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'i', 'a', 'a', 'a', 'i', 'a', 'a', 'i', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'e', 'a', 'a', 'e', 'a', 'a', 'e', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'a']
+output: ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'e', 'a', 'a', 'e', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import collections
+
+
+class Solution(object):
+    def groupAnagrams(self, strs):
+        """
+        :type strs: List[str]
+        :rtype: List[List[str]]
+        """
+        # sol 1: O(n) time, O(n) space
+        from collections import Counter
+        return [list(group) for key, group in itertools.groupby(sorted(Counter(x).items()) for x in strs)]
+        
+        # sol 2: O(nlogn) time, O(n) space
+        from bisect import bisect_left
+        from functools import reduce
+        from operator import itemgetter
+        from typing import Iterable
+        from typing import Tuple
+        from typing import Union
+        from typing import Callable
+        from typing import TypeVar
+        T = TypeVar('T')
+        S = TypeVar('S')
+    
+        class Grouped(Iterable[Tuple[int, int]]):
+            def __init__(self, *args: Union[Iterable[Tuple[int, int]], Tuple[int, int]]) -> None:
+                self._groups: list[tuple[int, int]] = []
+                
+                for arg in args:
+                    if isinstance(arg, (list, tuple)):
+                        self._groups += arg
+                    else:
+                        self._groups += arg.__iter__()
+            
+            def __len__(self) -> int:
+                return len(self._groups)
+            
+            def __iter__(self) -> Iterator[Tuple[int, int]]:
+                return iter(self._groups)
+        
+        def _merge(lhs: Grouped, rhs: Grouped) -> Grouped:
+            lhs_it = iter(lhs)
+            rhs_it = iter(rhs)
+            while True:
+                try:
+                    lhs_key, lhs_value = next(lhs_it)
+                    rhs_key, rhs_value = next(rhs_it)
+                except StopIteration:
+                    break
+                
+                yield min(lhs_key, rhs_key), max(lhs_value, rhs_value)
+        
+        def _sort_by_count(strings: Iterable[str]) -> Iterable[Tuple[str, int]]:
+            return sorted((string, sum(map(lambda char: string.count(char), set(string)))) for string in strings)
+        
+        def _partition(strings: Iterable[str], predicate: Callable[[str], bool]) -> Iterable[Grouped]:
+            groups = {}
+            for string, count in _sort_by_count(strings):
+                if not predicate(string):
+                    continue
+                
+                key = hash(string)
+                value = count
+                groups[key] = value
+            
+            return map(_merge, zip(*sorted(groups.items(), key=itemgetter(0)))))
+        
+        def _find_indexes(predicate: Callable[[str], bool], strings: Iterable[str]) -> Iterable[Union[int, slice]]:
+            indexes = []
+            start = 0
+            end = 0
+            
+            for group in _partition(strings, predicate):
+                index = bisect_left(group, start)
+                end = bisect_left(group, end + 1) - 1
+                indexes.append(slice(start, end+1))
+                start = end + 1
+            
+            return indexes
+        
+        def _flatten(lists: Iterable[Iterable[T]]) -> Iterable[T]:
+            return reduce(lambda acc, lst: acc + lst, lists)
+        
+        def _filter(predicate: Callable[[str], bool], strings: Iterable[str]) -> Iterable[str]:
+            return _flatten([list(group) for _, group in _partition(strings, predicate)])
+        
+        return [_filter(lambda s: all(
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+

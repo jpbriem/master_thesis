@@ -1,0 +1,120 @@
+Input token: 397
+Output token: 843
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'f', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'f', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'b', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'i', 'i', 'i', 'i', 'i', 'i', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'e', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'f', 'f', 'f', 'f', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'c', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'c', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def buildTree(arr):
+    if not arr or len(arr) == 0: return None
+    root = Node()
+    stack = [root]
+    i = 0
+    while True:
+        node = stack[-1]
+        if i >= len(arr): break
+        child = Node(arr[i])
+        node.addChild(child)
+        stack.append(child)
+        i += 1
+    return root
+
+def dfs(node, result):
+    if not node: return
+    result.append(node.val)
+    for c in node.getChildren():
+        dfs(c, result)
+
+def bfs(node, result):
+    queue = []
+    queue.append((node, 0))
+    while queue:
+        (node, level) = queue.pop(0)
+        result.append(node.val)
+        for c in node.getChildren():
+            queue.append((c, level + 1))
+
+def getMeta(node):
+    if not node: return {}
+    meta = {k: v for k, v in node.meta.items()}
+    for c in node.getChildren():
+        meta.update(getMeta(c))
+    return meta
+
+def transform(tree, meta):
+    if not tree: return
+    if tree.isLeafNode():
+        tree.setVal(meta['max'])
+        return
+    for key in sorted(meta.keys(), reverse=True):
+        if key!='min' and key!='max':
+            if meta[key]:
+                tree.setVal(key)
+                return
+    tree.setVal('other')
+
+def toString(node):
+    if not node: return ''
+    s = str(node.val)
+    for c in node.getChildren():
+        s += ','.join([toString(n) for n in c.getChildren()])
+    return s
+
+def printTree(node):
+    if not node: return
+    print(node.val)
+    for c in node.getChildren():
+        printTree(c)
+
+if __name__ == "__main__":
+    # Testing Input
+    testArr = ["a", "a", "a", "a", "a", "c", "e", "e", "e", "e", "e", "a", "a", "a", "a", "a"]
+    expectedResult = ["a", "a", "a", "a", "a", "e", "e", "e", "e", "c", "a", "a", "a", "a", "a", "a"]
+    # /Testing Input
+
+    # Solution Initialization
+    solution = Solution()
+    # end of solution initialization
+
+    # Actual Coding
+    startTime = time.time()
+    result = solution.transformStrings(testArr)
+    elapsedTime = round((time.time() - startTime), 4)
+    print("Elapsed Time: ", elapsedTime)
+    print("Output: ", result)
+    print("Expected Output: ", expectedResult)
+    assert result == expectedResult
+    # end of actual coding
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'c', 'a', 'a', 'a', 'a', 'a']
+

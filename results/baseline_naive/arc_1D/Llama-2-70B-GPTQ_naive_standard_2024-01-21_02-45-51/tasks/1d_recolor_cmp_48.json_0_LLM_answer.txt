@@ -1,0 +1,130 @@
+Input token: 502
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 2, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 2, 2, 0]
+output: [0, 2, 2, 0, 2, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 2, 2, 0]
+
+Example_2:
+input: [0, 0, 2, 0, 2, 2, 2, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0]
+output: [0, 0, 2, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 2, 2, 0, 0, 0, 2, 2, 2, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0]
+output: [0, 0, 0, 2, 2, 0, 0, 0, 2, 2, 2, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0]
+
+Test case:
+input: [0, 2, 2, 2, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2, 0, 2, 2, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 2, 2, 2, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2, 0, 2, 2, 0, 0, 0, 0]
+"""
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=None, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def get_max_depth(root):
+    if root is None: return 0
+    else:
+        ld = get_max_depth(root.left)
+        rd = get_max_depth(root.right)
+        return max(ld,rd)+1
+
+def get_min_depth(root):
+    if root is None: return float('inf')
+    else:
+        ld = get_min_depth(root.left)
+        rd = get_min_depth(root.right)
+        return min(ld,rd)-1
+
+def get_height(root):
+    return abs(get_max_depth(root)-get_min_depth(root))
+
+def get_balance_factor(node):
+    if node is None: return 0
+    else:
+        return (get_height(node.left)-get_height(node.right))
+
+def get_levels(root):
+    levels = []
+    queue = [(root, 1)]
+    while len(queue)>0:
+        cur_node, level = queue[0]
+        queue.pop(0)
+        if cur_node is not None:
+            levels.append([cur_node.val])
+            if cur_node.left is not None:
+                queue.append((cur_node.left, level+1))
+            if cur_node.right is not None:
+                queue.append((cur_node.right, level+1))
+    return levels
+
+def get_path(root, path):
+    if root is None or root.val == path[-1]:
+        return True
+    elif root.val < path[-1]:
+        return False
+    else:
+        return get_path(root.right, path)
+
+def get_paths(root, paths):
+    if root is None: return []
+    else:
+        if get_path(root, paths):
+            return [[root.val]] + get_paths(root.left, paths) + get_paths(root.right, paths)
+        else:
+            return get_paths(root.left, paths) + get_paths(root.right, paths)
+
+def get_all_paths(root, paths):
+    if root is None: return []
+    else:
+        return get_paths(root, paths) + get_all_paths(root.left, paths) + get_all_paths(root.right, paths)
+
+def get_leaf_nodes(root):
+    if root is None: return []
+    else:
+        return [x for x in get_leaves(root) if x.val!= -1]
+
+def get_leaves(root):
+    if root is None: return []
+    else:
+        return [root]+get_leaves(root.left)+get_leaves(root.right)
+
+def get_non_leaf_nodes(root):
+    if root is None: return []
+    else:
+        return [x for x in get_non_leaves(root) if x.val!= -1]
+
+def get_non_leaves(root):
+    if root is None: return []
+    else:
+        return get_non_leaves(root.left)+get_non_leaves(root.right)+[root]
+
+def get_ancestors(root, leaf):
+    if root is None: return []
+    else:
+        if root.val == leaf.val:
+            return [root]
+        else:
+            return get_ancestors(root.left, leaf) + get_ancestors(root.right, leaf)
+
+def get_descendants(root, ancestor):
+    if root is None: return []
+    else:
+        if root.val == ancestor.val:
+            return [root]
+        else:
+            return get_descendants(root.left, ancestor) +
+################################################################
+
+Solution:
+[0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 2, 2, 0, 0, 0, 0]
+

@@ -1,0 +1,148 @@
+Input token: 397
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'i', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'i', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'i', 'a']
+output: ['a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'i', 'a']
+
+Example_3:
+input: ['d', 'd', 'd', 'd', 'a', 'a', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'd', 'd', 'd', 'd', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'i', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'i', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path):
+    if node is None or len(path) == 0: return []
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"):
+        node.meta["count"] = 0
+    count = node.meta["count"] + 1
+    node.meta["count"] = count
+    result = [node]
+    for child in node.children:
+        result += dfs(child, path[:])
+    return result
+
+def bfs(root, path):
+    queue = collections.deque()
+    queue.append((root, path))
+    while queue:
+        node, path = queue.popleft()
+        yield (node, path)
+        for child in node.children:
+            queue.append((child, path[:]))
+
+def transform(nodes, root):
+    for node in nodes:
+        if node!= root:
+            node.parent = root
+    for node in nodes:
+        if node!= root:
+            node.depth = max([n.depth for n in node.parents]) + 1
+    for node in nodes:
+        if node!= root:
+            node.height = max([len(p.children) for p in node.ancestors]) - node.depth + 1
+    return nodes
+
+def get_leaves(node):
+    leaves = set()
+    for child in node.children:
+        leaves |= get_leaves(child)
+    if not node.is_leaf():
+        leaves.add(node)
+    return leaves
+
+def get_internal_nodes(node):
+    internal_nodes = set()
+    for child in node.children:
+        internal_nodes |= get_internal_nodes(child)
+    if node.is_leaf():
+        pass
+    else:
+        internal_nodes.add(node)
+    return internal_nodes
+
+def get_all_descendants(node):
+    descendants = set()
+    for child in node.children:
+        descendants |= get_all_descendants(child)
+    descendants.add(node)
+    return descendants
+
+def get_common_ancestor(nodes):
+    ancestor = None
+    for node in nodes:
+        if ancestor is None:
+            ancestor = node
+        elif node.depth > ancestor.depth:
+            ancestor = node
+    return ancestor
+
+def get_lowest_common_ancestor(nodes):
+    lca = None
+    for node in nodes:
+        if lca is None:
+            lca = node
+        elif node.depth < lca.depth:
+            lca = node
+    return lca
+
+def get_highest_common_ancestor(nodes):
+    hca = None
+    for node in nodes:
+        if hca is None:
+            hca = node
+        elif node.depth > hca.depth:
+            hca = node
+    return hca
+
+def get_subtree_roots(node):
+    subtrees = set()
+    for child in node.children:
+        subtrees |= get_subtree_roots(child)
+    subtrees.add(node)
+    return subtrees
+
+def get_subtree_leaves(node):
+    subtrees = set()
+    for child in node.children:
+        subtrees |= get_subtree_leaves(child)
+    subtrees.update(get_leaves(node))
+    return subtrees
+
+def get_subtree_internal_nodes(node):
+    subtrees = set()
+    for child in node.children:
+        subtrees |= get_subtree_internal_nodes(child)
+    subtrees.update(get_internal_nodes(node))
+    return subtrees
+
+def get_subtree_descendant_nodes(node):
+    subtrees = set()
+    for child in node.children:
+       
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'i', 'a', 'a', 'a', 'a', 'a', 'a']
+

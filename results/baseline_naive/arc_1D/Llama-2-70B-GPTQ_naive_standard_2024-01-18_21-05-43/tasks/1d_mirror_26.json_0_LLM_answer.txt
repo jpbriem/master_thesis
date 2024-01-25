@@ -1,0 +1,99 @@
+Input token: 523
+Output token: 696
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['g', 'g', 'g', 'g', 'g', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def buildTree(arr):
+    if not arr or len(arr) == 0: return None
+    root = Node()
+    q = [root]
+    while q:
+        node = q.pop(0)
+        for i in range(len(node.val)):
+            childNode = Node(node.val[i])
+            node.addChild(childNode)
+            q.append(childNode)
+    return root
+
+def dfs(node, result):
+    if not node: return
+    result.append(node.val)
+    for c in node.getChildren():
+        dfs(c, result)
+
+def bfs(node, result):
+    if not node: return
+    result.append(node.val)
+    queue = []
+    queue.append((node, True))
+    while queue:
+        (curNode, isLeft) = queue.pop(0)
+        if curNode.hasRightSibling():
+            rightSibling = curNode.rightSibling()
+            queue.append((rightSibling, False))
+        if curNode.hasParent():
+            parent = curNode.parent()
+            if isLeft:
+                queue.append((parent, True))
+            else:
+                queue.append((parent, False))
+
+def getNextVal(node, result):
+    if not node: return
+    result.append(node.val)
+    if node.hasRightSibling():
+        rightSibling = node.rightSibling()
+        result.append(rightSibling.val)
+    if node.hasParent():
+        parent = node.parent()
+        if node.isLeftChild():
+            result.append(parent.leftChild().val)
+        else:
+            result.append(parent.rightChild().val)
+
+def transform(root):
+    if not root: return
+    result = []
+    dfs(root, result)
+    return result
+
+if __name__ == "__main__":
+    # Testing Input
+    testArr = ["a", "a", "a", "b", "b", "b", "b", "b", "a", "a", "j", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"]
+    print("Input: ", testArr)
+    tree = buildTree(testArr)
+    print("Output: ", transform(tree))
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+

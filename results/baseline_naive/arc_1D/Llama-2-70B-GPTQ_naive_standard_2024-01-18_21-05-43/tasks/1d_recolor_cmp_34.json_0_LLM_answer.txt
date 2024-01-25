@@ -1,0 +1,78 @@
+Input token: 460
+Output token: 426
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a']
+output: ['a', 'a', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a']
+
+Example_2:
+input: ['a', 'g', 'g', 'g', 'g', 'a', 'g', 'g', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'g', 'g', 'g', 'g']
+output: ['a', 'i', 'i', 'i', 'i', 'a', 'g', 'g', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'i', 'i', 'i', 'i']
+
+Example_3:
+input: ['a', 'a', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'a', 'g', 'g', 'a']
+output: ['a', 'a', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'a', 'g', 'g', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, children=None):
+        self.val = val
+        self.children = children
+
+
+class Solution(object):
+    def transformToPreorder(self, inorder, postorder):
+        """
+        :type inorder: List[int]
+        :type postorder: List[int]
+        :rtype: TreeNode
+        """
+        
+        if not inorder or not postorder: return None
+        root = Node(postorder[-1])
+        stack = []
+        i = 0
+        while True:
+            node = postorder[len(inorder)-i-1]
+            
+            # find the index of current node in inorder list
+            j = -1
+            for k in range(len(inorder)):
+                if inorder[k] == node:
+                    j = k
+                    break
+            assert j!= -1
+            
+            # pop all nodes from stack that have smaller value than current node
+            while len(stack) > 0 and stack[-1].val < node:
+                tmp = stack.pop()
+                if tmp.left is not None:
+                    tmp.left._parent = root
+                else:
+                    tmp.right._parent = root
+            # add current node to stack
+            stack.append(root)
+            # set parent pointer
+            root.left = Node(node)
+            root = root.left
+            i += 1
+            if i >= len(postorder):
+                break
+        return root
+################################################################
+
+Solution:
+['a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i']
+

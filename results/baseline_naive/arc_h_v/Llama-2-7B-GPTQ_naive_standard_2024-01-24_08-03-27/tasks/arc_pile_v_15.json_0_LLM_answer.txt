@@ -1,0 +1,70 @@
+Input token: 612
+Output token: 599
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'g', 'a', 'a', 'a], ['a', 'g', 'f', 'h', 'a], ['a', 'a', 'a', 'a', 'a], ['a', 'g', 'a', 'h', 'a], ['a', 'a', 'a', 'h', 'a']]
+output: [['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['a', 'g', 'a', 'h', 'a], ['a', 'g', 'a', 'h', 'a], ['a', 'g', 'f', 'h', 'a']]
+
+Example_2:
+input: [['e', 'a', 'a', 'f], ['e', 'a', 'a', 'a], ['e', 'd', 'a', 'f], ['a', 'd', 'c', 'f']]
+output: [['a', 'a', 'a', 'a], ['e', 'a', 'a', 'f], ['e', 'd', 'a', 'f], ['e', 'd', 'c', 'f']]
+
+Example_3:
+input: [['a', 'a', 'a', 'a', 'a', 'a], ['a', 'g', 'a', 'a', 'a', 'f], ['j', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['j', 'g', 'a', 'a', 'c', 'a], ['j', 'a', 'a', 'a', 'a', 'f']]
+output: [['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['j', 'a', 'a', 'a', 'a', 'a], ['j', 'g', 'a', 'a', 'a', 'f], ['j', 'g', 'a', 'a', 'c', 'f']]
+
+Test case:
+input: [['j', 'a', 'a', 'a', 'a], ['j', 'a', 'a', 'h', 'c], ['j', 'g', 'a', 'h', 'a], ['a', 'g', 'e', 'a', 'a], ['a', 'g', 'e', 'h', 'c']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a', 'a], ['j', 'a', 'a', 'a', 'a'], ['j', 'a', 'a', 'h', 'c'], ['j', 'g', 'a', 'h', 'a'], ['a', 'g', 'e', 'a', 'a]]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_input(filename):
+    with open(filename) as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def get_output(filename):
+    with open(filename) + '.out' as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def solve(inputs: List[List[str]], output: str = None) -> int:
+    if not isinstance(inputs, list):
+        inputs = [get_input(filename) for filename in sys.argv]
+    if not isinstance(output, str):
+        outputs = [get_output(filename) for filename in sys.argv]
+    n = len(inputs)
+    dp = [[0 for _ in range(n)] for _ in range(n)]
+    for i in range(len(inputs)):
+        for j in range(i+1, len(inputs)):
+            if (inputs[i][0] == inputs[j][0]) or (inputs[i][1:] == inputs[j][1:]) \
+                    or (inputs[j][0] == inputs[i][0]) or (inputs[j][1:] == inputs[i][1:]):
+                dp[i][j] += 1
+    res = sum([dp[i][j] for i in range(len(inputs)) for j in range(i+1, len(inputs))])\
+           - sum([dp[i][j] for i in range(len(inputs)) for j in range(i+1, len(inputs))])\
+           + sum([dp[i][j] for i in range(len(inputs)) for j in range(i+1, len(inputs))]\
+               if (inputs[i][0]!= inputs[j][0]))
+    print(res)
+    return res
+
+
+if __name__ == "__main__":
+    inputs = get_input("input")
+    outputs = get_output("input.out")
+    print(solve(inputs, outputs))
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['j', 'g', 'a', 'h', 'a], ['j', 'g', 'e', 'h', 'c], ['j', 'g', 'e', 'h', 'c']]
+

@@ -1,0 +1,83 @@
+Input token: 418
+Output token: 507
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'b', 'b', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'a', 'b', 'b', 'b', 'b', 'a']
+output: ['a', 'b', 'b', 'a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'a', 'b', 'b', 'b', 'b', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a']
+output: ['a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'b', 'a', 'b', 'b', 'b', 'b', 'a', 'a', 'b', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'b', 'a', 'c', 'c', 'c', 'c', 'a', 'a', 'b', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'b', 'b', 'b', 'a', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'b', 'b', 'b', 'a', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l','m', 'n', 'o']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, result):
+    if node is None or len(result) == 0: return
+    if not node.parent:
+        result[len(result)-1] += 1
+        return
+    if node.parent.val!= node.val:
+        result[-1] += 1
+        return
+    if node.parent in node.children:
+        result[-1] -= 1
+        return
+    result[-1] -= 1
+    dfs(node.parent, result)
+
+class Solution(object):
+    def longestConsecutive(self, nums):
+        """
+        :type nums: List[int]
+        :rtype: int
+        """
+        # write your code here
+        if not nums: return 0
+        
+        root = Node()
+        stack = [root]
+        result = [-1]*len(nums)+[0]
+        for i in range(len(nums)):
+            curNode = stack[-1]
+            if curNode.val < nums[i]:
+                while True:
+                    if curNode.parent is None: break
+                    if curNode.parent.val > nums[i]:
+                        curNode = curNode.parent
+                    else:
+                        break
+                curNode.parent.addChild(stack[-1])
+            
+            stack[-1].val = nums[i]
+            stack[-1].parent = curNode
+            stack.append(curNode.getNewChild())
+            result[i+1] = -1
+            dfs(stack[-1], result)
+            result[i+1] *= -1
+        return max([abs(x) for x in result])
+################################################################
+
+Solution:
+['a', 'b', 'b', 'b', 'a', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

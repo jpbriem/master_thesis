@@ -1,0 +1,124 @@
+Input token: 544
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 3, 3, 3, 3, 3, 3, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0, 3, 3, 3, 0]
+output: [0, 0, 0, 5, 5, 5, 5, 5, 5, 0, 0, 8, 8, 8, 8, 8, 0, 0, 0, 8, 8, 8, 0]
+
+Example_2:
+input: [0, 0, 3, 3, 3, 3, 3, 3, 0, 0, 3, 3, 3, 0, 3, 3, 3, 0, 3, 3, 3, 3, 3]
+output: [0, 0, 5, 5, 5, 5, 5, 5, 0, 0, 8, 8, 8, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8]
+
+Example_3:
+input: [0, 0, 3, 3, 0, 0, 0, 3, 3, 3, 0, 0, 0, 3, 3, 3, 0, 3, 3, 3, 3, 3, 0]
+output: [0, 0, 5, 5, 0, 0, 0, 8, 8, 8, 0, 0, 0, 8, 8, 8, 0, 8, 8, 8, 8, 8, 0]
+
+Test case:
+input: [0, 3, 3, 3, 3, 3, 0, 3, 3, 0, 0, 0, 3, 3, 3, 3, 3, 3, 0, 3, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 5, 5, 5, 5, 5, 0, 8, 8, 0, 0, 0, 8, 8, 8, 8, 8, 8, 0, 8, 0, 0, 0]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=None, children=[], nextNode=None):
+        self.val = val
+        self.children = children
+        self.nextNode = nextNode
+
+def getNextNode(nodeList, nodeIndex):
+    if (len(nodeList) - 1) == nodeIndex:
+        return None
+    else:
+        return nodeList[nodeIndex + 1]
+
+def getPreviousNode(nodeList, nodeIndex):
+    if 0 == nodeIndex:
+        return None
+    else:
+        return nodeList[nodeIndex - 1]
+
+def getLeftChild(nodeList, nodeIndex):
+    leftChildIndex = 2 * nodeIndex + 1
+    if len(nodeList) > leftChildIndex:
+        return nodeList[leftChildIndex]
+    else:
+        return None
+
+def getRightChild(nodeList, nodeIndex):
+    rightChildIndex = 2 * nodeIndex + 2
+    if len(nodeList) > rightChildIndex:
+        return nodeList[rightChildIndex]
+    else:
+        return None
+
+def isLeafNode(nodeList, nodeIndex):
+    return not hasChildren(nodeList, nodeIndex)
+
+def hasChildren(nodeList, nodeIndex):
+    return len(getLeftChild(nodeList, nodeIndex))!= 0 or \
+           len(getRightChild(nodeList, nodeIndex))!= 0
+
+def getParentNode(nodeList, nodeIndex):
+    parentIndex = int((nodeIndex - 1)/2)
+    if parentIndex < 0:
+        return None
+    else:
+        return nodeList[parentIndex]
+
+def getSiblingNodes(nodeList, nodeIndex):
+    siblings = []
+    currentNode = getParentNode(nodeList, nodeIndex)
+    while currentNode!= None:
+        if currentNode.val == nodeList[nodeIndex].val:
+            break
+        elif currentNode.val > nodeList[nodeIndex].val:
+            siblings.append(currentNode)
+            currentNode = getPreviousNode(nodeList, currentNode.index)
+        else:
+            siblings.extend([x for x in reversed(siblings)])
+            siblings.reverse()
+            siblings.insert(0, currentNode)
+            currentNode = getNextNode(nodeList, currentNode.index)
+    return siblings
+
+def getMaxValInSubTree(nodeList, nodeIndex):
+    maxVal = nodeList[nodeIndex].val
+    childNodes = [getLeftChild(nodeList, nodeIndex), getRightChild(nodeList, nodeIndex)]
+    for i in range(len(childNodes)):
+        if childNodes[i]:
+            maxVal = max(maxVal, getMaxValInSubTree(nodeList, childNodes[i].index))
+    return maxVal
+
+def getMinValInSubTree(nodeList, nodeIndex):
+    minVal = nodeList[nodeIndex].val
+    childNodes = [getLeftChild(nodeList, nodeIndex), getRightChild(nodeList, nodeIndex)]
+    for i in range(len(childNodes)):
+        if childNodes[i]:
+            minVal = min(minVal, getMinValInSubTree(nodeList, childNodes[i].index))
+    return minVal
+
+def getSumOfValuesInSubTree(nodeList, nodeIndex):
+    sumValue = 0
+    childNodes = [getLeftChild(nodeList, nodeIndex), getRightChild(nodeList, nodeIndex)]
+    for i in range(len(childNodes)):
+        if childNodes[i]:
+            sumValue += getSumOfValuesInSubTree(nodeList, childNodes[i].index)
+    return sumValue + nodeList[nodeIndex].val
+
+def getNumberOfNodesInSubTree(nodeList, nodeIndex):
+    numberOfNodes = 1
+    childNodes = [getLeftChild(nodeList, nodeIndex), getRightChild(nodeList, nodeIndex)]
+    for i in range(len(childNodes)):
+
+################################################################
+
+Solution:
+[0, 8, 8, 8, 8, 8, 0, 5, 5, 0, 0, 0, 5, 5, 5, 5, 5, 5, 0, 8, 0, 0, 0]
+

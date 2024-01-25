@@ -1,0 +1,67 @@
+Input token: 691
+Output token: 578
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution:
+    def findReplaceString(self, S: str, T: str) -> str:
+        """
+        思路：找到最长的字符串，然后在这个字符串中寻找最短的字符串。
+            - 如果不存在，则返回原始字符串
+            - 否则，将最短字符串替换为最长字符串
+                - 重复上述过程直到没有更多可以被替换的字符串
+                    
+        时间复杂度：O(n)
+        空间复杂度：O(n)
+        """
+        if not T or len(T) > len(S): return S
+
+        # 记录每一位置对应的最大长度和最小长度
+        max_lengths = [0] * (len(S)+1)
+        min_lengths = [0] * (len(S)+1)
+
+        for i in range(len(S)):
+            max_lengths[i+1] = max(max_lengths[i], 1 + max_lengths[i-min_lengths[i]])
+            min_lengths[i+1] = min(min_lengths[i], min_lengths[i-max_lengths[i]]+1)
+
+        # 从右向左遍历，因为我们希望能够找到最长的字符串
+        for i in reversed(range(len(S))):
+            j = i - max_lengths[i]
+            
+            while j >= 0 and S[j:j+min_lengths[i]+1] == T[:min_lengths[i]+1]:
+                S = S[:j] + S[j+min_lengths[i]+1:]
+                break
+
+        return S
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+

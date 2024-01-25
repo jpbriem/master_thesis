@@ -1,0 +1,77 @@
+Input token: 355
+Output token: 492
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['f', 'f', 'f', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'j', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'h', 'h', 'h', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'j', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'b', 'b', 'b', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'j', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'j', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'j', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path):
+    if node is None or len(path) == 0: return []
+    if not hasattr(node, "meta") or not hasattr(node.meta, "order"): return []
+    order = node.meta["order"]
+    if order in path[::-1]:
+        return [node] + dfs(node.parent, path[:len(path)-1])
+    else:
+        return dfs(node.parent, path)
+
+class Solution(object):
+    def reconstructFromPrePost(self, pre, post):
+        """
+        :type pre: List[str]
+        :type post: List[str]
+        :rtype: str
+        """
+        root = Node()
+        stack = [(root, [])]
+        for i in range(len(pre)):
+            curNode = stack[-1][0].addChild("", {})
+            stack.append((curNode, [i]))
+        for i in range(len(post)):
+            curNode = stack[-1][0].getChildren()[stack[-1][1][-1]]
+            stack.pop(-1)
+            while True:
+                if i < len(pre):
+                    curNode.setMeta({"order": pre[i]})
+                    break
+                elif i >= len(pre):
+                    curNode.setMeta({"order": ""})
+                    break
+                else:
+                    curNode = curNode.parent
+        res = []
+        for node in dfs(root, ["a"] * (len(pre)+1)):
+            res += [node.val]
+        return "".join(res)
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'e', 'e', 'e', 'a']
+

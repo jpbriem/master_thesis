@@ -1,0 +1,93 @@
+Input token: 355
+Output token: 549
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['d', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def buildTree(arr):
+    if not arr or len(arr) == 0: return None
+    root = Node()
+    q = [root]
+    while q:
+        node = q.pop(0)
+        for i in range(len(node.val)):
+            childNode = Node(node.val[i])
+            node.addChild(childNode)
+            q.append(childNode)
+    return root
+
+def dfs(node, res):
+    if not node: return
+    res.append(node.val)
+    for c in node.getChildren():
+        dfs(c, res)
+
+def bfs(node, res):
+    if not node: return
+    res.append(node.val)
+    queue = []
+    queue.append((node, True))
+    while queue:
+        (curNode, isLeft) = queue.pop(0)
+        if curNode.hasRightSibling():
+            rightSibling = curNode.rightSibling()
+            if isLeft:
+                res.append(rightSibling.val)
+            else:
+                res.insert(0, rightSibling.val)
+            queue.append((rightSibling, False))
+        if curNode.hasParent():
+            parent = curNode.parent()
+            if isLeft:
+                res.append(parent.val)
+            else:
+                res.insert(0, parent.val)
+            queue.append((parent, True))
+
+class Solution(object):
+    def transformToPreorder(self, A):
+        """
+        :type A: List[str]
+        :rtype: str
+        """
+        # Build tree from array
+        root = buildTree(A)
+        
+        # Traverse tree to get pre order traversal result
+        res = []
+        dfs(root, res)
+        return "".join(res)
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a']
+

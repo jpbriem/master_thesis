@@ -1,0 +1,98 @@
+Input token: 397
+Output token: 792
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'c', 'a', 'a', 'c', 'a', 'a', 'c', 'a']
+output: ['a', 'a', 'i', 'i', 'i', 'a', 'a', 'b', 'b', 'a', 'a', 'j', 'a', 'a', 'j', 'a']
+
+Example_2:
+input: ['a', 'c', 'c', 'a', 'c', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'c', 'a', 'a', 'a']
+output: ['a', 'b', 'b', 'a', 'j', 'a', 'i', 'i', 'i', 'a', 'a', 'b', 'b', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'c', 'c', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'a', 'c', 'c']
+output: ['a', 'b', 'b', 'a', 'a', 'a', 'i', 'i', 'i', 'a', 'a', 'a', 'j', 'a', 'b', 'b']
+
+Test case:
+input: ['a', 'a', 'c', 'c', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'b', 'b', 'a', 'a', 'a', 'i', 'i', 'i', 'a', 'a', 'j', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path=''):
+    if node is None or not hasattr(node, "children") or len(node.children) == 0:
+        return []
+    
+    result = [path]
+    for child in node.children:
+        result += dfs(child, path + str(child.val))
+        
+    return result
+
+def bfs(root, queue):
+    while queue:
+        node = queue.pop()
+        yield node
+        for child in node.children:
+            queue.append(child)
+            
+def get_next_node(node, path):
+    next_nodes = []
+    for i in range(len(node.children)):
+        if node.children[i].val!= int(path[-1])+1:
+            next_nodes.append((node.children[i], path+'%d' % (int(path[-1])+1)))
+    return next_nodes
+
+def find_longest_common_subsequence(seq1, seq2):
+    m = len(seq1)+1
+    n = len(seq2)+1
+    dp = [[0]*n for _ in xrange(m)]
+    for i in reversed(xrange(1, m)):
+        for j in reversed(xrange(1, n)):
+            if seq1[i-1] == seq2[j-1]:
+                dp[i][j] = max(dp[i-1][j]+1, dp[i][j-1], dp[i-1][j-1])
+            else:
+                dp[i][j] = max(dp[i][j-1], dp[i-1][j], dp[i-1][j-1])
+                
+    return dp[m-1][n-1]
+
+def longestCommonSubstring(str1, str2):
+    """
+    :type str1: str
+    :type str2: str
+    :rtype: str
+    """
+    # Write your code here
+    if str1 == '' or str2 == '':
+        return ''
+    
+    m = len(str1)+1
+    n = len(str2)+1
+    dp = [[0]*n for _ in xrange(m)]
+    for i in reversed(xrange(1, m)):
+        for j in reversed(xrange(1, n)):
+            if str1[i-1] == str2[j-1]:
+                dp[i][j] = max(dp[i-1][j]+1, dp[i][j-1], dp[i-1][j-1])
+            else:
+                dp[i][j] = max(dp[i][j-1], dp[i-1][j], dp[i-1][j-1])
+                
+    return str1[:dp[m-1][n-1]]
+
+################################################################
+
+Solution:
+['a', 'a', 'b', 'b', 'a', 'a', 'a', 'i', 'i', 'i', 'a', 'a', 'j', 'a', 'a', 'a']
+

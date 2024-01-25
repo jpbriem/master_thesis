@@ -1,0 +1,70 @@
+Input token: 397
+Output token: 456
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e']
+*/
+public class Solution {
+    public String[] rearrangeString(String s) {
+        int n = s.length();
+        if (n == 0 || n == 1) return new String[]{s};
+        char[] chars = s.toCharArray();
+        Map<Character, Integer> map = new HashMap<>();
+        for (char c : chars) {
+            map.put(c, map.getOrDefault(c, 0) + 1);
+        }
+        List<Integer> list = new ArrayList<>(map.values());
+        Collections.sort(list);
+        int max = list.get(list.size() - 1), min = list.get(0);
+        int half = (max + min) / 2;
+        int count = 0;
+        StringBuilder sb = new StringBuilder();
+        while (count < n &&!map.isEmpty()) {
+            Character key = null;
+            int value = 0;
+            for (Map.Entry<Character, Integer> entry : map.entrySet()) {
+                if (entry.getValue() > 0) {
+                    if (key == null || entry.getKey().equals('a')) {
+                        key = entry.getKey();
+                        value = entry.getValue();
+                    } else if (!entry.getKey().equals('a') && entry.getValue() <= half) {
+                        key = entry.getKey();
+                        value = entry.getValue();
+                    }
+                }
+            }
+            if (value!= 0) {
+                sb.append(key);
+                map.remove(key);
+                --value;
+                ++count;
+            }
+        }
+        return sb.toString().split("");
+    }
+}
+################################################################
+
+Solution:
+['a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a']
+

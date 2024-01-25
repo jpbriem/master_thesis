@@ -1,0 +1,96 @@
+Input token: 334
+Output token: 617
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'e', 'e', 'e', 'a', 'a', 'e', 'e', 'a', 'a', 'e', 'a']
+output: ['a', 'a', 'g', 'g', 'g', 'a', 'a', 'c', 'c', 'a', 'a', 'i', 'a']
+
+Example_2:
+input: ['a', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'a', 'e', 'a', 'a']
+output: ['a', 'g', 'g', 'g', 'a', 'a', 'a', 'c', 'c', 'a', 'i', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'e', 'a', 'a', 'a', 'e', 'e', 'a', 'a', 'e', 'e', 'e']
+output: ['a', 'a', 'i', 'a', 'a', 'a', 'c', 'c', 'a', 'a', 'g', 'g', 'g']
+
+Test case:
+input: ['a', 'a', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'g', 'g', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def encode(s):
+    return "".join([str(x) for x in s])
+
+def decode(t):
+    return [int(x) for x in t]
+
+class Solution(object):
+    def transformToHighestBits(self, arr):
+        """
+        :type arr: List[List[int]]
+        :rtype: List[List[int]]
+        """
+        
+        # 1. build tree from list of lists
+        root = Node()
+        for i in range(len(arr)):
+            node = Node(arr[i][0], [], {})
+            
+            if len(arr[i]) > 1:
+                node.children = [Node(j, [], {}) for j in arr[i][1::]]
+                
+            root.addChild(node)
+        
+        # 2. traverse tree to find all possible paths
+        queue = [(root, [])]
+        while queue:
+            parent, path = queue.pop(0)
+            if not parent.isLeaf():
+                for child in parent.getChildren():
+                    queue.append((child, path + [child]))
+            else:
+                yield path
+    
+        # 3. sort by number of nodes in each path
+        sortedPaths = sorted(paths, key=lambda p: len(p))
+        
+        # 4. get highest bit value for each path
+        maxBitValue = {}
+        for path in sortedPaths:
+            maxBitValue[path] = 0
+            for node in reversed(path[:-1]):
+                maxBitValue[path] += (maxBitValue[path[-1]] << 1) & ~node.val
+        
+        # 5. update values on each path
+        for path in sortedPaths:
+            for node in path:
+                node.updateVal(maxBitValue[path])
+        
+        # 6. rebuild array from updated tree
+        result = []
+        for i in range(len(arr)):
+            result.append([])
+            for j in range(len(arr[i])):
+                result[i].append(encode(root.findByIndex(i).findByIndex(j)))
+        
+        return result
+
+################################################################
+
+Solution:
+['a', 'a', 'c', 'c', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a']
+

@@ -1,0 +1,92 @@
+Input token: 754
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'i', 'i', 'i', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'i', 'i', 'i', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'e', 'e', 'e', 'a', 'a', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'e', 'e', 'e', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'i', 'i', 'i', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'a', 'i', 'a', 'a', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'i', 'i', 'i', 'a', 'd', 'd', 'd', 'a', 'a', 'a', 'i', 'i', 'i', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'j', 'j', 'j', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'j', 'j', 'j', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import re
+from typing import List, Tuple
+
+class Solution:
+    def transform(self, s: str) -> str:
+        """
+        :type s: str
+        :rtype: str
+        """
+        # 1. split string into words
+        words = [word for word in s.split() if len(word)>0]
+        
+        # 2. find all substrings of length 4 that contain only letters from a, i or j
+        matches = []
+        for w in words:
+            m = re.search('[ai][ij][ai][ij]', w)
+            if m is not None:
+                matches.append((w,m))
+                
+        # 3. sort by index
+        sorted_matches = sorted(matches, key=lambda x:x[0].index(x[1]))
+        
+        # 4. replace each match with its replacement
+        result = ''
+        for w,m in sorted_matches:
+            result += self._replace(result, w, m)
+            
+        return result
+    
+    def _replace(self, s:str, old:str, new:str):
+        """
+        :param s: string to be replaced
+        :param old: substring to be replaced
+        :param new: replacement string
+        :return: string after replacing
+        """
+        pos = s.find(old)
+        while pos!= -1:
+            s = s[:pos]+new+s[pos+len(old):]
+            pos = s.find(old)
+        return s
+
+if __name__ == "__main__":
+    solution = Solution()
+    assert solution.transform("")=='', print("{}".format(solution.transform("")))
+    assert solution.transform("a")=='a', print("{}".format(solution.transform("a")))
+    assert solution.transform("aa")=='aa', print("{}".format(solution.transform("aa")))
+    assert solution.transform("aia")=='aia', print("{}".format(solution.transform("aia")))
+    assert solution.transform("aiaj")=='aiaj', print("{}".format(solution.transform("aiaj")))
+    assert solution.transform("aiai")=='aiai', print("{}".format(solution.transform("aiai")))
+    assert solution.transform("aiaji")=='aiaji', print("{}".format(solution.transform("aiaji")))
+    assert solution.transform("aiajia")=='aiajia', print("{}".format(solution.transform("aiajia")))
+    assert solution.transform("aiajija")=='aiajija', print("{}".format(solution.transform("aiajija")))
+    assert solution.transform("aiajijaj")=='aiajijaj', print("{}".format(solution.transform("aiajijaj")))
+    assert solution.transform("aiajijaja")=='aiajijaja', print("{}".format(solution.transform("aiajijaja")))
+    assert solution.transform("aiajijajja")=='aiajijajja', print("{}".format(solution.transform("aiajijajja")))
+    assert solution.transform("aiajijajjaj")=='aiajijajjaj', print("{}".format(solution.transform("aiajijajjaj")))
+    assert solution.transform("aiajijajjajj")=='aiajijajjajj', print("{}".format(solution.transform("aiajijajjajj")))
+    assert solution.transform("aiajijajjajjj")=='aiajijajjajjj', print("{}".format(solution.transform("aiajijajjajjj")))
+    assert
+################################################################
+
+Solution:
+['a', 'a', 'j', 'j', 'j', 'a', 'a', 'a', 'j', 'j', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

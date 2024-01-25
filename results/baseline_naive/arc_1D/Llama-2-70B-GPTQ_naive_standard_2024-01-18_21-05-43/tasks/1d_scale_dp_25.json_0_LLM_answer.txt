@@ -1,0 +1,87 @@
+Input token: 544
+Output token: 566
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'd', 'a']
+output: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'd', 'a']
+
+Example_2:
+input: ['a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'd', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'a', 'a', 'a', 'a']
+output: ['a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'd', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'd', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'd', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, result):
+    if node is None or len(result) == 0: return
+    if not node.isLeaf():
+        for child in node.getChildren():
+            dfs(child, result)
+    else:
+        result[node] += 1
+
+def bfs(root, result):
+    queue = [root]
+    while queue:
+        node = queue.pop()
+        if not node.isLeaf():
+            for child in node.getChildren():
+                queue.append(child)
+        else:
+            result[node] += 1
+
+class Solution(object):
+    def transformToHighestBits(self, arr):
+        """
+        :type arr: List[int]
+        :rtype: List[int]
+        """
+        root = Node(-1)
+        for i in range(len(arr)):
+            curNode = root
+            while True:
+                if curNode.hasChild(arr[i]) and curNode.getChild(arr[i]).isLeaf():
+                    break
+                elif curNode.hasChild(arr[i]):
+                    curNode = curNode.getChild(arr[i])
+                else:
+                    newNode = Node(arr[i])
+                    curNode.addChild(newNode)
+                    curNode = newNode
+            curNode.setIsLeaf(True)
+        
+        result = {}
+        for node in root.getAllNodes():
+            if node.isLeaf():
+                dfs(node, result)
+        for key in sorted(result.keys(), reverse=True):
+            for node in root.getAllNodes():
+                if node!= key and node.isLeaf():
+                    bfs(key, result)
+                    break
+        return list(map(lambda x:x.val, root.getAllNodes()))
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'd', 'a']
+

@@ -1,0 +1,89 @@
+Input token: 585
+Output token: 652
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'i', 'a', 'a', 'f], ['g', 'i', 'a', 'j', 'f], ['a', 'a', 'a', 'j', 'a], ['g', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'j', 'a']]
+output: [['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'j', 'a], ['g', 'i', 'a', 'j', 'f], ['g', 'i', 'a', 'j', 'f']]
+
+Example_2:
+input: [['b', 'a', 'a', 'a], ['a', 'i', 'a', 'a], ['a', 'i', 'a', 'a], ['a', 'a', 'c', 'g']]
+output: [['a', 'a', 'a', 'a], ['a', 'a', 'a', 'a], ['a', 'i', 'a', 'a], ['b', 'i', 'c', 'g']]
+
+Example_3:
+input: [['a', 'e', 'a', 'a', 'g', 'a], ['a', 'e', 'i', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'e', 'a', 'f', 'a', 'a], ['a', 'a', 'i', 'f', 'a', 'h], ['a', 'a', 'a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'e', 'a', 'a', 'a', 'a], ['a', 'e', 'i', 'f', 'a', 'a], ['a', 'e', 'i', 'f', 'g', 'h']]
+
+Test case:
+input: [['h', 'a', 'a', 'a], ['a', 'a', 'd', 'a], ['h', 'a', 'd', 'f], ['h', 'c', 'a', 'f']]
+################################################################
+
+LLM answer:
+
+output: [['h', 'a', 'a', 'a], ['h', 'a', 'a', 'a], ['h', 'a', 'd', 'f'], ['h', 'c', 'a', 'f']]
+*/
+public class Solution {
+    public List<List<String>> removeInvalidParentheses(String[] s) {
+        if (s == null || s.length == 0) return new ArrayList<>();
+        int n = s[0].length();
+        Set<Integer> set = new HashSet<>();
+        for (int i = 0; i < n; ++i) {
+            if (s[0].charAt(i) == ')') set.add(i);
+        }
+        Queue<String> queue = new LinkedList<>();
+        for (int i : set) {
+            String str = s[0];
+            char c = str.charAt(i);
+            str = str.substring(0, i) + str.substring(i+1);
+            queue.offer(str);
+        }
+        while (!queue.isEmpty()) {
+            String cur = queue.poll();
+            if (isValid(cur)) {
+                return getResult(cur, s);
+            } else {
+                for (int i = 0; i < n; ++i) {
+                    if (cur.charAt(i)!= '(' && cur.charAt(i)!= ')') continue;
+                    String next = cur.substring(0, i) + cur.substring(i+1);
+                    queue.offer(next);
+                }
+            }
+        }
+        return new ArrayList<>();
+    }
+
+    private boolean isValid(String str) {
+        Stack<Character> stack = new Stack<>();
+        for (char c : str.toCharArray()) {
+            if (c == '(') stack.push(c);
+            else if (stack.empty() || c!= ')') return false;
+            else stack.pop();
+        }
+        return stack.empty();
+    }
+
+    private List<List<String>> getResult(String cur, String[] s) {
+        List<List<String>> res = new ArrayList<>();
+        if (isValid(cur)) {
+            List<String> list = new ArrayList<>();
+            list.add(cur);
+            res.add(list);
+        }
+        for (int i = 0; i < s.length; ++i) {
+            if (s[i].equals(cur)) continue;
+            List<List<String>> temp = getResult(s[i], s);
+            for (List<String> lst : temp) {
+                lst.add(0, cur);
+                res.add(lst);
+            }
+        }
+        return res;
+    }
+}
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a], ['h', 'a', 'a', 'a], ['h', 'a', 'd', 'f], ['h', 'c', 'd', 'f']]
+

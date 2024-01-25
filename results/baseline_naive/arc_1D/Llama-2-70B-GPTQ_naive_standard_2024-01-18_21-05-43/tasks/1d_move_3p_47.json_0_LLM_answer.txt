@@ -1,0 +1,102 @@
+Input token: 502
+Output token: 830
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def buildTree(s):
+    if not s or len(s) == 0: return None
+    root = Node()
+    stack = [root]
+    for i in range(len(s)):
+        node = stack[-1].children[i % len(stack[-1].children)]
+        node.val = s[i]
+        if i < len(s)-1:
+            node.children = []
+            stack.append(node)
+    return root
+
+def getNextNode(node, index):
+    while True:
+        if node is None: return None
+        if node.children[index%len(node.children)]!= None:
+            return node.children[index%len(node.children)]
+        else:
+            node = node.parent
+            index -= 1
+
+def transform(root, startIndex, endIndex):
+    if root is None: return
+    if startIndex > endIndex: return
+    if startIndex == endIndex:
+        if root.children[startIndex] is None:
+            root.children[startIndex] = Node()
+        elif root.children[endIndex] is None:
+            root.children[endIndex] = Node()
+        else:
+            return
+    
+    # find the first non-empty child of current node
+    nextChild = getNextNode(root, startIndex+1)
+    if nextChild is None: return
+    # find the last non-empty child of current node
+    prevChild = getNextNode(root, endIndex-1)
+    if prevChild is None: return
+    # find the first non-empty child of previous node
+    prePrevChild = getNextNode(prevChild.parent, prevChild.parent.children.index(prevChild))
+    if prePrevChild is None: return
+    # find the last non-empty child of next node
+    postPostChild = getNextNode(nextChild.parent, nextChild.parent.children.index(nextChild)+1)
+    if postPostChild is None: return
+
+    # swap the two nodes' values
+    tmpVal = nextChild.val
+    nextChild.val = prevChild.val
+    prevChild.val = tmpVal
+
+    # update the parents' children
+    if prePrevChild is not None:
+        prePrevChild.parent.children[prePrevChild.parent.children.index(prePrevChild)] = nextChild
+    if postPostChild is not None:
+        postPostChild.parent.children[postPostChild.parent.children.index(postPostChild)] = prevChild
+
+    # recursively call this function on the swapped nodes
+    transform(nextChild.parent, nextChild.parent.children.index(nextChild), nextChild.parent.children.index(nextChild)-1)
+    transform(prevChild.parent, prevChild.parent.children.index(prevChild)+1, endIndex)
+
+if __name__ == "__main__":
+    print("Input:", tree.serialize())
+    print("Output:", solution.transformString(tree.deserialize()))
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'a']
+

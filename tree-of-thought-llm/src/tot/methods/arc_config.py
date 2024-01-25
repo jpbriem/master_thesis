@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '3'
+GPU = '6,7'
 
 #################### OPEN SOURCE ###############
 MAX_TOKEN = 4096
@@ -88,16 +88,16 @@ MODEL_CONFIG_GPT = {
 }
 
 #################### Prompt ####################
-CHANGE_REPRESENTATION = True
-NEW_REPRESENTATION = [".", "a", "b", "c", "d", "e", "f", "g", "h", "i"]
+CHANGE_REPRESENTATION = False
+NEW_REPRESENTATION = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
 
 POST_TEST_CASE = ""
 DELIMITER = {
     "arc": {
-        "item": "', '", 
+        "item": ", ", # TODO: add apostroph if needed
         "grid_start": "[",
-        "grid_end": "']]\n", # include end of last row
-        "row_start": "['",
+        "grid_end": "]]\n", # include end of last row # TODO: add apostroph if needed
+        "row_start": "[", # TODO: add apostroph if needed
         "row_end": "], ", # except for last row
         "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
         "example_end": "\n",
@@ -191,13 +191,13 @@ INSTRUCTION_END = ""
 # DATASET = "arc"
 # TASK = "arc"
 
-DIR = ["ARC_datasets/1D-ARC/dataset"]
-DATASET = "arc_1D" # tasks are the same as for 2D ARC
-TASK = "arc_1D"
+# DIR = ["ARC_datasets/1D-ARC/dataset"]
+# DATASET = "arc_1D" 
+# TASK = "arc_1D"
 
-# DIR = ["ARC_datasets/arc_new"]
-# DATASET = "arc_h_v" 
-# TASK = "arc_h_v"
+DIR = ["ARC_datasets/arc_new"]
+DATASET = "arc" # tasks are the same as for 2D ARC
+TASK = "arc_h_v"
 
 # X = "ARC_datasets/ARC_solved_tasks/training/"
 # X = "ARC_datasets/ARC_solved_tasks/evaluation/"

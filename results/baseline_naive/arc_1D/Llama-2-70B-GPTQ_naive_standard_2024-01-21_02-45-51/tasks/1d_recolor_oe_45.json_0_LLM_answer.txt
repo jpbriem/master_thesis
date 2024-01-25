@@ -1,0 +1,83 @@
+Input token: 418
+Output token: 492
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 0, 0]
+output: [0, 0, 0, 2, 2, 2, 2, 2, 2, 0, 3, 3, 3, 3, 3, 0, 0]
+
+Example_2:
+input: [0, 0, 7, 7, 7, 0, 0, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0]
+output: [0, 0, 3, 3, 3, 0, 0, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 0, 0, 7, 7, 7, 0]
+output: [0, 2, 2, 2, 2, 2, 2, 0, 3, 3, 3, 0, 0, 3, 3, 3, 0]
+
+Test case:
+input: [0, 0, 7, 7, 7, 7, 7, 0, 0, 7, 7, 7, 7, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 4, 4, 4, 4, 4, 0, 5, 5, 5, 5, 5, 0, 0, 0, 0]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=None, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+class Solution(object):
+    def longestConsecutive(self, nums):
+        """
+        :type nums: List[int]
+        :rtype: int
+        """
+        if not nums or len(nums) == 0: return 0
+        
+        root = Node()
+        stack = []
+        for i in range(len(nums)):
+            node = Node(nums[i])
+            while stack and stack[-1].val < node.val:
+                curNode = stack.pop()
+                if curNode.right is None:
+                    curNode.right = node
+                    break
+                else:
+                    stack.append(curNode)
+            
+            if stack and stack[-1].val == node.val:
+                stack.append(node)
+            elif stack:
+                stack.append(node)
+            else:
+                stack.append(root)
+                root = node
+        
+        maxLen = 0
+        for node in stack:
+            if node!= root:
+                maxLen = max(maxLen, self._getMaxLength(node))
+        return maxLen
+    
+    def _getMaxLength(self, node):
+        if node.left is None and node.right is None:
+            return 1
+        elif node.left is None:
+            return self._getMaxLength(node.right) + 1
+        elif node.right is None:
+            return self._getMaxLength(node.left) + 1
+        else:
+            return max(self._getMaxLength(node.left), self._getMaxLength(node.right)) + 1
+################################################################
+
+Solution:
+[0, 0, 3, 3, 3, 3, 3, 0, 0, 2, 2, 2, 2, 0, 0, 0, 0]
+

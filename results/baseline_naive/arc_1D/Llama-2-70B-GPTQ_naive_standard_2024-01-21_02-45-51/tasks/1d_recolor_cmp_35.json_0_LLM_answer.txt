@@ -1,0 +1,81 @@
+Input token: 481
+Output token: 557
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0]
+output: [0, 0, 4, 4, 4, 4, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0]
+output: [0, 1, 1, 1, 1, 0, 4, 4, 4, 4, 4, 4, 4, 0, 1, 1, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0]
+output: [0, 0, 0, 4, 4, 4, 4, 4, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0]
+
+Test case:
+input: [0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0]
+################################################################
+
+LLM answer:
+
+expected output: [0, 1, 1, 0, 5, 6, 7, 8, 9, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=None, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def get_max_depth(root):
+    if root is None or len(root) == 0: return 0
+    max_depth = 0
+    for child in root:
+        depth = get_max_depth(child) + 1
+        if depth > max_depth: max_depth = depth
+    return max_depth
+
+def get_node_at_depth(root, depth):
+    if root is None or len(root) == 0: return []
+    nodes = []
+    for node in root:
+        if len(node)!= 0:
+            nodes += get_node_at_depth(node, depth - 1)
+    if depth <= len(nodes):
+        return nodes[depth - 1]
+    else:
+        return []
+
+def find_longest_path(root, depth):
+    longest_path = []
+    for i in range(len(get_node_at_depth(root, depth))):
+        path = []
+        current_node = get_node_at_depth(root, depth)[i]
+        while current_node is not None:
+            path.append(current_node.val)
+            current_node = current_node.parent
+        longest_path.append(path)
+    return sorted(longest_path, key=lambda x: len(x), reverse=True)[0][::-1]
+
+def transform(nums):
+    """
+    :type nums: List[int]
+    :rtype: List[int]
+    """
+    # Write your code here
+    max_depth = get_max_depth(nums)
+    longest_path = find_longest_path(nums, max_depth)
+    for i in range(len(longest_path)):
+        nums[i] = len(longest_path[i])
+    return nums
+
+################################################################
+
+Solution:
+[0, 1, 1, 0, 4, 4, 4, 4, 4, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0]
+

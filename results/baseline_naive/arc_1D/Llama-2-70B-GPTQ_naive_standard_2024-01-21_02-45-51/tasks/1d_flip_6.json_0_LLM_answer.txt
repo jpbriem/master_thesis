@@ -1,0 +1,88 @@
+Input token: 481
+Output token: 487
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 8, 0, 0]
+
+Example_2:
+input: [2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [5, 5, 5, 5, 5, 5, 5, 5, 5, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 5, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 7, 7, 7, 7, 7, 7, 7, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 0, 0, 0, 0, 0, 1, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 1, 0, 0, 0, 0, 0, 0]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=None, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+class Solution(object):
+    def transformToPreorder(self, inorder, postorder):
+        """
+        :type inorder: List[int]
+        :type postorder: List[int]
+        :rtype: TreeNode
+        """
+        
+        if not inorder or not postorder: return None
+        root = Node()
+        stack = []
+        i = len(inorder) - 1
+        p = len(postorder)-1
+        while True:
+            node = postorder[p]
+            
+            # find the index of current node in inorder list
+            j = bisect.bisect_left(inorder,node)
+            if j == 0:
+                break
+                
+            # pop all nodes from stack that have smaller value than current node
+            while stack and stack[-1].val < node:
+                tmp = stack.pop()
+                if tmp.left is not None:
+                    stack.append(tmp.left)
+                else:
+                    break
+                    
+            # add current node to stack
+            stack.append(root)
+            root = root.right
+            
+            # update inorder and postorder indexes
+            i -= 1
+            p -= 1
+            
+        # build tree using stack
+        while stack:
+            tmp = stack.pop()
+            tmp.left = Node()
+            tmp.right = Node()
+            tmp.left.val = inorder[i]
+            tmp.right.val = inorder[j]
+            i -= 1
+            j += 1
+            
+        return root
+################################################################
+
+Solution:
+[0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 1, 0, 0, 0, 0, 0, 0]
+

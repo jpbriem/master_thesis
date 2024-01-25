@@ -1,0 +1,98 @@
+Input token: 712
+Output token: 818
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'a', 'a', 'a', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'g', 'g', 'g', 'a', 'a', 'c', 'a', 'a', 'a', 'f', 'f', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'h', 'a', 'a', 'h', 'h', 'h', 'a', 'h', 'h', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'c', 'a', 'a', 'g', 'g', 'g', 'a', 'f', 'f', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'h', 'a', 'a', 'a', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'c', 'a', 'a', 'a', 'f', 'f', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'h', 'h', 'a', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'a', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'b', 'b', 'a', 'b', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'b', 'a', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import re
+from typing import List, Tuple
+
+class Solution:
+    def letterCasePermutation(self, s: str) -> List[str]:
+        if not s or len(s) == 0: return []
+        
+        # find all substrings of length 2
+        subs = [sub for sub in itertools.product('ab', repeat=2)]
+        # find all substrings of length 3
+        subs += [sub for sub in itertools.product('abcdefghijklmnopqrstuvwxyz', repeat=3)]
+        
+        # build a regex to match any substring of length 2 or more
+        regex = r''.join(['|'.join(sub) for sub in subs])
+        # build a regex to match any substring of length 3 or more
+        regex += r''.join([re.escape(char) for char in 'abcdefghijklmnopqrstuvwxyz'])
+        
+        # split string into list of characters
+        chars = list(s)
+        
+        # iterate over each character
+        result = []
+        for i, c in enumerate(chars):
+            # remove current character from string
+            newChars = chars[:i] + chars[i+1:]
+            
+            # check if we can replace it with another character
+            if re.search(regex, newChars):
+                # get all possible replacements
+                candidates = set()
+                
+                # iterate over all substrings of length 2
+                for sub in subs:
+                    # check if this is a valid replacement
+                    if sub[0]!= c and sub[1]!= c:
+                        candidates.add(newChars.replace(c, sub[0]))
+                    
+                    elif sub[0] == c and sub[1]!= c:
+                        candidates.add(newChars.replace(c, sub[1]))
+                    
+                    else: continue
+                    
+                # iterate over all substrings of length 3
+                for sub in subs:
+                    # check if this is a valid replacement
+                    if sub[0]!= c and sub[1]!= c and sub[2]!= c:
+                        candidates.add(newChars.replace(c, sub[0]))
+                    
+                    elif sub[0] == c and sub[1]!= c and sub[2]!= c:
+                        candidates.add(newChars.replace(c, sub[1]))
+                    
+                    elif sub[0] == c and sub[1] == c and sub[2]!= c:
+                        candidates.add(newChars.replace(c, sub[2]))
+                    
+                    elif sub[0] == c and sub[1] == c and sub[2] == c:
+                        candidates.add(newChars.replace(c, ''))
+                    
+                    else: continue
+                    
+                # pick one at random
+                candidate = choice(list(candidates))
+                
+                # add to results
+                result.append(candidate)
+                
+        return result
+################################################################
+
+Solution:
+['a', 'f', 'f', 'a', 'c', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'c', 'a', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

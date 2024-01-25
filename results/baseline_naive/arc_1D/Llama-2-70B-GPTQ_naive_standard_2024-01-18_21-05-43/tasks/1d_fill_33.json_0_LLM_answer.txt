@@ -1,0 +1,119 @@
+Input token: 355
+Output token: 665
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['f', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'f', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'g', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'h', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path=''):
+    if node is None or not hasattr(node, "children") or len(node.children) == 0:
+        return []
+    
+    result = [path]
+    for child in node.children:
+        result += dfs(child, path + str(child.val))
+        
+    return result
+
+def bfs(root, queue):
+    while queue:
+        node = queue.pop()
+        yield node
+        for child in node.children:
+            queue.append(child)
+            
+def get_all_paths(root):
+    paths = set([])
+    queue = deque()
+    queue.appendleft(root)
+    while queue:
+        node = queue.popleft()
+        paths.add(str(node.val))
+        for child in node.children:
+            queue.appendleft(child)
+                
+    return list(sorted(list(paths)))
+
+def find_pattern(root, pattern):
+    queue = deque()
+    queue.append((root, pattern[0]))
+    while queue:
+        node, current = queue.popleft()
+        if current!= node.val:
+            continue
+        
+        if current == pattern[-1]:
+            return True
+        
+        for child in node.children:
+            queue.append((child, pattern[len(pattern)-1]))
+            
+    return False
+
+def transform(root, pattern):
+    queue = deque()
+    queue.append((root, pattern[0]))
+    while queue:
+        node, current = queue.popleft()
+        if current!= node.val:
+            continue
+        
+        if current == pattern[-1]:
+            node.val = pattern[0]
+            return root
+        
+        for child in node.children:
+            queue.append((child, pattern[len(pattern)-1]))
+            
+    return root
+
+def main():
+    # Input
+    s = input().strip()
+    t = input().strip()
+
+    # Processing
+    root = Node('r')
+    for i in range(int(t)):
+        c = int(input())
+        if c > 0:
+            root.children.append(Node(c))
+        else:
+            root.children.append(None)
+
+    print(transform(root, s).val)
+
+if __name__ == '__main__':
+    main()
+################################################################
+
+Solution:
+['a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

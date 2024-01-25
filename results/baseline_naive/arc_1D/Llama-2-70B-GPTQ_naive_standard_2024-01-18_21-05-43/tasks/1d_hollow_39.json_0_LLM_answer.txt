@@ -1,0 +1,93 @@
+Input token: 397
+Output token: 703
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'i', 'a', 'a', 'i', 'a', 'a']
+
+Example_2:
+input: ['a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a']
+output: ['a', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'f', 'a', 'a']
+
+Test case:
+input: ['a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path=''):
+    if node is None or not hasattr(node, "children") or len(node.children) == 0:
+        return []
+    else:
+        result = [path] + list(map(lambda x: dfs(x), node.children))
+        return result
+
+def bfs(root, queue):
+    while queue:
+        node = queue[0].popleft()
+        yield node
+        if hasattr(node, "children") and len(node.children) > 0:
+            queue.extend([child for child in node.children])
+
+def get_next_indexes(node, index):
+    next_indexes = set()
+    if hasattr(node, "children") and len(node.children) > 0:
+        for i, child in enumerate(node.children):
+            if child.val!= node.val:
+                next_indexes.add((i+1, i+len(child)))
+    return next_indexes
+
+def transform(root, indexes):
+    new_nodes = []
+    for (start, end) in sorted(list(indexes)):
+        new_node = root.copy()
+        new_node.val = root.children[end - 1].val
+        new_node.children = root.children[:start] + [Node(new_node.val)] + root.children[end:]
+        new_nodes.append(new_node)
+    return new_nodes
+
+def build_tree(words):
+    words = iter(words)
+    current_word = ""
+    word_count = 0
+    tree = Node(current_word)
+    for char in words:
+        if char == current_word[-1]:
+            word_count += 1
+        elif char!= current_word[-1]:
+            current_word = char
+            word_count = 1
+        tree.children.append(Node(char, [], {"count": word_count}))
+    return tree
+
+if __name__ == "__main__":
+    # Testing Inputs
+    test_cases = ["aaaiiiiaaaaa", "aeeeeaaeeea", "aaaaaffffffa"]
+    expected_results = ["aaaiaiiaaaaa", "aeeaaeeeea", "aaaaafffffaa"]
+    for tc, er in zip(test_cases, expected_results):
+        print("Input: {}".format(tc))
+        print("Output: {}".format(transform_string(tc)))
+        assert transform_string(tc) == er
+
+################################################################
+
+Solution:
+['a', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'a']
+

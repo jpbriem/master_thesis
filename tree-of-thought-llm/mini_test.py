@@ -46,22 +46,22 @@ from tot.models import gpt_usage
 
 ########## ARC ##########
 args = argparse.Namespace(
-    # backend='gpt-3.5-turbo-1106',   # TODO: Set model!
+    backend='gpt-3.5-turbo-1106',   # TODO: Set model!
     # backend='gpt-4-1106-preview', 
     # backend='NousResearch/Llama-2-7b-chat-hf',
-    backend='TheBloke/Llama-2-70b-Chat-GPTQ',
-    model_revision='main',
-    use_api=True,                       # TODO: Use API?!
+    # backend='TheBloke/Llama-2-70b-Chat-GPTQ',
+    # model_revision='main',
+    use_api=False,                       # TODO: Use API?!
     temperature=0.7, 
     # task='arc',                       # TODO: Set task!
-    task='arc_1D',
-    # task = 'arc_h_v',
+    # task='arc_1D',
+    task = 'arc_h_v',
     input_representation = None,    # TODO: set input representation
     # input_representation = 'objects',
     naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
-    prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
+    prompt_sample='standard',                # TODO: Set prompt sample: cot - standard!
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy',
@@ -159,7 +159,9 @@ def save_log_files(log, task_name, directory, failure_log=""):
             log_text += "\n###########################################################\nNew Step\n###########################################################\n"
             for key, value in step_info.items():
                 log_text += f"{key}: {value}\n\n"
-            
+        log_text += "\n###########################################################\nResult:\n"
+        for key, value in log[-1]['result'].items():
+            log_text += f"{key}: {value}\n\n"
         with open(directory+"/tasks/"+task_name+"_LLM_answer.txt", "w") as text_file:
             text_file.write(log_text)
     except Exception as e:

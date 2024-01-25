@@ -1,0 +1,83 @@
+Input token: 590
+Output token: 555
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', 'i', '.], ['.', 'h', '.', '.', '.', '.], ['.', 'h', '.', 'e', 'i', '.], ['f', '.', '.', 'e', '.', 'a], ['.', '.', '.', '.', 'i', '.], ['.', '.', 'b', 'e', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', 'e', 'i', '.], ['.', 'h', '.', 'e', 'i', '.], ['f', 'h', 'b', 'e', 'i', 'a']]
+
+Example_2:
+input: [['.', 'a', '.', '.', '.', '.], ['.', '.', 'f', '.', '.', '.], ['.', '.', 'f', 'b', '.', '.], ['.', 'a', '.', '.', '.', '.], ['.', '.', 'f', '.', '.', '.], ['.', 'a', '.', '.', '.', 'e']]
+output: [['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', 'a', 'f', '.', '.', '.], ['.', 'a', 'f', '.', '.', '.], ['.', 'a', 'f', 'b', '.', 'e']]
+
+Example_3:
+input: [['.', '.', '.', '.', 'e], ['.', '.', 'h', '.', 'e], ['.', '.', '.', 'i', '.], ['.', 'b', '.', 'i', '.], ['.', '.', '.', 'i', '.']]
+output: [['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', '.', '.', 'i', '.], ['.', '.', '.', 'i', 'e], ['.', 'b', 'h', 'i', 'e']]
+
+Test case:
+input: [['g', 'a', 'e', 'b], ['.', 'a', 'e', '.], ['.', 'a', '.', '.], ['.', '.', 'e', '.']]
+################################################################
+
+LLM answer:
+
+output: [['g', 'a', 'e', 'b'], ['.', 'a', 'e', '.], ['.', 'a', '.', '.], ['.', '.', 'e', '.]]
+"""
+
+import sys
+from collections import deque, defaultdict
+from typing import List, Optional, Tuple
+
+
+def get_next(current_state: str) -> Tuple[str, int]:
+    """Return next state and index of current state."""
+    if len(current_state) == 0:
+        return "", -1
+    elif current_state[-1] in "ae":
+        return current_state[:-1], -1
+    else:
+        return current_state + "e", -1
+
+
+class StateMachine:
+    def __init__(self):
+        self._states = [""] * 5
+        self._indexes = defaultdict(int)
+        for i in range(len(self._states)):
+            self._indexes[self._states[i]] += 1
+
+    @property
+    def states(self) -> List[Tuple[str, int]]:
+        return list(self._indexes.keys())
+
+    def add_transition(self, new_state: str, old_state: str, index: int) -> None:
+        self._states[old_state] = new_state
+        self._indexes[new_state] = index
+
+    def remove_transition(self, old_state: str, index: int) -> None:
+        del self._indexes[old_state]
+
+    def is_valid(self, state: str) -> bool:
+        return state in self.states
+
+    def get_next(self, state: str) -> Tuple[str, int]:
+        if not self.is_valid(state):
+            raise ValueError("Invalid state")
+        return (self._states[state], self._indexes[state])
+
+
+if __name__ == "__main__":
+    sm = StateMachine()
+    sm.add_transition(".", ".", 0)
+    sm.add_transition(".", "h", 1)
+    sm.add_transition(".", "e", 2)
+    sm.add_transition(".", "i", 3)
+    sm.add_transition(".", "b", 4)
+    print(sm.get_next("."))
+
+################################################################
+
+Solution:
+[['.', '.', '.', '.], ['.', 'a', 'e', '.], ['.', 'a', 'e', '.], ['g', 'a', 'e', 'b']]
+

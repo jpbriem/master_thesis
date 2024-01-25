@@ -1,0 +1,75 @@
+Input token: 666
+Output token: 543
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'a', 'e], ['a', 'a', 'b', 'a', 'a], ['a', 'a', 'c', 'a', 'c], ['g', 'a', 'a', 'a', 'a], ['a', 'h', 'a', 'a', 'a']]
+output: [['e', 'a', 'a', 'a', 'a], ['b', 'a', 'a', 'a', 'a], ['c', 'c', 'a', 'a', 'a], ['g', 'a', 'a', 'a', 'a], ['h', 'a', 'a', 'a', 'a']]
+
+Example_2:
+input: [['f', 'a', 'a', 'f', 'a], ['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['c', 'a', 'a', 'c', 'a], ['a', 'e', 'a', 'e', 'e']]
+output: [['f', 'f', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['c', 'c', 'a', 'a', 'a], ['e', 'e', 'e', 'a', 'a']]
+
+Example_3:
+input: [['a', 'c', 'a', 'a', 'a', 'c], ['j', 'a', 'j', 'a', 'a', 'j], ['a', 'a', 'g', 'a', 'g', 'g], ['a', 'a', 'a', 'a', 'a', 'a], ['d', 'a', 'a', 'a', 'd', 'a], ['e', 'e', 'a', 'a', 'a', 'a']]
+output: [['c', 'c', 'a', 'a', 'a', 'a], ['j', 'j', 'j', 'a', 'a', 'a], ['g', 'g', 'g', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['d', 'd', 'a', 'a', 'a', 'a], ['e', 'e', 'a', 'a', 'a', 'a']]
+
+Test case:
+input: [['a', 'a', 'd', 'd', 'd], ['f', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'e', 'a], ['a', 'c', 'c', 'a', 'a], ['a', 'a', 'j', 'j', 'j']]
+################################################################
+
+LLM answer:
+
+output: [['d', 'd', 'd', 'd', 'd'], ['f', 'f', 'f', 'f', 'f'], ['e', 'e', 'e', 'e', 'e'], ['c', 'c', 'c', 'c', 'c'], ['j', 'j', 'j', 'j', 'j']]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_next(current_state: str) -> Tuple[str, int]:
+    """Return next state and index of current state."""
+    if len(current_state) == 0:
+        return "", -1
+    elif current_state[-1] in "ae":
+        return current_state[:-1], -1
+    else:
+        return current_state + "e", -1
+
+
+class Solution:
+    def findTheDifference(self, words: List[str]) -> None:
+        """
+        Do not change code
+        """
+        # your code here
+        dp = defaultdict(list)
+        for word in words:
+            dp[word].append((len(word), 0))
+        for i in range(len(words)):
+            for j in range(i+1, len(words)):
+                if words[i][:-1]!= words[j][:-1]:
+                    continue
+                if words[i][-1] == 'e':
+                    dp[words[i]][dp[words[i]][-1][1]+1].append(j)
+                else:
+                    dp[words[i]][-1][1] += 1
+                    dp[words[j]][0].append(i)
+        print("".join([w for w in sorted(set(x[0]), key=lambda x: x[1])]))
+
+
+if __name__ == "__main__":
+    solution = Solution()
+    words = ["a", "a", "d", "d", "d"]
+    words = ["f", "a", "a", "a", "a"]
+    words = ["a", "c", "c", "a", "a"]
+    words = ["a", "j", "j", "j", "j"]
+    solution.findTheDifference(words)
+
+################################################################
+
+Solution:
+[['d', 'd', 'd', 'a', 'a], ['f', 'a', 'a', 'a', 'a], ['e', 'a', 'a', 'a', 'a], ['c', 'c', 'a', 'a', 'a], ['j', 'j', 'j', 'a', 'a']]
+

@@ -1,0 +1,110 @@
+Input token: 502
+Output token: 815
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'g', 'a']
+output: ['h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'g', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'g']
+output: ['a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'g']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'g', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'g', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'a', 'a', 'g', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'g', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path):
+    if node is None or len(path) == 0: return []
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"):
+        node.meta["count"] = 0
+    count = node.meta["count"] + 1
+    node.meta["count"] = count
+    result = [node]
+    for child in node.children:
+        result += dfs(child, path[:])
+    return result
+
+def bfs(root, path):
+    queue = collections.deque()
+    queue.append((root, path))
+    while queue:
+        node, path = queue.popleft()
+        yield (node, path)
+        if node is not None:
+            for child in node.children:
+                queue.append((child, path[:]))
+
+def transform(tree, path):
+    if tree is None: return []
+    if not hasattr(tree, "meta") or not hasattr(tree.meta, "count"):
+        tree.meta["count"] = 0
+    count = tree.meta["count"] + 1
+    tree.meta["count"] = count
+    result = [(tree, path)]
+    for child in tree.children:
+        result += transform(child, path[:])
+    return result
+
+def buildTree(nodes):
+    root = Node()
+    stack = [root]
+    for i in range(len(nodes)):
+        currentNode = nodes[i]
+        parentNode = stack[-1]
+        if parentNode.children.__contains__(currentNode): continue
+        parentNode.children.append(currentNode)
+        stack.append(currentNode)
+    return root
+
+def getPath(node, path):
+    if node is None: return []
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"):
+        node.meta["count"] = 0
+    count = node.meta["count"] + 1
+    node.meta["count"] = count
+    result = [(node, path)]
+    for child in node.children:
+        result += getPath(child, path[:])
+    return result
+
+def main():
+    # Input
+    s = input().strip()
+    t = input().strip()
+    
+    # Processing
+    sNodes = list(map(lambda x: Node(x), s))
+    tNodes = list(map(lambda x: Node(x), t))
+    sRoot = buildTree(sNodes)
+    tRoot = buildTree(tNodes)
+    sPaths = set(getPath(sRoot, []))
+    tPaths = set(transform(tRoot, []))
+    diff = sPaths - tPaths
+    print("".join([str(n.val) for n in sorted(diff, key=lambda x: x[0].val)]))
+
+if __name__ == "__main__":
+    main()
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'g', 'a', 'a', 'a', 'a']
+

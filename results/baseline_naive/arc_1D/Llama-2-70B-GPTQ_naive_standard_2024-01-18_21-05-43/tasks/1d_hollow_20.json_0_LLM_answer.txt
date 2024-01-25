@@ -1,0 +1,108 @@
+Input token: 502
+Output token: 638
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['f', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def buildTree(arr):
+    if not arr or len(arr) == 0: return None
+    root = Node()
+    q = [root]
+    i = j = 0
+    while True:
+        node = q[j].val
+        if node in arr:
+            arr.remove(node)
+        else:
+            break
+        if j < len(q)-1:
+            q.append([])
+        j += 1
+    while q:
+        node = q[-1][i]
+        if node is None:
+            q.pop(-1)
+            continue
+        if node.val in arr:
+            arr.remove(node.val)
+        else:
+            break
+        if i+1 >= len(q[-1]):
+            q[-1].append(Node())
+        i += 1
+    return root
+
+def dfs(node, arr):
+    if node is None: return
+    if node.val in arr:
+        arr.remove(node.val)
+    else:
+        return
+    dfs(node.left, arr)
+    dfs(node.right, arr)
+
+def bfs(node, arr):
+    if node is None: return
+    if node.val in arr:
+        arr.remove(node.val)
+    else:
+        return
+    queue = []
+    queue.append((node, 0))
+    while queue:
+        node, level = queue.pop(0)
+        if level > 0:
+            queue.append((node, level - 1))
+        if node.val in arr:
+            arr.remove(node.val)
+        elif node.val!= arr[level]:
+            return
+        if node.left:
+            queue.append((node.left, level + 1))
+        if node.right:
+            queue.append((node.right, level + 1))
+
+def transform(arr):
+    """
+    :type arr: List[str]
+    :rtype: List[str]
+    """
+    tree = buildTree(arr)
+    if tree is None: return arr
+    dfs(tree, arr)
+    bfs(tree, arr)
+    return arr
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'a', 'a', 'a', 'a']
+

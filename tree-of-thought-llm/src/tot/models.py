@@ -63,7 +63,15 @@ def initialize_model(args):
 def prompt_preprocessing_for_model(prompt):
     global backend, naive_run, prompt_sample
     if "gpt" in backend:
-        return prompt
+        messages = []
+        if "system" in prompt:
+            messages.append({"role": "system", "content": prompt["system"]})
+        if "few_shot_ex" in prompt:
+            for k, v in prompt["few_shot_ex"].items():
+                messages.append({"role": "user", "content": v[0]}) # ex task
+                messages.append({"role": "assistant", "content": v[1]}) # ex answer
+        messages.append({"role": "user", "content": prompt["user"]})
+        return messages
     elif not naive_run or not prompt_sample == "standard":
         if "chat" in backend.lower() and "llama" in backend.lower():
             # use prompting template for llama chat models
@@ -142,16 +150,7 @@ def completions_with_backoff(**kwargs):
             raise WrongFinishReasonError("finish_reason is {}".format(res["finish_reason"]))
     return res
 
-def gpt(prompt, model="gpt-3.5-turbo-1106", temperature=0.7, response_format={ "type": "json_object" }, max_tokens=2000, n=1, stop=None) -> list:
-    if "system" in prompt:
-        messages =[
-            {"role": "system", "content": prompt["system"]},
-            {"role": "user", "content": prompt["user"]}
-        ]
-    else:
-        messages =[
-            {"role": "user", "content": prompt["user"]}
-        ]
+def gpt(messages, model="gpt-3.5-turbo-1106", temperature=0.7, response_format={ "type": "json_object" }, max_tokens=2000, n=1, stop=None) -> list:
     return chatgpt(messages, model=model, temperature=temperature, response_format=response_format, max_tokens=max_tokens, n=n, stop=stop)
     
 def chatgpt(messages, model="gpt-3.5-turbo-1106", temperature=0.7, response_format={ "type": "json_object" }, max_tokens=2000, n=1, stop=None) -> list:
@@ -162,12 +161,6 @@ def chatgpt(messages, model="gpt-3.5-turbo-1106", temperature=0.7, response_form
         n -= cnt
         try:
             res = completions_with_backoff(model=model, messages=messages, temperature=temperature, response_format=response_format, max_tokens=max_tokens, n=cnt, stop=stop)
-            # TODO: Delete:
-            responses.append({"i": idx, "res": res})
-            path = "error_log/gpt_output_errors/"+date.strftime("%Y-%m-%d_%H-%M-%S")+".json"
-            with open(path, "w") as f:
-                json.dump(responses, f, indent=4)
-            # TODO: Delete
         except:
             res = {"choices": [{"message": {"content": "ERROR"}}], "usage": {"prompt_tokens": 0,"completion_tokens": 0}}
         outputs.extend([choice["message"]["content"] for choice in res["choices"]])

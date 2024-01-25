@@ -1,0 +1,71 @@
+Input token: 481
+Output token: 608
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'j', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'j', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'j', 'a']
+
+Example_3:
+input: ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'j', 'a']
+output: ['a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'j', 'a']
+
+Test case:
+input: ['a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'j', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a']
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution:
+    def transform(self, arr):
+        """
+        思路：
+            将数组中的元素分成两类，一种是重复出现的元素，另外一种是只出现了一次的元素。
+            对于每个只出现了一次的元素，我们可以把这些元素放在最前面或者最后面，然后对于重复出现的元素进行转换。
+            O(n) 时间复杂度，O(1) 空间复杂度
+        :param arr:
+        :return:
+        """
+        if not arr or len(arr) == 0:
+            return []
+
+        # 统计每个元素出现的次数
+        count = collections.Counter(arr)
+        # 获取所有只出现了一次的元素
+        unique_elements = [element for element in set(count.keys()) if count[element] == 1]
+        # 获取所有重复出现的元素
+        repeated_elements = list(set(count.keys()).difference([element for element in count.keys() if count[element]!= 1]))
+
+        # 如果没有只出现了一次的元素，那么直接返回重复出现的元素
+        if not unique_elements:
+            return repeated_elements
+
+        # 否则，先找到所有只出现了一次的元素的索引位置
+        indexs = [(index, element) for (index, element) in enumerate(arr) if element in unique_elements]
+        # 按照从小到大排序
+        indexs.sort(key=lambda x: x[0])
+        # 根据索引位置删除所有只出现了一次的元素
+        for i in reversed(range(len(unique_elements))):
+            del arr[indexs[i][0]]
+
+        # 再拼接所有重复出现的元素和只出现了一次的元素
+        return sorted(repeated_elements + unique_elements)
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'j', 'a', 'a', 'a', 'a']
+

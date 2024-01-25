@@ -1,0 +1,86 @@
+Input token: 502
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'i', 'a']
+output: ['a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'i', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'i', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'i', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'i', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'i', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'a', 'a', 'i', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'i', 'a', 'a', 'a', 'a']
+"""
+
+import re
+from typing import List, Pattern
+
+
+class Solution:
+    def replaceWords(self, words: List[str]) -> List[str]:
+        """
+        1. 先找到所有的单词，然后按照长度从小到大进行匹配。
+        2. 如果一个单词不能被其他单词包含，那么就直接返回这个单词。
+        3. 否则，将这个单词和可以包含它的单词进行比較，看哪个单词在字典中出现次数最多，选择哪个单词作为输出。
+            a) 如果两者都没有在字典中出现过，那么就返回原始单词。
+            b) 如果两者都在字典中出现过，但是两者在字典中出现的次数相等，那么就返回原始单词。
+            c) 如果两者都在字典中出现过，且可以包含原始单词的单词在字典中出现的次数更多，那么就返回可以包含原始单词的单词。
+            
+        :param words:
+        :return:
+        """
+        # 使用正则表达式来判断单词是否存在于字典中
+        dictionary = set()
+        for word in words:
+            if re.search('^[a-zA-Z]+$', word):
+                dictionary.add(word)
+    
+        # 对每个单词进行处理
+        result = []
+        for word in words:
+            # 获取当前单词的长度
+            length = len(word)
+            # 遍历所有的单词
+            for otherWord in words:
+                # 如果当前单词的长度与其他单词的长度相同，那么就跳过
+                if length == len(otherWord):
+                    continue
+                # 如果当前单词的长度小于其他单词的长度，那么就跳过
+                elif length < len(otherWord):
+                    break
+                else:
+                    # 如果当前单词的长度大于其他单词的长度，并且其他单词包含了当前单词，那么就需要进行比較
+                    if word in otherWord:
+                        # 如果其他单词不存在于字典中，那么就直接返回当前单词
+                        if not otherWord in dictionary:
+                            result.append(word)
+                            continue
+                        # 如果其他单词也存在于字典中，那么就根据字典中出现的次数进行比較
+                        elif otherWord in dictionary:
+                            # 如果两者都没有在字典中出现过，那么就返回原始单词
+                            if not word in dictionary:
+                                result.append(word)
+                                continue
+                            # 如果两者都在字典中出现过，但是两者在字典中出现的次数相等，那么就返回原始单词
+                            elif word in dictionary and word.count(word) == otherWord.count(otherWord):
+                                result.append(word)
+                                continue
+                            # 如果两者都在字典中出现过，且可以包含原始单词的单词
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'i', 'a', 'a', 'a', 'a']
+

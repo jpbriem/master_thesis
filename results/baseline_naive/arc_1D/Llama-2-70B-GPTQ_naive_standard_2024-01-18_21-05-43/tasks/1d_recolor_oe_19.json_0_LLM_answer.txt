@@ -1,0 +1,93 @@
+Input token: 439
+Output token: 551
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'j', 'j', 'j', 'a', 'a', 'a', 'j', 'j', 'j', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'b', 'b', 'b', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'j', 'j', 'j', 'j', 'j', 'a', 'a', 'a', 'j', 'j', 'j', 'j', 'a', 'a', 'j', 'j', 'a']
+output: ['a', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'g', 'g', 'a']
+
+Example_3:
+input: ['a', 'j', 'j', 'j', 'j', 'j', 'a', 'a', 'a', 'j', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'j', 'j', 'j', 'j', 'j', 'a', 'a', 'a', 'j', 'j', 'j', 'j', 'j', 'j', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, result):
+    if node is None or len(result) == 0: return
+    if not node.is_leaf():
+        for child in node.getChildren():
+            dfs(child, result)
+    else:
+        result[node] = True
+
+def bfs(root, result):
+    queue = [root]
+    while queue:
+        node = queue.pop()
+        if node is None or len(result) == 0: continue
+        if not node.is_leaf():
+            for child in node.getChildren():
+                queue.append(child)
+        else:
+            result[node] = True
+
+class Solution(object):
+    def transformToExclamationMarks(self, s):
+        """
+        :type s: str
+        :rtype: str
+        """
+        # 1. Build tree
+        root = Node('')
+        stack = []
+        for i, c in enumerate(reversed(s)):
+            if c!= '!':
+                newNode = Node(c)
+                if len(stack) > 0:
+                    lastNode = stack[-1].addChild(newNode)
+                else:
+                    root.setVal(lastNode)
+                stack.append(lastNode)
+            elif i < len(s)-1:
+                stack.pop().setVal(stack[-1])
+            else:
+                stack.pop().setVal(root)
+        
+        # 2. Find all leaves
+        result = {}
+        dfs(root, result)
+        bfs(root, result)
+        
+        # 3. Replace all leaves with!
+        res = ''
+        for i, c in enumerate(s):
+            if c == '!' and result.has_key(i):
+                res += '!'
+            else:
+                res += c
+        return res
+################################################################
+
+Solution:
+['a', 'a', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a']
+

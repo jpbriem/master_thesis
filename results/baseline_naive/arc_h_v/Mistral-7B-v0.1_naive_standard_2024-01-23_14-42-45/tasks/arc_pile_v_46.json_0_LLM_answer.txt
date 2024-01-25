@@ -1,0 +1,72 @@
+Input token: 548
+Output token: 590
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', 'b', '.], ['.', '.', 'd', '.', '.], ['.', '.', 'd', 'b', '.], ['.', '.', '.', 'b', '.], ['.', 'h', '.', '.', 'g']]
+output: [['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', '.', '.', 'b', '.], ['.', '.', 'd', 'b', '.], ['.', 'h', 'd', 'b', 'g']]
+
+Example_2:
+input: [['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', '.', '.', '.', 'd], ['.', '.', 'e', '.', 'd], ['g', '.', '.', '.', 'd']]
+output: [['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', '.', '.', '.', 'd], ['.', '.', '.', '.', 'd], ['g', '.', 'e', '.', 'd']]
+
+Example_3:
+input: [['c', '.', 'g', '.', 'i', '.], ['c', '.', '.', '.', 'i', '.], ['.', 'h', '.', '.', '.', '.], ['.', '.', 'g', '.', '.', '.], ['c', '.', 'g', 'e', 'i', '.], ['.', 'h', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['c', '.', 'g', '.', 'i', '.], ['c', 'h', 'g', '.', 'i', '.], ['c', 'h', 'g', 'e', 'i', '.']]
+
+Test case:
+input: [['.', '.', 'i', '.', 'e], ['.', 'g', '.', 'a', '.], ['.', '.', '.', '.', '.], ['.', 'g', '.', 'a', 'e], ['h', '.', '.', '.', 'e']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.']]
+*/
+public class Solution {
+    public int[][] updateBoard(int[][] board, int[] click) {
+        if (board == null || board.length == 0 || board[0].length == 0) return board;
+        int m = board.length, n = board[0].length;
+        boolean[][] visited = new boolean[m][n];
+        Queue<int[]> queue = new LinkedList<>();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (board[i][j] == -1) continue;
+                if (Math.abs(click[0] - i) + Math.abs(click[1] - j) <= 1 &&!visited[i][j]) {
+                    dfs(board, i, j, visited);
+                    break;
+                }
+            }
+        }
+        return board;
+    }
+
+    private void dfs(int[][] board, int x, int y, boolean[][] visited) {
+        if (x < 0 || x >= board.length || y < 0 || y >= board[0].length || board[x][y]!= 9 || visited[x][y]) return;
+        visited[x][y] = true;
+        int count = 0;
+        for (int i = -1; i <= 1; ++i) {
+            for (int j = -1; j <= 1; ++j) {
+                if (i == 0 && j == 0) continue;
+                if (Math.abs(i) + Math.abs(j) > 1) continue;
+                if (board[x+i][y+j] == 9) ++count;
+            }
+        }
+        if (count == 0) {
+            board[x][y] = -1;
+            queue.offer(new int[]{x, y});
+        } else {
+            board[x][y] = count;
+        }
+        while (!queue.isEmpty()) {
+            int[] cur = queue.poll();
+            dfs(board, cur[0], cur[1], visited);
+        }
+    }
+}
+################################################################
+
+Solution:
+[['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', '.', '.', '.', 'e], ['.', 'g', '.', 'a', 'e], ['h', 'g', 'i', 'a', 'e']]
+

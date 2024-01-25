@@ -1,0 +1,86 @@
+Input token: 334
+Output token: 486
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a', 'e', 'a']
+output: ['a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'e', 'a']
+
+Example_2:
+input: ['c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e']
+output: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'e']
+
+Example_3:
+input: ['a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'e', 'a']
+output: ['a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'e', 'a']
+
+Test case:
+input: ['i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'e', 'a']
+################################################################
+
+LLM answer:
+
+output: ['i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'e', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, children=None):
+        self.val = val
+        self.children = children
+
+
+class Solution(object):
+    def longestConsecutive(self, nums):
+        """
+        :type nums: List[int]
+        :rtype: int
+        """
+        if not nums or len(nums) == 0: return 0
+        
+        root = Node('')
+        stack = [root]
+        while stack:
+            node = stack[-1]
+            
+            # pop from stack
+            stack.pop()
+            
+            # add child to current node
+            for i in range(len(node.val)):
+                char = node.val[i]
+                
+                # check whether there is an existing child with this character
+                if char in node.children:
+                    continue
+                    
+                # otherwise create new child
+                else:
+                    node.children[char] = Node(char)
+                    stack.append(node.children[char])
+                    
+        maxLen = 0
+        for key in sorted(list(root.children.keys())):
+            curNode = root.children[key]
+            curLen = 1 + self._getMaxLengthFromNode(curNode)
+            maxLen = max(maxLen, curLen)
+        return maxLen
+    
+    def _getMaxLengthFromNode(self, node):
+        if not node: return 0
+        elif not node.children: return 1
+        else:
+            maxLen = 0
+            for key in list(sorted(list(node.children.keys()))):
+                curChild = node.children[key]
+                curLen = 1 + self._getMaxLengthFromNode(curChild)
+                maxLen = max(maxLen, curLen)
+            return maxLen
+
+################################################################
+
+Solution:
+['i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'e', 'a']
+

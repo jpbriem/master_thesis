@@ -1,0 +1,82 @@
+Input token: 515
+Output token: 687
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', 'b', '.', 'd', '.', '.], ['.', '.', '.', 'd', 'h', '.], ['.', '.', '.', '.', 'h', '.], ['.', '.', 'i', '.', '.', '.], ['.', '.', 'i', '.', '.', 'f], ['.', '.', 'i', 'd', 'h', '.']]
+output: [['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', 'i', 'd', 'h', '.], ['.', '.', 'i', 'd', 'h', '.], ['.', 'b', 'i', 'd', 'h', 'f']]
+
+Example_2:
+input: [['.', '.', '.', 'f], ['.', '.', 'g', 'f], ['c', '.', 'g', 'f], ['.', '.', 'g', '.']]
+output: [['.', '.', '.', '.], ['.', '.', 'g', 'f], ['.', '.', 'g', 'f], ['c', '.', 'g', 'f']]
+
+Example_3:
+input: [['a', 'i', '.', '.', 'c], ['.', '.', '.', '.', 'c], ['.', '.', 'e', '.', 'c], ['.', '.', '.', '.', '.], ['a', '.', 'e', '.', '.']]
+output: [['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', '.', '.', '.', 'c], ['a', '.', 'e', '.', 'c], ['a', 'i', 'e', '.', 'c']]
+
+Test case:
+input: [['.', '.', '.', '.', 'a], ['d', '.', '.', 'b', '.], ['.', 'h', '.', 'b', '.], ['d', 'h', 'c', '.', '.], ['d', '.', '.', 'b', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.']]
+
+Constraints:
+0 <= matrix.length, matrix[i].length <= 500
+matrix[i][j] is either a lowercase English letter or '.'.
+ */
+public class Solution {
+    public List<List<String>> updateMatrix(char[][] mat) {
+        int m = mat.length;
+        if (m == 0) return new ArrayList<>();
+        int n = mat[0].length;
+        Queue<int[]> q = new LinkedList<>();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (mat[i][j] == '0') {
+                    q.offer(new int[]{i, j});
+                } else {
+                    mat[i][j] = '~';
+                }
+            }
+        }
+        while (!q.isEmpty()) {
+            int[] cur = q.poll();
+            int x = cur[0];
+            int y = cur[1];
+            if (x > 0 && mat[x - 1][y] == '~') {
+                mat[x - 1][y] = mat[x][y] + 1;
+                q.offer(new int[]{x - 1, y});
+            }
+            if (x < m - 1 && mat[x + 1][y] == '~') {
+                mat[x + 1][y] = mat[x][y] + 1;
+                q.offer(new int[]{x + 1, y});
+            }
+            if (y > 0 && mat[x][y - 1] == '~') {
+                mat[x][y - 1] = mat[x][y] + 1;
+                q.offer(new int[]{x, y - 1});
+            }
+            if (y < n - 1 && mat[x][y + 1] == '~') {
+                mat[x][y + 1] = mat[x][y] + 1;
+                q.offer(new int[]{x, y + 1});
+            }
+        }
+        List<List<String>> res = new ArrayList<>();
+        for (int i = 0; i < m; ++i) {
+            char[] row = new char[n];
+            for (int j = 0; j < n; ++j) {
+                row[j] = mat[i][j];
+            }
+            res.add(Arrays.asList(row));
+        }
+        return res;
+    }
+}
+################################################################
+
+Solution:
+[['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['d', '.', '.', 'b', '.], ['d', 'h', '.', 'b', '.], ['d', 'h', 'c', 'b', 'a']]
+

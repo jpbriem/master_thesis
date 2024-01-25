@@ -1,0 +1,84 @@
+Input token: 418
+Output token: 488
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'e', 'e', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'e', 'a', 'e', 'e', 'a', 'a', 'a']
+output: ['a', 'h', 'h', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'd', 'a', 'h', 'h', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'e', 'e', 'a', 'e', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'e', 'a', 'a']
+output: ['a', 'a', 'a', 'h', 'h', 'a', 'd', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'd', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'e', 'a', 'a', 'e', 'e', 'a', 'e', 'e', 'e', 'a', 'e', 'e', 'a', 'a']
+output: ['a', 'a', 'a', 'd', 'a', 'a', 'h', 'h', 'a', 'b', 'b', 'b', 'a', 'h', 'h', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'e', 'e', 'a', 'a', 'e', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'h', 'h', 'a', 'a', 'd', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'd', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def encode(s):
+    return "".join([str(x) for x in s])
+
+def decode(t):
+    return [int(x) for x in t]
+
+class Solution(object):
+    def transformToHighestBits(self, arr):
+        """
+        :type arr: List[int]
+        :rtype: List[int]
+        """
+        
+        # 1. build tree from array
+        root = Node()
+        stack = []
+        for i, num in enumerate(arr):
+            if not stack or len(stack[-1].children) == 4:
+                node = Node(num)
+                root.addChild(node)
+                stack.append(root)
+                continue
+            
+            node = stack[-1]
+            while True:
+                if node.getMeta('left'):
+                    node = node.getLeft()
+                elif node.getMeta('right'):
+                    node = node.getRight()
+                else:
+                    break
+            node.setVal(num).setMeta({'left': False, 'right': False})
+            stack[-1] = node
+    
+        # 2. traverse tree to get result
+        res = []
+        queue = [(root, 0)]
+        while queue:
+            node, depth = queue.pop()
+            if node.hasChildren():
+                queue += [(child, depth + 1) for child in reversed(node.getChildren())]
+            else:
+                res.extend((depth << 1) | (1 - ((depth & 1) ^ 1))) * 4
+        return res
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'h', 'h', 'a', 'a', 'd', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+

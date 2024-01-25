@@ -41,8 +41,8 @@ def load_llama(model_name, revision, max_token, model_config):
     )
 
     # # fix bug for certain models - fixed in new Optimum version
-    # if model_name in ["TheBloke/Camel-Platypus2-70B-GPTQ", "TheBloke/Platypus2-70B-GPTQ", "TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ", "TheBloke/Llama-2-70B-GPTQ"]:
-    #     model = exllama_set_max_input_length(model, 4096)
+    if model_name in ["TheBloke/Camel-Platypus2-70B-GPTQ", "TheBloke/Platypus2-70B-GPTQ", "TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ", "TheBloke/Llama-2-70B-GPTQ"]:
+        model = exllama_set_max_input_length(model, 4096)
 
 
     # make pipeline
@@ -129,36 +129,46 @@ def count_tokens(prompt, model_name, tokenizer):
 
 def replace_quotes_in_text(res, json_format):  
     # preprocess json format
-    if isinstance(json_format, dict):
-        output_format = {}
-        for key, value in json_format.items():
-            if "Example_1" in json_format:
+    output_format = {}
+    for key, value in json_format.items():
+        if "Example_1" in json_format:
+            for i in range(2, 11): # do for 10 examples
+                k = "Example_" + str(i)
+                output_format.update({k: ""})
+        output_format.update({key: ""})
+        if isinstance(value, dict):
+            if "Example_1" in value:
                 for i in range(2, 11): # do for 10 examples
                     k = "Example_" + str(i)
                     output_format.update({k: ""})
-            output_format.update({key: ""})
-            if isinstance(value, dict):
-                if "Example_1" in value:
-                    for i in range(2, 11): # do for 10 examples
-                        k = "Example_" + str(i)
-                        output_format.update({k: ""})
-                for key2, value2 in value.items():
-                    output_format.update({key2: ""})
-                    if isinstance(value2, dict):
-                        if "Example_1" in value2:
-                            for i in range(2, 11): # do for 10 examples
-                                k = "Example_" + str(i)
-                                output_format.update({k: ""})
-                        for key3, value3 in value2.items():
-                            output_format.update({key3: ""}) 
+            for key2, value2 in value.items():
+                output_format.update({key2: ""})
+                if isinstance(value2, dict):
+                    if "Example_1" in value2:
+                        for i in range(2, 11): # do for 10 examples
+                            k = "Example_" + str(i)
+                            output_format.update({k: ""})
+                    for key3, value3 in value2.items():
+                        output_format.update({key3: ""})   
         keys = list(output_format.keys())
-    elif isinstance(json_format, list):
-        keys = json_format
+    # add some potential artificially created keys from the model
+    keys += ["Choice", "test_case", "Test_case", "Test case", "test case", "test_output", "Test_output", "test output", "Test output", "output", "Test input", "Test_input", "test input", "test_input"]
+
+    # do some regex to remove unwanted line breakes
+    res = res.replace("\n", " ")
+    # check if this is already enough procesing:
+    try: 
+        json.loads(res)
+        return res
+    except:
+        pass
+    
     # do some regex to remove unwanted single aprostrophes
     res = res.replace("'", '"')
-    res = res.replace("\n", " ")
-    # replace any color name or other word enclosed in double quotation marks to single quotation marks, in case it is inside a string field
-    pattern = r'"([^\s"]+)"'
+
+    # replace any color name enclosed in double quotation marks to single quotation marks
+    # pattern = r'"([^\s"]+)"'
+    pattern = r'"((?:(?!np\.array)[^"\s])+)"'
     res = re.sub(pattern, r"'\1'", res)
     pattern = r'(\': \s*)\'(\w+)\'(, \s*\')'
     res = re.sub(pattern, r'\1"\2"\3', res)
@@ -178,11 +188,20 @@ def replace_quotes_in_text(res, json_format):
             # Otherwise, replace 'key' # ], ] "objec
             new_string = match.group(1)+","+str(match.group(0))[1:]
             return new_string
-    for key in keys+["Choice"]:
+    for key in keys:
         pattern = fr"'({key}(?:_\d+)?)'"
         res = re.sub(pattern, r'"\1"', res)
         pattern = r'(.)\s*"' + re.escape(key)
         res = re.sub(pattern, replace_match, res)
+
+    # check for wrong array '"output": '['.", '.'...
+    def replace_apostrophes(match):
+        before = match.group(2)  # The text between the single apostrophe and the next key or ending sequence
+        after = before.replace('"', "'")  # Replace single apostrophes with double
+        return f'"{match.group(1)}": "{after}{match.group(3)}'    
+    keys_pattern = '|'.join([re.escape(key) for key in keys])  # Escape each key and join with '|'
+    pattern = rf'"({keys_pattern})":\s*\'(.*?)("(?:, "({keys_pattern})")|\s*"\s*\}})'
+    res = re.sub(pattern, replace_apostrophes, res)   
 
     # ensure that we don't replace away aprostophes in text 
     res = re.sub(r"(\w)\"(\w)", r"\1'\2", res)
@@ -194,6 +213,12 @@ def replace_quotes_in_text(res, json_format):
     # replace any characters with a backslash away, except \n and \t
     pattern = r"(\\[^nt])"
     res = re.sub(pattern, "", res)
+
+    # in case the model outputs the string "np.array" to indicate such an object
+    pattern = r'"np\.array\(([^)]*?)\)"'
+    res = re.sub(pattern, r'\1', res)
+    pattern = r'np\.array\(([^)]*?)\)'
+    res = re.sub(pattern, r'"\1"', res)
 
     # In case any output is an array but with letters w/o double quotes
     for k in keys:
@@ -222,8 +247,8 @@ def get_json_from_text(string, json_format):
         # Extract the JSON-like segment           
         list_of_jsons.append(string[json_start:json_end])
         indices.append((json_start, json_end))
-        string = string[json_start+1:json_end-1]
         try:
+            string = string[json_start:json_end]
             return json.loads(string)
         except:
             pass
@@ -264,24 +289,30 @@ def find_key(dictionary, target_key):
                 return result, keys
     return False, []
 
-def extract_json_value(string, json_format, key):
+def extract_json_value(string, json_format, keys):
     data = get_json_from_text(string, json_format)
     if isinstance(data, str): # error in json parsing
         # get path from beginning of string
         path = data.split(".txt")[0]+".txt"
         # get error from end of string
         data = data.split(".txt")[-1]
-        data += f'Key to extract:\n{key}'
+        data += f'Key to extract:\n{keys}'
         with open(path, "w") as text_file:
             text_file.write(data)
         return None
     
+    # if only one key is given, make it a list
+    # if a list of keys is given, use this list to find data, starting from first potential key
+    if isinstance(keys, str):
+        keys = [keys]    
+
     # Check if the key exists in the JSON, also check nested dictionaries
-    key_exists, keys = find_key(data, key)
-    if key_exists:
-        for key in keys:
-            data = data[key]
-    
+    for key in keys:
+        key_exists, key_path = find_key(data, key)
+        if key_exists:
+            for next_key in key_path:
+                data = data[next_key]
+            break
     # Return the value for the given key or entire dictionar if not found
     return data
 

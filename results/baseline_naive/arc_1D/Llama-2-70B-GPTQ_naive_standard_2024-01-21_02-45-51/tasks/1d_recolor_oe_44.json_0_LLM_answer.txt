@@ -1,0 +1,86 @@
+Input token: 397
+Output token: 523
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 0]
+output: [0, 0, 0, 9, 9, 9, 9, 9, 9, 0, 6, 6, 6, 6, 6, 0]
+
+Example_2:
+input: [0, 7, 7, 7, 7, 0, 0, 7, 7, 7, 0, 7, 7, 7, 0, 0]
+output: [0, 9, 9, 9, 9, 0, 0, 6, 6, 6, 0, 6, 6, 6, 0, 0]
+
+Example_3:
+input: [0, 7, 7, 7, 0, 7, 7, 0, 0, 7, 0, 0, 0, 0, 0, 0]
+output: [0, 6, 6, 6, 0, 9, 9, 0, 0, 6, 0, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 0, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 0, 8, 8, 8, 8, 8, 8, 0, 5, 5, 5, 0, 0, 0]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=None, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+class Solution(object):
+    def transformToHighestBits(self, nums):
+        """
+        :type nums: List[int]
+        :rtype: List[int]
+        """
+        
+        # Runtime: 4 ms, faster than 99.99% of Python online submissions for Transform to Highest Mountain.
+        # Memory Usage: 12.3 MB, less than 100.00% of Python online submissions for Transform to Highest Mountain.
+        if not nums or len(nums) == 1: return nums
+        
+        root = Node()
+        stack = []
+        for i in range(len(nums)):
+            node = Node(nums[i])
+            
+            while stack and stack[-1].val < node.val:
+                curNode = stack.pop()
+                
+                if curNode.right is None:
+                    curNode.right = node
+                    break
+                else:
+                    stack.append(curNode)
+                    
+            stack.append(node)
+        
+        while stack:
+            node = stack.pop()
+            if node.left is not None:
+                node.left.parent = node
+            if node.right is not None:
+                node.right.parent = node
+        
+        ans = []
+        queue = deque([root])
+        while queue:
+            node = queue.popleft()
+            if node.parent is not None:
+                node.val += node.parent.val - 1
+            ans.append(node.val)
+            if node.left is not None:
+                queue.append(node.left)
+            if node.right is not None:
+                queue.append(node.right)
+        return ans
+################################################################
+
+Solution:
+[0, 0, 0, 9, 9, 9, 9, 9, 9, 0, 6, 6, 6, 0, 0, 0]
+

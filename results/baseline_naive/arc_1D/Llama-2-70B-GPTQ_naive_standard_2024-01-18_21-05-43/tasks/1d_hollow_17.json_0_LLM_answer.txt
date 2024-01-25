@@ -1,0 +1,94 @@
+Input token: 397
+Output token: 586
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a']
+output: ['a', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a']
+output: ['a', 'a', 'a', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, result):
+    if node is None or len(result) == 0: return
+    if not node.isLeaf():
+        for child in node.getChildren():
+            dfs(child, result)
+    else:
+        result[node] += 1
+
+def bfs(root, result):
+    queue = [root]
+    while queue:
+        node = queue.pop()
+        if node is None or len(result) == 0: continue
+        if not node.isLeaf():
+            for child in node.getChildren():
+                queue.append(child)
+        else:
+            result[node] += 1
+
+class Solution(object):
+    def transformToHighestBits(self, arr):
+        """
+        :type arr: List[int]
+        :rtype: List[int]
+        """
+        root = Node(-1)
+        for i in range(len(arr)):
+            curNode = root
+            while True:
+                if curNode.hasChild(arr[i]) and curNode.getChild(arr[i]).isLeaf():
+                    break
+                elif curNode.hasChild(arr[i]):
+                    curNode = curNode.getChild(arr[i])
+                else:
+                    newNode = Node(arr[i])
+                    curNode.addChild(newNode)
+                    curNode = newNode
+            curNode.setIsLeaf(True)
+        
+        result = {}
+        for node in root.getAllNodes():
+            dfs(node, result)
+            
+        for key in sorted(result.keys(), reverse=True):
+            for node in root.getAllNodes():
+                if node!= key and node.hasParent(key):
+                    node.removeParent()
+                    
+        for node in root.getAllNodes():
+            bfs(node, result)
+            
+        res = []
+        for i in range(len(arr)):
+            res.append(result[arr[i]])
+        return res
+################################################################
+
+Solution:
+['g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a']
+

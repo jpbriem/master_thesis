@@ -1,0 +1,59 @@
+Input token: 712
+Output token: 451
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 6, 6, 0, 6, 0, 6, 6, 6, 0, 0, 0, 6, 6, 0, 0, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 1, 1, 0, 3, 0, 4, 4, 4, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 6, 0, 0, 0, 6, 6, 0, 0, 0, 6, 6, 6, 0, 0, 6, 6, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 3, 0, 0, 0, 1, 1, 0, 0, 0, 4, 4, 4, 0, 0, 1, 1, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 6, 0, 0, 0, 6, 6, 6, 0, 0, 6, 6, 0, 0, 0, 6, 6, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 3, 0, 0, 0, 4, 4, 4, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 6, 6, 6, 0, 6, 6, 0, 0, 0, 6, 0, 0, 0, 6, 0, 0, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 1, 1, 4, 0, 3, 3, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Constraints:
+1 <= arr.length <= 5 * 10^4
+arr[i] is either 0 or 6
+ */
+public class Solution {
+    public int[] reorganizeString(int[] arr) {
+        if (arr == null || arr.length < 2) return arr;
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int i : arr) {
+            map.put(i, map.getOrDefault(i, 0) + 1);
+        }
+        PriorityQueue<Map.Entry<Integer, Integer>> pq = new PriorityQueue<>((a, b) -> a.getValue() - b.getValue());
+        pq.addAll(map.entrySet());
+        List<Integer> list = new ArrayList<>();
+        while (!pq.isEmpty()) {
+            Map.Entry<Integer, Integer> entry = pq.poll();
+            if (list.size() > 0 && list.get(list.size() - 1).equals(entry.getKey())) continue;
+            list.add(entry.getKey());
+            if (--entry.getValue()!= 0) pq.offer(entry);
+        }
+        if (list.size() % 2 == 1) return new int[]{};
+        int[] res = new int[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            res[i] = list.get(i);
+        }
+        return res;
+    }
+}
+################################################################
+
+Solution:
+[0, 4, 4, 4, 0, 1, 1, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+

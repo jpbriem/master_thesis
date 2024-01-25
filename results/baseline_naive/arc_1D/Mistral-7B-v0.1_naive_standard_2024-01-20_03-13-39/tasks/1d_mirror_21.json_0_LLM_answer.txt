@@ -1,0 +1,70 @@
+Input token: 334
+Output token: 415
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'b', 'b', 'b', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'b', 'b', 'b', 'a', 'a']
+
+Example_2:
+input: ['a', 'g', 'g', 'g', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'j', 'a', 'g', 'g', 'g', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'f', 'f', 'f', 'a', 'j', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'f', 'f', 'f', 'a']
+
+Test case:
+input: ['b', 'b', 'b', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j']
+
+Note:
+The given array will have at least one element.
+The given array will not contain duplicate elements except for 'a' and 'j'.
+The length of the array is in range [0, 50,000].
+*/
+public class Solution {
+    public String reorganizeString(String S) {
+        if (S == null || S.length() < 2) return S;
+        int[] count = new int[26];
+        char[] chars = S.toCharArray();
+        for (char c : chars) {
+            count[c - 'a']++;
+        }
+        PriorityQueue<Integer> pq = new PriorityQueue<>(new Comparator<Integer>() {
+            @Override
+            public int compare(Integer o1, Integer o2) {
+                return o2 - o1;
+            }
+        });
+        for (int i = 0; i < 26; i++) {
+            if (count[i] > 0) {
+                pq.offer(count[i]);
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        while (!pq.isEmpty()) {
+            int maxCount = pq.poll();
+            if (maxCount <= 1) continue;
+            sb.append((char)(maxCount + 'a'));
+            maxCount--;
+            if (maxCount > 0) {
+                sb.append((char)(maxCount + 'a'));
+            } else {
+                pq.offer(-maxCount);
+            }
+        }
+        return sb.toString();
+    }
+}
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'j', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+

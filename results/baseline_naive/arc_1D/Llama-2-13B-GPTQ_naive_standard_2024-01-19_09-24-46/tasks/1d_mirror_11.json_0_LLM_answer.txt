@@ -1,0 +1,84 @@
+Input token: 649
+Output token: 648
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import re
+from typing import List, Tuple
+
+class Solution:
+    def transform(self, s: str) -> str:
+        if not s or len(s) == 0: return ''
+        # split string into words
+        words = [word for word in s.split(' ') if word]
+        # find all substrings of length 4 that contain only letters a, b, c, j
+        patterns = []
+        for i in range(len(words)):
+            for j in range(i+1, len(words)+1):
+                if (re.search(r'[abj]*', ''.join(words[:i])) is None) and \
+                   (re.search(r'[abj]*', ''.join(words[i:j])) is None): continue
+                patterns.append((i, j))
+        # sort by index
+        sorted_patterns = sorted(patterns, key=lambda x:x[0])
+        # apply transformations
+        result = ''
+        for i, j in sorted_patterns:
+            result += self._transform(result, words, i, j)
+        return result
+    
+    def _transform(self, result: str, words: List[str], start: int, end: int) -> str:
+        """
+        :param result: current result
+        :param words: list of words to be transformed
+        :param start: index of first letter to be replaced
+        :param end: index of last letter to be replaced
+        :return: new result
+        """
+        if start > end: return result
+        # replace letters with their corresponding symbols
+        for i in range(start, end + 1):
+            result = result[:i - 1] + self._replace(words, i) + result[i:]
+        return result
+        
+    @staticmethod
+    def _replace(words: List[str], idx: int) -> str:
+        """
+        :param words: list of words to be transformed
+        :param idx: index of letter to be replaced
+        :return: new word
+        """
+        if len(words) <= idx: return ''
+        if words[idx].isalpha(): return 'a'
+        elif words[idx].islower() and words[idx].isnumeric(): return 'b'
+        else: return 'c'
+
+# Your Solution object will be instantiated and called as such:
+# obj = Solution(s)
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

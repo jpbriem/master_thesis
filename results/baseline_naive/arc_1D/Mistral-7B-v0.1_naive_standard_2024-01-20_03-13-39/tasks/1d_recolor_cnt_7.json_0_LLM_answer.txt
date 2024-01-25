@@ -1,0 +1,96 @@
+Input token: 334
+Output token: 735
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'j', 'j', 'j', 'a', 'a', 'j', 'a', 'j', 'j', 'a', 'j', 'a']
+output: ['a', 'e', 'e', 'e', 'a', 'a', 'b', 'a', 'h', 'h', 'a', 'b', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'j', 'a', 'a', 'j', 'j', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'b', 'a', 'a', 'h', 'h', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'j', 'j', 'j', 'a', 'j', 'a', 'a', 'j', 'j', 'a']
+output: ['a', 'a', 'a', 'e', 'e', 'e', 'a', 'b', 'a', 'a', 'h', 'h', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'j', 'j', 'j', 'a', 'a', 'j', 'a', 'a', 'j', 'j']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'b', 'a', 'a', 'h', 'h']
+*/
+public class Solution {
+    public String[] transform(String[] strs, int[] b) {
+        if (strs == null || strs.length == 0 || b == null || b.length!= strs.length) return new String[0];
+        Map<Character, Integer> map = new HashMap<>();
+        for (int i = 0; i < strs.length; ++i) {
+            char c = strs[i].charAt(0);
+            if (!map.containsKey(c)) map.put(c, 0);
+            map.put(c, map.get(c) + 1);
+        }
+        List<Integer> list = new ArrayList<>(map.values());
+        Collections.sort(list);
+        int max = list.get(list.size() - 1), min = list.get(0);
+        int count = 0;
+        while (max > min) {
+            int mid = (min + max) / 2;
+            if (countBiggerThanMid(mid, b)) {
+                max = mid;
+            } else {
+                min = mid + 1;
+            }
+            ++count;
+        }
+        int[] indexes = new int[strs.length];
+        for (int i = 0; i < strs.length; ++i) {
+            indexes[i] = i;
+        }
+        Arrays.sort(indexes, (o1, o2) -> {
+            if (map.get(strs[o1].charAt(0)).equals(map.get(strs[o2].charAt(0)))) {
+                return strs[o1].compareTo(strs[o2]);
+            }
+            return map.get(strs[o1].charAt(0)) - map.get(strs[o2].charAt(0));
+        });
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < strs.length; ++i) {
+            if (i % count == 0 && i!= 0) {
+                sb.append('\n');
+            }
+            sb.append(transformOne(strs[indexes[i]], b[indexes[i]]));
+        }
+        return sb.toString().split("\n");
+    }
+
+    private boolean countBiggerThanMid(int mid, int[] b) {
+        int count = 0;
+        for (int num : b) {
+            if (num >= mid) {
+                ++count;
+            }
+        }
+        return count > mid;
+    }
+
+    private String transformOne(String s, int b) {
+        switch (b) {
+            case 0:
+                return "a";
+            case 1:
+                return "e";
+            case 2:
+                return "h";
+            default:
+                return "b";
+        }
+    }
+}
+################################################################
+
+Solution:
+['a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'b', 'a', 'a', 'h', 'h']
+

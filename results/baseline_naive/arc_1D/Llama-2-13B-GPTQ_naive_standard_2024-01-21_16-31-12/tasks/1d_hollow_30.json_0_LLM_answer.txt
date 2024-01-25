@@ -1,0 +1,93 @@
+Input token: 670
+Output token: 751
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0]
+output: [0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+"""
+
+import unittest
+from typing import List
+
+class Solution:
+    def findMaxForm(self, nums: List[int]) -> List[List[int]]:
+        if not nums or len(nums) == 1: return []
+        
+        # 1. sort the array in ascending order
+        nums = sorted(nums)
+        
+        # 2. check whether there is a subarray with all elements equal to one number
+        for i in range(len(nums)-1):
+            if nums[i]!= nums[i+1]: continue
+            
+            # 3. check whether we can remove this subarray from the original array
+            newNums = nums[:i] + nums[i+2:]
+            if self._isValid(newNums):
+                yield [nums[i], nums[i+1]]
+                
+        # 4. repeat step 2 until no more valid subarrays exist
+        while True:
+            for i in range(len(nums)-1):
+                if nums[i]!= nums[i+1]: break
+                
+                # 5. check whether we can remove this subarray from the original array
+                newNums = nums[:i] + nums[i+2:]
+                if self._isValid(newNums):
+                    yield [nums[i], nums[i+1]]
+                    
+                    # 6. repeat step 2 until no more valid subarrays exist
+                    while True:
+                        for j in range(len(newNums)-1):
+                            if newNums[j]!= newNums[j+1]: break
+                            
+                            # 7. check whether we can remove this subarray from the original array
+                            newNewNums = newNums[:j] + newNums[j+2:]
+                            if self._isValid(newNewNums):
+                                yield [newNums[j], newNums[j+1]]
+                                break
+                            else:
+                                break
+                        else:
+                            break
+                    
+                    break
+                    
+    @staticmethod
+    def _isValid(nums: List[int]) -> bool:
+        """Checks whether the given list of numbers represents a valid solution."""
+        if not nums or len(nums) < 2: return False
+        
+        # 8. check whether the remaining array contains only one element
+        if len(nums) > 2 and nums[-1]!= nums[-2]: return False
+        
+        # 9. check whether the remaining array has at least two elements
+        if len(nums) <= 2: return False
+        
+        return True
+
+if __name__ == '__main__':
+    unittest.main()
+################################################################
+
+Solution:
+[0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+

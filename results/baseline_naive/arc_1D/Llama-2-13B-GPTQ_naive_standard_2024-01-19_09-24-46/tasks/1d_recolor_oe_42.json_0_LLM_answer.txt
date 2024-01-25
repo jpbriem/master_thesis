@@ -1,0 +1,83 @@
+Input token: 355
+Output token: 606
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'f', 'a', 'a']
+output: ['a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'c', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'f', 'f', 'f', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f']
+output: ['a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i']
+
+Test case:
+input: ['a', 'f', 'f', 'a', 'a', 'f', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'b', 'b', 'a', 'a', 'b', 'a', 'a', 'b', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import re
+from typing import List, Tuple
+
+class Solution:
+    def transform(self, s: str) -> str:
+        if not s or len(s) == 0: return ''
+        # find all a's in string
+        as = [x for x in s if x == 'a']
+        # find all f's in string
+        fs = [x for x in s if x == 'f']
+        
+        # check if there is at least one a and one f
+        if len(as) < 1 or len(fs) < 1: return ''
+        
+        # get index of first a
+        iA = next((index for index, char in enumerate(s) if char == 'a'), None)
+        # get index of last a
+        iLA = next((index for index, char in enumerate(s) if char == 'a')[-1], None)
+        # get index of first f
+        iF = next((index for index, char in enumerate(s) if char == 'f')[::-1][0], None)
+        # get index of last f
+        iLF = next((index for index, char in enumerate(s) if char == 'f')[-1], None)
+        
+        # check if we have enough indices to make it work
+        if iA is None or iLA is None or iF is None or iLF is None: return ''
+        
+        # create list with indexes of a's
+        lAs = []
+        while True:
+            try:
+                lAs.append(int(re.search('^[0-9]+$', str(iA)).group()))
+                iA += 1
+            except ValueError: break
+            
+        # create list with indexes of f's
+        lFs = []
+        while True:
+            try:
+                lFs.append(int(re.search('^[0-9]+$', str(iF)).group()))
+                iF -= 1
+            except ValueError: break
+        
+        # create output string
+        out = ''
+        for i in range(len(lAs)):
+            out += 'a' * (lAs[i] - lFs[i]) + 'f' * lFs[i]
+        return out
+    
+if __name__ == "__main__":
+    solution = Solution()
+    print(solution.transform(""))
+################################################################
+
+Solution:
+['a', 'i', 'i', 'a', 'a', 'c', 'a', 'a', 'c', 'a', 'a', 'a', 'a', 'a']
+

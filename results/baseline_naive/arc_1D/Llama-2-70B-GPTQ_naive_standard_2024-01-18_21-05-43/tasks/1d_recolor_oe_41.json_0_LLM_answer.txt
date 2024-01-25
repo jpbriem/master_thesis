@@ -1,0 +1,64 @@
+Input token: 733
+Output token: 609
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'e', 'e', 'e', 'a', 'e', 'e', 'a', 'a', 'e', 'e', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'h', 'h', 'h', 'a', 'd', 'd', 'a', 'a', 'd', 'd', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a']
+output: ['a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'e', 'e', 'e', 'e', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'e', 'e', 'e', 'e', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a']
+output: ['a', 'a', 'd', 'd', 'd', 'd', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'd', 'd', 'd', 'd', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'e', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'd', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'd', 'a', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import re
+from typing import List, Pattern
+
+
+class Solution:
+    def replaceWords(self, text: str) -> str:
+        """
+        思路：正则表达式匹配，替换字符串。
+            - 先将所有单词转化为小写，再进行匹配和替换操作。
+                - 注意：如果是大写的话，会被当成标点符号处理。
+                    比如：'A' 会被当成 '.' 来处理。
+            - 使用正则表达式匹配单词，并且在匹配到单词后面加上一个空格。
+                - 这样可以保证每次都能够匹配到单词前边界。
+            - 然后对于每个单词，判断是否存在于 `words` 中，不存在就返回原值；
+            存在就返回 `words[word]` 中的值。
+        :return: 新的文本内容。
+        """
+        # 获取所有单词列表
+        words = ["".join([i for i in word if not i.isdigit()]) for word in self._get_all_words(text)]
+        # 获取所有单词的正则表达式模式
+        regexp = "|".join("\\b{}\\s*".format(re.escape(word)) for word in sorted(set(words), key=lambda x: len(x), reverse=True))
+        return re.sub(regexp, lambda match: words[match.group().lower()], text).strip()
+
+    @staticmethod
+    def _get_all_words(text):
+        """
+        获取所有单词列表。
+        :param text: 输入文本内容。
+        :return: 所有单词列表。
+        """
+        return re.findall("\w+", text)
+
+################################################################
+
+Solution:
+['a', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'h', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'h', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

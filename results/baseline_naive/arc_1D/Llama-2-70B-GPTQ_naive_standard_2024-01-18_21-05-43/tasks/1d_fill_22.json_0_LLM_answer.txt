@@ -1,0 +1,84 @@
+Input token: 502
+Output token: 509
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'e', 'a', 'a', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'a', 'a', 'a', 'b', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, result):
+    if node is None or len(result) == 0: return
+    if not node.isLeaf():
+        for child in node.getChildren():
+            dfs(child, result)
+    else:
+        result[node] += 1
+
+def bfs(root, result):
+    queue = [root]
+    while queue:
+        node = queue.pop()
+        if node is None or len(result) == 0: continue
+        if not node.isLeaf():
+            for child in node.getChildren():
+                queue.append(child)
+        else:
+            result[node] += 1
+
+class Solution(object):
+    def longestConsecutive(self, nums):
+        """
+        :type nums: List[int]
+        :rtype: int
+        """
+        root = Node(-1)
+        for i in range(len(nums)):
+            curNode = root
+            while True:
+                if curNode.hasChild(nums[i]) and curNode.getChild(nums[i]).isLeaf():
+                    break
+                elif curNode.hasChild(nums[i]):
+                    curNode = curNode.getChild(nums[i])
+                else:
+                    newNode = Node(nums[i])
+                    curNode.addChild(newNode)
+                    break
+        
+        result = {}
+        dfs(root, result)
+        maxLen = 0
+        for key in result:
+            if result[key] > maxLen:
+                maxLen = result[key]
+        return maxLen
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+

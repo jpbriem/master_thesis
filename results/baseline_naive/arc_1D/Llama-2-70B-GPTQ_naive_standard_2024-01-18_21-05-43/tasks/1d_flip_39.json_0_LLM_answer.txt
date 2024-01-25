@@ -1,0 +1,123 @@
+Input token: 481
+Output token: 855
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'g', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'g', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'g', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'g', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'f', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def buildTree(arr):
+    if not arr or len(arr) == 0: return None
+    root = Node()
+    q = [root]
+    i = 0
+    while True:
+        node = q[0]
+        del q[0]
+        if i >= len(arr): break
+        node.val = arr[i]
+        i += 1
+        if i < len(arr):
+            child = Node()
+            node.addChild(child)
+            q.append(child)
+    return root
+
+def addChild(node, child):
+    if not hasattr(node, "children") or node.children is None:
+        node.children = []
+    node.children.append(child)
+    child.parent = node
+
+def getParentNode(node, val):
+    if node.val!= val: return None
+    if node.parent is None: return None
+    return node.parent
+
+def findNextSibling(node, val):
+    if node.parent is None: return None
+    siblings = node.parent.getChildren()
+    for s in siblings:
+        if s.val == val: return s
+    return None
+
+def findPrevSibling(node, val):
+    if node.parent is None: return None
+    siblings = node.parent.getChildren()
+    for idx, s in enumerate(siblings):
+        if s.val == val:
+            if idx > 0:
+                return siblings[idx - 1]
+            else:
+                return None
+    return None
+
+def swapNodes(nodeA, nodeB):
+    if nodeA.parent is None or nodeB.parent is None: return False
+    if nodeA.parent.isAncestorOf(nodeB): return False
+    if nodeB.parent.isAncestorOf(nodeA): return False
+    # check if nodes have common ancestors
+    pA = nodeA.parent
+    pB = nodeB.parent
+    while pA!= pB:
+        if pA.isAncestorOf(pB):
+            pB = pA
+        elif pB.isAncestorOf(pA):
+            pA = pB
+        else:
+            return False
+    # now we know that they have a common ancestor
+    # so we can safely swap them
+    pA.swapChildren(nodeA, nodeB)
+    return True
+
+def printTree(node):
+    if node is None: return ""
+    ret = str(node.val) + "\n"
+    for c in node.getChildren():
+        ret += printTree(c)
+    return ret
+
+if __name__ == "__main__":
+    import sys
+    f = open("test.txt", "r")
+    lines = f.readlines()
+    f.close()
+    for line in lines:
+        line = line.strip("\n").split(' ')
+        n = int(line[0])
+        arr = list(map(int, line[1].split(',')))
+        t = buildTree(arr)
+        print(printTree(t))
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

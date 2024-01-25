@@ -1,0 +1,113 @@
+Input token: 460
+Output token: 883
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'b', 'a', 'a', 'b', 'b', 'a', 'b', 'b', 'b', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'i', 'a', 'a', 'g', 'g', 'a', 'e', 'e', 'e', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'b', 'a', 'b', 'b', 'b', 'a', 'a', 'b', 'b', 'a', 'a', 'a', 'b', 'b', 'a', 'a', 'a', 'a']
+output: ['a', 'i', 'a', 'e', 'e', 'e', 'a', 'a', 'g', 'g', 'a', 'a', 'a', 'g', 'g', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'b', 'a', 'b', 'b', 'b', 'a', 'b', 'b', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+output: ['a', 'i', 'a', 'e', 'e', 'e', 'a', 'g', 'g', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'b', 'a', 'a', 'b', 'b', 'a', 'a', 'b', 'b', 'b', 'a', 'b', 'a', 'a', 'b', 'b', 'b']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'a', 'i', 'a', 'a', 'g', 'g', 'a', 'a', 'f', 'f', 'f', 'a', 'h', 'h', 'a', 'a', 'j', 'j', 'j']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path=''):
+    if node is None or not hasattr(node, "children") or len(node.children) == 0:
+        return []
+    
+    result = [path]
+    for child in node.children:
+        result += dfs(child, path + str(child.val))
+        
+    return result
+
+def bfs(root, queue):
+    while queue:
+        node = queue.pop()
+        yield node
+        for child in node.children:
+            queue.append(child)
+            
+def get_next_node(node, path):
+    next_nodes = []
+    for i in range(len(node.children)):
+        if node.children[i].val!= int(path[-1])+1:
+            next_nodes.append((node.children[i], path+'{}{}'.format('0'*(len(str(int(path[-1]+1))) - len(str(i+1)))), i+1))
+    return sorted(next_nodes)[0][0]
+
+def transform(root, path=""):
+    if root is None or not hasattr(root, "children") or len(root.children) == 0:
+        return []
+    
+    result = [path]
+    for child in root.children:
+        result += transform(child, path + str(child.val))
+        
+    return result
+
+def find_longest_common_subsequence(seq1, seq2):
+    m = len(seq1)
+    n = len(seq2)
+    dp = [[0]*n for _ in xrange(m)]
+    max_length = 0
+    for i in reversed(xrange(m)):
+        for j in reversed(xrange(n)):
+            if seq1[i] == seq2[j]:
+                dp[i][j] = dp[i+1][j+1] + 1
+                if dp[i][j] > max_length:
+                    max_length = dp[i][j]
+    return max_length
+
+def longestCommonSubstring(s1, s2):
+    """
+    :type s1: str
+    :type s2: str
+    :rtype: str
+    """
+    # Write your code here
+    if s1 == '' or s2 == '':
+        return ''
+    m = len(s1)
+    n = len(s2)
+    dp = [[0]*n for _ in xrange(m)]
+    max_length = 0
+    start1 = 0
+    start2 = 0
+    for i in reversed(xrange(m)):
+        for j in reversed(xrange(n)):
+            if s1[i] == s2[j]:
+                dp[i][j] = dp[i+1][j+1] + 1
+                if dp[i][j] > max_length:
+                    max_length = dp[i][j]
+                    start1 = i
+                    start2 = j
+    return s1[start1:start1+max_length]
+
+if __name__ == '__main__':
+    print longestCommonSubstring("abc", "cde")
+################################################################
+
+Solution:
+['a', 'a', 'i', 'a', 'a', 'g', 'g', 'a', 'a', 'e', 'e', 'e', 'a', 'i', 'a', 'a', 'e', 'e', 'e']
+

@@ -1,0 +1,112 @@
+Input token: 523
+Output token: 950
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'g', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, nextNode=None):
+        self.val = val
+        self.next = nextNode
+
+def getNextNode(nodeList, nodeIndex):
+    if (len(nodeList) - 1) == nodeIndex:
+        return None
+    else:
+        return nodeList[nodeIndex + 1]
+
+def getPreviousNode(nodeList, nodeIndex):
+    if 0 == nodeIndex:
+        return None
+    else:
+        return nodeList[nodeIndex - 1]
+
+def isSameValue(nodeA, nodeB):
+    return nodeA.val == nodeB.val
+
+def insertNewNode(nodeList, newVal, index):
+    newNode = Node(newVal)
+    previousNode = getPreviousNode(nodeList, index)
+    currentNode = getNextNode(nodeList, index)
+    
+    # Insertion at head of list
+    if previousNode is None:
+        newNode.next = currentNode
+        nodeList[index] = newNode
+        
+    elif not isSameValue(previousNode, currentNode):
+        newNode.next = currentNode
+        previousNode.next = newNode
+        nodeList[index] = newNode
+        
+    else:
+        while True:
+            if isSameValue(currentNode, getNextNode(nodeList, index)):
+                break
+            
+            currentNode = getNextNode(nodeList, index)
+            index += 1
+        
+        newNode.next = currentNode
+        previousNode.next = newNode
+        nodeList[index] = newNode
+
+def transform(nodeList):
+    """
+    Transform the linked list to match the expected output format.
+    :param nodeList: A singly linked list with values in string form.
+    :return: A transformed singly linked list with values in string form.
+    """
+    result = []
+    currentNode = nodeList[0]
+    previousNode = None
+    count = 1
+    
+    while currentNode!= None:
+        if previousNode is None or not isSameValue(previousNode, currentNode):
+            result.append(currentNode.val)
+            count = 1
+        else:
+            count += 1
+        
+        previousNode = currentNode
+        currentNode = getNextNode(nodeList, len(result))
+    
+    return result
+
+if __name__ == "__main__":
+    testCases = [['a', 'a', 'g', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a'],
+                 ['c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'a', 'a', 'a'],
+                 ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'a', 'a', 'g', 'a', 'a', 'a', 'a'],
+                 ['a', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']]
+    
+    for testCase in testCases:
+        print("Input:", testCase)
+        print("Output:", transform(testCase))
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

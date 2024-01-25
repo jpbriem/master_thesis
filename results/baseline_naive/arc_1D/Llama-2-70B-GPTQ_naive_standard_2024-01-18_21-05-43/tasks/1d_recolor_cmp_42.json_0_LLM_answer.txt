@@ -1,0 +1,106 @@
+Input token: 481
+Output token: 640
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'j', 'j', 'j', 'j', 'j', 'j', 'j', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'd', 'd', 'd', 'd', 'a', 'd', 'a', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'd', 'd', 'a']
+output: ['a', 'a', 'a', 'j', 'j', 'j', 'j', 'a', 'd', 'a', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'd', 'd', 'a']
+
+Example_3:
+input: ['a', 'd', 'd', 'd', 'd', 'd', 'a', 'd', 'd', 'a', 'd', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'd', 'a']
+output: ['a', 'j', 'j', 'j', 'j', 'j', 'a', 'd', 'd', 'a', 'd', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'd', 'a']
+
+Test case:
+input: ['a', 'a', 'd', 'd', 'd', 'd', 'a', 'a', 'd', 'd', 'a', 'd', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'j', 'j', 'j', 'j', 'a', 'a', 'j', 'j', 'a', 'd', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, result):
+    if node is None or len(result) == 0: return
+    if not node.is_leaf():
+        for child in node.getChildren():
+            dfs(child, result)
+    else:
+        result[node] += 1
+
+def bfs(root, result):
+    queue = [root]
+    while queue:
+        node = queue.pop()
+        if node is None or len(result) == 0: continue
+        if not node.is_leaf():
+            for child in node.getChildren():
+                queue.append(child)
+        else:
+            result[node] += 1
+
+class Solution(object):
+    def replaceWords(self, words):
+        """
+        :type words: List[str]
+        :rtype: str
+        """
+        # Note: this solution assumes that all words have at least one letter
+        #       and there're no duplicate words in the list
+        
+        root = Node(-1)
+        for word in words:
+            curNode = root
+            
+            for i in range(len(word)):
+                char = word[i]
+                
+                if char!= '.':
+                    newChild = Node(char)
+                    
+                    if curNode.hasChild(newChild):
+                        curNode = curNode.getChild(newChild)
+                    else:
+                        curNode.addChild(newChild)
+                        curNode = newChild
+                else:
+                    if curNode.isLeaf():
+                        break
+                    else:
+                        curNode = curNode.getParent()
+                
+        result = {}
+        dfs(root, result)
+        bfs(root, result)
+        
+        for word in words:
+            res = []
+            for c in word:
+                if c!= '.':
+                    res.append(c)
+                elif c == '.':
+                    res.append('j')
+                    if result[root]:
+                        result[root] -= 1
+                        root = root.getParent()
+                    else:
+                        root = root.getRandomChild()
+            print(res)
+            return "".join(res)
+################################################################
+
+Solution:
+['a', 'a', 'j', 'j', 'j', 'j', 'a', 'a', 'd', 'd', 'a', 'd', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'a']
+

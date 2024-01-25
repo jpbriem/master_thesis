@@ -1,0 +1,93 @@
+Input token: 376
+Output token: 664
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'a', 'e', 'a']
+
+Example_2:
+input: ['a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'i', 'a', 'a', 'i', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, result):
+    if node is None or len(result) == 0: return
+    if not node.isLeaf():
+        for child in node.getChildren():
+            dfs(child, result)
+    else:
+        result[node.getVal()] += 1
+
+def bfs(node, result):
+    queue = [node]
+    while queue:
+        currentNode = queue.pop(0)
+        if currentNode is None or len(result) == 0: continue
+        if not currentNode.isLeaf():
+            for child in currentNode.getChildren():
+                queue.append(child)
+        else:
+            result[currentNode.getVal()] += 1
+
+class Solution(object):
+    def transformToExpected(self, root, expected):
+        """
+        :type root: TreeNode
+        :type expected: List[int]
+        :rtype: void Do not return anything, modify tree in-place instead.
+        """
+        # Write your code here
+        if root is None: return
+        
+        result = {}
+        for i in range(len(root.getChildren())):
+            result[root.getChildren()[i].getVal()] = 0
+            
+        dfs(root, result)
+        bfs(root, result)
+        
+        for i in range(len(expected)):
+            if result[expected[i]] > 0:
+                result[expected[i]] -= 1
+                
+        for i in range(len(expected)):
+            if result[expected[i]] < 0:
+                result[expected[i]] += 1
+                
+        for i in range(len(expected)):
+            if result[expected[i]]!= 0:
+                print("Error")
+                break
+    
+if __name__ == "__main__":
+    solution = Solution()
+    testCase = ["a", "a", "a", "h", "h", "h", "h", "a", "a", "a", "a", "a", "a", "a", "a"]
+    expectedResult = ["a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"]
+    solution.transformToExpected(TreeNode(testCase), expectedResult)
+################################################################
+
+Solution:
+['a', 'a', 'a', 'h', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

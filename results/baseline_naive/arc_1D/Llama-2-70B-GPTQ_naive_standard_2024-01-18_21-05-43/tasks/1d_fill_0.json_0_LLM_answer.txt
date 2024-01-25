@@ -1,0 +1,121 @@
+Input token: 397
+Output token: 1022
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'a']
+output: ['a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'f', 'a', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path=''):
+    if node is None or not hasattr(node, "children") or len(node.children) == 0:
+        return []
+    
+    result = [path]
+    for child in node.children:
+        result += dfs(child, path + str(child.val))
+        
+    return result
+
+def bfs(root, queue):
+    while queue:
+        node = queue[0].popleft()
+        yield node
+        for child in node.children:
+            queue.append([child])
+            
+def get_next_indexes(node, index):
+    indexes = set()
+    for i in range(len(node)):
+        if node[i][0]!= node[index][0]:
+            break
+        else:
+            indexes.add(i)
+    return list(indexes)
+
+def find_longest_matching_subsequence(node, start_index, end_index):
+    longest_length = 0
+    longest_start_index = -1
+    longest_end_index = -1
+    for i in range(start_index+1, min(end_index, len(node)-1)+1):
+        length = 0
+        current_index = i
+        while current_index < len(node) and node[current_index][0] == node[start_index][0]:
+            length += 1
+            current_index += 1
+        if length > longest_length:
+            longest_length = length
+            longest_start_index = start_index
+            longest_end_index = current_index-1
+    return (longest_start_index, longest_end_index), longest_length
+
+def transform(node, start_index, end_index):
+    # print("transform", node, start_index, end_index)
+    if start_index >= end_index:
+        return
+    elif start_index == end_index:
+        node[start_index] = Node('*')
+        return
+    else:
+        (longest_start_index, longest_end_index), longest_length = find_longest_matching_subsequence(node, start_index, end_index)
+        # print("longest_start_index", longest_start_index)
+        # print("longest_end_index", longest_end_index)
+        # print("longest_length", longest_length)
+        if longest_length <= 4:
+            node[longest_start_index] = Node('*')
+            transform(node, longest_start_index+1, end_index)
+        else:
+            node[longest_start_index] = Node('*')
+            transform(node, longest_start_index+1, longest_end_index)
+            transform(node, longest_end_index+1, end_index)
+
+def main():
+    root = Node('a')
+    root.children = [Node('a'), Node('a'), Node('a'), Node('h'), Node('a'), Node('a'), Node('a'), Node('a'), Node('a'), Node('a'), Node('a'), Node('h'), Node('a'), Node('a'), Node('a'), Node('a')]
+    queue = deque()
+    queue.append([root])
+    while queue:
+        node = queue[0].popleft()
+        if node.children:
+            queue.extend([[c] for c in node.children])
+        else:
+            continue
+    print(dfs(root))
+    print(bfs(root, queue))
+    print(get_next_indexes(root.children, 5))
+    print(find_longest_matching_subsequence(root.children, 6, 9))
+    transform(root.children, 7, 8)
+    print(dfs(root))
+
+if __name__ == '__main__':
+    main()
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a']
+

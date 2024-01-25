@@ -1,0 +1,111 @@
+Input token: 481
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'f', 'a']
+output: ['a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'f', 'a']
+
+Example_2:
+input: ['i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'f', 'a', 'a']
+output: ['a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'f', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path):
+    if node is None or len(path) == 0: return []
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"):
+        node.meta["count"] = 0
+    if not hasattr(node, "meta") or not hasattr(node.meta, "last"):
+        node.meta["last"] = -1
+    if not hasattr(node, "meta") or not hasattr(node.meta, "next"):
+        node.meta["next"] = -1
+    if not hasattr(node, "meta") or not hasattr(node.meta, "prev"):
+        node.meta["prev"] = -1
+    
+    # print("dfs", node.val, node.meta['count'], node.meta['last'])
+    if node.meta["count"] > 0:
+        node.meta["last"] += 1
+        
+    if node.meta["last"] >= 0:
+        path[node.meta["last"]] = node.val
+    else:
+        path[-1] = node.val
+    
+    if node.meta["count"] < 0:
+        node.meta["count"] *= -1
+        node.meta["last"] -= 1
+        node.meta["next"] += 1
+        node.meta["prev"] -= 1
+        node.val = node.val + 1
+        dfs(node.children[node.meta["next"]], path)
+        node.val = node.val - 1
+        node.meta["next"] -= 1
+        node.meta["prev"] += 1
+        node.meta["last"] += 1
+        node.meta["count"] *= -1
+    elif node.meta["count"] == 0:
+        node.meta["count"] = 1
+        node.meta["last"] -= 1
+        node.meta["next"] += 1
+        node.meta["prev"] -= 1
+        node.val = node.val + 1
+        dfs(node.children[node.meta["next"]], path)
+        node.val = node.val - 1
+        node.meta["next"] -= 1
+        node.meta["prev"] += 1
+        node.meta["last"] += 1
+        node.meta["count"] *= -1
+    else:
+        node.meta["count"] -= 1
+        node.meta["last"] -= 1
+        node.meta["next"] += 1
+        node.meta["prev"] -= 1
+        node.val = node.val + 1
+        dfs(node.children[node.meta["next"]], path)
+        node.val = node.val - 1
+        node.meta["next"] -= 1
+        node.meta["prev"] += 1
+        node.meta["last"] += 1
+        node.meta["count"] *= -1
+
+if __name__ == "__main__":
+    root = Node()
+    root.val = 'a'
+    root.children = [Node(), Node(), Node()]
+    root.children[0].val = 'b'
+    root.children[1].val = 'c'
+    root.children[2].val = 'd'
+    root.children[0].children = [Node(), Node(), Node()]
+    root.children[0].children[0].val = 'e'
+    root.children[0].children[1].val = 'f'
+    root.children[0].children[2].val = 'g'
+    root.children[1].children = [Node(), Node(), Node()]
+    root.children[1].children[0].val = 'h'
+    root.children[1].children[1].val = 'i'
+    root.children[1].children[2].val
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

@@ -1,0 +1,116 @@
+Input token: 502
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path):
+    if node is None or len(path) == 0: return []
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"): return []
+    count = node.meta["count"]
+    if count > 0:
+        return [node] + dfs(node.children[0], path[:-1])
+    else:
+        return dfs(node.children[-1], path[:-1])
+
+def bfs(root, path):
+    queue = collections.deque()
+    queue.append((root, path))
+    while queue:
+        node, path = queue.popleft()
+        yield (node, path)
+        if node is not None and node.children:
+            queue.extend([(child, path+[i]) for i, child in enumerate(node.children)])
+
+def transform(tree, path):
+    if tree is None or len(path) == 0: return tree
+    if not hasattr(tree, "meta") or not hasattr(tree.meta, "count"): return tree
+    count = tree.meta["count"]
+    if count < 0:
+        return transform(tree.children[0], path[:-1])
+    elif count > 0:
+        return transform(tree.children[-1], path[:-1])
+    else:
+        return tree
+
+def buildTree(nodes):
+    root = Node()
+    stack = [(root, nodes)]
+    while stack:
+        parent, children = stack.pop()
+        for child in reversed(children):
+            newNode = Node(child)
+            parent.addChild(newNode)
+            stack.append((parent, [newNode]))
+    return root
+
+def addMetaData(root, path):
+    if root is None or len(path) == 0: return
+    if not hasattr(root, "meta"):
+        root.meta = {}
+    if not hasattr(root.meta, "count"):
+        root.meta["count"] = 0
+    if not hasattr(root.meta, "index"):
+        root.meta["index"] = -1
+    if not hasattr(root.meta, "prev"):
+        root.meta["prev"] = None
+    if not hasattr(root.meta, "next"):
+        root.meta["next"] = None
+    if not hasattr(root.meta, "first"):
+        root.meta["first"] = False
+    if not hasattr(root.meta, "last"):
+        root.meta["last"] = False
+    if not hasattr(root.meta, "visited"):
+        root.meta["visited"] = False
+    if not hasattr(root.meta, "toVisit"):
+        root.meta["toVisit"] = True
+    if not hasattr(root.meta, "fromVisit"):
+        root.meta["fromVisit"] = False
+    if not hasattr(root.meta, "isPathEnd"):
+        root.meta["isPathEnd"] = False
+    if not hasattr(root.meta, "isPathStart"):
+        root.meta["isPathStart"] = False
+    if not hasattr(root.meta, "isPathMiddle"):
+        root.meta["isPathMiddle"] = False
+    if not hasattr(root.meta, "isPathSingle"):
+        root.meta["isPathSingle"] = False
+    if not hasattr(root.meta, "isPathMultiple"):
+        root.meta["isPathMultiple"] = False
+    if not hasattr(root.meta, "isPathEmpty"):
+        root.meta["isPathEmpty"] = False
+    if not hasattr(root.meta, "isPathFull"):
+        root.meta["isPathFull"] = False
+    if not has
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'a']
+

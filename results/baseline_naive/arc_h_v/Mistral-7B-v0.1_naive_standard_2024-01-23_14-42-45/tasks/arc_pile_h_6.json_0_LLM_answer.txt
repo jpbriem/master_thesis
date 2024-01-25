@@ -1,0 +1,94 @@
+Input token: 416
+Output token: 833
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', 'f', '.', '.], ['.', '.', '.', '.], ['.', 'h', '.', '.], ['g', '.', 'g', '.']]
+output: [['f', '.', '.', '.], ['.', '.', '.', '.], ['h', '.', '.', '.], ['g', 'g', '.', '.']]
+
+Example_2:
+input: [['.', '.', '.', '.', '.], ['.', 'h', 'h', 'h', '.], ['.', '.', 'i', 'i', '.], ['f', '.', '.', '.', '.], ['.', 'd', '.', 'd', 'd']]
+output: [['.', '.', '.', '.', '.], ['h', 'h', 'h', '.', '.], ['i', 'i', '.', '.', '.], ['f', '.', '.', '.', '.], ['d', 'd', 'd', '.', '.']]
+
+Example_3:
+input: [['.', 'd', 'd', '.], ['.', '.', '.', '.], ['f', 'f', '.', 'f], ['.', 'e', 'e', '.']]
+output: [['d', 'd', '.', '.], ['.', '.', '.', '.], ['f', 'f', 'f', '.], ['e', 'e', '.', '.']]
+
+Test case:
+input: [['.', '.', 'd', 'd', 'd], ['.', '.', 'f', '.', '.], ['.', '.', 'g', '.', 'g], ['i', 'i', '.', '.', 'i], ['.', 'h', '.', 'h', '.']]
+################################################################
+
+LLM answer:
+
+output: [['d', 'd', 'd', '.', '.'], ['.', '.', 'f', '.', '.'], ['.', '.', 'g', '.', 'g'], ['.', '.', '.', '.', 'i'], ['.', '.', '.', 'h', '.']]
+'''
+
+class Solution(object):
+    def updateBoard(self, board, click):
+        """
+        :type board: List[List[str]]
+        :type click: List[int]
+        :rtype: List[List[str]]
+        """
+        if not board or len(board) == 0 or len(click)!= 2: return []
+        m = len(board)
+        n = len(board[0])
+        self.visited = [[False for _ in range(n)] for _ in range(m)]
+        self.count = 0
+        self.update(board, click[0], click[1])
+        return board
+
+    def update(self, board, x, y):
+        if not board or len(board) == 0 or len(board[0]) == 0: return
+        if self.visited[x][y]: return
+        self.visited[x][y] = True
+        self.count += 1
+        if board[x][y] == "M":
+            return
+        else:
+            num = self.getNum(board, x, y)
+            if num > 0:
+                board[x][y] = str(num)
+            else:
+                self.expand(board, x, y)
+
+    def getNum(self, board, x, y):
+        m = len(board)
+        n = len(board[0])
+        count = 0
+        for i in [-1, 0, 1]:
+            for j in [-1, 0, 1]:
+                if (i == 0 and j == 0) or (abs(i) + abs(j)) >= 2: continue
+                if x+i < 0 or x+i >= m or y+j < 0 or y+j >= n: continue
+                if board[x+i][y+j] == "M":
+                    count += 1
+        return count
+
+    def expand(self, board, x, y):
+        m = len(board)
+        n = len(board[0])
+        queue = deque()
+        queue.append((x, y))
+        while queue:
+            curX, curY = queue.popleft()
+            for i in [-1, 0, 1]:
+                for j in [-1, 0, 1]:
+                    if (i == 0 and j == 0) or (abs(i) + abs(j)) >= 2: continue
+                    nextX = curX + i
+                    nextY = curY + j
+                    if nextX < 0 or nextX >= m or nextY < 0 or nextY >= n: continue
+                    if board[nextX][nextY] == "E" or self.visited[nextX][nextY]: continue
+                    self.visited[nextX][nextY] = True
+                    self.count += 1
+                    if board[nextX][nextY] == "M":
+                        board[nextX][nextY] = "X"
+                    elif board[nextX][nextY] == ".":
+                        board[nextX][nextY] = "*"
+                    queue.append((nextX, nextY))
+################################################################
+
+Solution:
+[['d', 'd', 'd', '.', '.], ['f', '.', '.', '.', '.], ['g', 'g', '.', '.', '.], ['i', 'i', 'i', '.', '.], ['h', 'h', '.', '.', '.']]
+

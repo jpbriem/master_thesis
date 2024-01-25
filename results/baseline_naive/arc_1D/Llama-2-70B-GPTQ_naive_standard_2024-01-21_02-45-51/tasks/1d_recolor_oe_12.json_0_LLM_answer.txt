@@ -1,0 +1,88 @@
+Input token: 586
+Output token: 483
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 4, 4, 4, 4, 4, 4, 0, 0, 0, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 4, 4, 4, 0, 0]
+output: [0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 6, 6, 6, 0, 0, 1, 1, 1, 1, 0, 6, 6, 6, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 4, 4, 0, 0, 0, 4, 4, 4, 0, 0, 0, 4, 4, 4, 0, 0, 0, 4, 4, 4, 4, 4]
+output: [0, 0, 0, 1, 1, 0, 0, 0, 6, 6, 6, 0, 0, 0, 6, 6, 6, 0, 0, 0, 6, 6, 6, 6, 6]
+
+Example_3:
+input: [0, 0, 0, 4, 4, 4, 4, 0, 0, 0, 4, 4, 4, 0, 4, 4, 4, 4, 0, 0, 0, 4, 4, 4, 4]
+output: [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 6, 6, 6, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1]
+
+Test case:
+input: [0, 0, 0, 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 0, 0, 0, 4, 0, 0, 4, 4, 4]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 6, 6, 6, 6, 6, 0, 0, 0, 1, 0, 0, 6, 6, 6]
+"""
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=None, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+class Solution(object):
+    def transformToPreorder(self, nums):
+        """
+        :type nums: List[int]
+        :rtype: List[int]
+        """
+        if not nums or len(nums) == 0:
+            return []
+        
+        root = Node()
+        stack = [(root, None)]
+        while stack:
+            node, parent = stack.pop()
+            
+            if node is None:
+                continue
+                    
+            if node.val!= 0:
+                stack.append((node, parent))
+                parent.left = node
+                parent.right = None
+                parent = node
+                continue
+            
+            # find the first non zero number in current level
+            while True:
+                if node.left is None:
+                    break
+                else:
+                    stack.append((node.left, node))
+                    node = node.left
+            
+            # find the last non zero number in current level
+            while True:
+                if node.right is None:
+                    break
+                else:
+                    stack.append((node.right, node))
+                    node = node.right
+            
+            # update the value of current node
+            node.val += (parent.val - 1) * 4 + 1
+            parent.val -= 1
+            
+            stack.append((node, parent))
+            parent = node
+            
+        return [node.val for node in root.toList()]
+
+################################################################
+
+Solution:
+[0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 6, 6, 6, 6, 6, 0, 0, 0, 6, 0, 0, 6, 6, 6]
+

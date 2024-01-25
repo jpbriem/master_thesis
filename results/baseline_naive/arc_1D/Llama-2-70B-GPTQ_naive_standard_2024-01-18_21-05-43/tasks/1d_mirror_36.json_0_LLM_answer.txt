@@ -1,0 +1,77 @@
+Input token: 607
+Output token: 815
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a']
+
+Example_2:
+input: ['a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution:
+    def transform(self, arr):
+        """
+        思路：找到最长的连续子序列，然后将其中间的元素移动到两侧。
+            - 先排序，再遍历数组，记录每个元素左右边界值，以及当前元素是否在左右边界之内。
+                - 如果不在边界内，则说明这个元素是一个新的连续子序列开始位置，需要更新左右边界值。
+                    同时，如果上一次的元素也不在边界内，那么就表示上一次的元素和本次的元素都不在边界内，
+                    所以可以认为上一次的元素和本次的元素构成了一个连续子序列，并且该子序列已经结束。
+                    此时需要对该子序列进行处理（将其中间元素移动到两侧）。
+            - 注意：由于题目规定输入数组有序，因此只需要记录左边界值即可。
+        :param arr:
+        :return:
+        """
+        if not arr or len(arr) <= 1:
+            return arr
+
+        left = [0] * (len(arr))
+        for i in range(len(arr)):
+            left[i] = i
+            for j in range(i + 1, len(arr)):
+                if arr[i] == arr[j]:
+                    left[j] = i
+                    break
+
+        right = list(reversed([left[-i - 1] for i in range(len(arr))] if left[-i - 1]!= -1]))
+        result = []
+        for i in range(len(arr)):
+            if left[i] < 0 and right[i] < 0:
+                # 如果上一次的元素和本次的元素都不在边界内，那么就表示上一次的元素和本次的元素构成了一个连续子序列，并且该子序列已经结束
+                # 此时需要对该子序列进行处理（将其中间元素移动到两侧）
+                if i > 0:
+                    tmp = arr[:i] + arr[right[i - 1]] + arr[left[i - 1]] + arr[i:]
+                    result += tmp
+                else:
+                    result += arr[:i] + arr[right[i - 1]] + arr[left[i - 1]]
+            elif left[i] >= 0:
+                result.append(arr[left[i]])
+            else:
+                result.append(arr[i])
+        return result
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a']
+

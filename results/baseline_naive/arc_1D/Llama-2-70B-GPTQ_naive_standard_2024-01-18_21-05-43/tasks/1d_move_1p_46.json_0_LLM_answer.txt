@@ -1,0 +1,88 @@
+Input token: 481
+Output token: 758
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+output: ['a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a']
+
+Example_2:
+input: ['i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def buildTree(s):
+    if not s or len(s) == 0: return None
+    root = Node()
+    stack = [root]
+    for i in range(len(s)):
+        node = stack[-1].children[i % len(stack[-1].children)]
+        node.val = s[i]
+        if i < len(s)-1:
+            stack.append(node)
+    return root
+
+def getNextNode(node, index):
+    while True:
+        if node is None: return None
+        if node.children[index%len(node.children)]!= None:
+            return node.children[index%len(node.children)]
+        else:
+            node = node.parent
+            index -= 1
+
+def transform(root, startIndex, endIndex):
+    if root is None: return
+    if startIndex > endIndex: return
+    if startIndex >= len(root.children): return
+    if endIndex >= len(root.children): return
+    if startIndex <= -1: return
+    if endIndex <= -1: return
+    if startIndex == endIndex: return
+    if startIndex == 0 and endIndex == len(root.children)-1: return
+    if startIndex == 0 and endIndex == len(root.children): return
+    if startIndex == len(root.children)-1 and endIndex == 0: return
+    if startIndex == len(root.children) and endIndex == 0: return
+    if startIndex == 0 and endIndex == 0: return
+    if startIndex == len(root.children)-1 and endIndex == len(root.children)-1: return
+    if startIndex == len(root.children) and endIndex == len(root.children): return
+    
+    #print("startIndex", startIndex,"endIndex", endIndex)
+    nextStartNode = getNextNode(root, startIndex+1)
+    nextEndNode = getNextNode(root, endIndex+1)
+    if nextStartNode is None or nextEndNode is None: return
+    temp = nextStartNode.children[nextStartNode.children.index(root.children[startIndex])]
+    nextStartNode.children[nextStartNode.children.index(root.children[startIndex])] = \
+                                nextEndNode.children[nextEndNode.children.index(root.children[endIndex])]
+    nextEndNode.children[nextEndNode.children.index(root.children[endIndex])] = temp
+    transform(root, startIndex-1, endIndex-1)
+    transform(root, startIndex+1, endIndex+1)
+
+if __name__ == "__main__":
+    print(buildTree(['a','b']))
+################################################################
+
+Solution:
+['a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

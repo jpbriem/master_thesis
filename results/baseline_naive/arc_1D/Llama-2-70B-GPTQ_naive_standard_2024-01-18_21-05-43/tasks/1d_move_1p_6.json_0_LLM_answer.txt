@@ -1,0 +1,111 @@
+Input token: 418
+Output token: 806
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path=''):
+    if node is None or not hasattr(node, "children") or len(node.children) == 0:
+        return []
+    
+    result = [path]
+    for child in node.children:
+        result += dfs(child, path + str(child.val))
+        
+    return result
+
+def bfs(root, queue):
+    while queue:
+        node = queue[0].popleft()
+        yield node
+        for child in node.children:
+            queue.append([child])
+            
+def get_next_indexes(node, index):
+    indexes = set()
+    for i in range(len(node)):
+        if node[i][0] > node[index][0]:
+            indexes.add((i, node[i]))
+    return list(sorted(list(indexes), key=lambda x:x[1][0]))
+
+def find_longest_subsequence(node, start_index=-1):
+    longest_length = -1
+    longest_start_index = -1
+    longest_end_index = -1
+    for i in range(len(node)):
+        if start_index!= -1 and node[i][0] <= node[start_index][0]:
+            continue
+        current_length = 1
+        current_start_index = i
+        current_end_index = i
+        while True:
+            next_indexes = get_next_indexes(node, current_end_index)
+            if len(next_indexes) == 0:
+                break
+            current_end_index = next_indexes[-1][0]
+            current_length += 1
+        if current_length > longest_length:
+            longest_length = current_length
+            longest_start_index = current_start_index
+            longest_end_index = current_end_index
+    return (longest_start_index, longest_end_index+1)
+
+def transform(nodes):
+    root = nodes[0]
+    queue = deque()
+    queue.extend(dfs(root))
+    while queue:
+        node = queue.popleft().copy()
+        if len(node.children) == 0:
+            continue
+        # print("current node", node)
+        # print("queue", queue)
+        sorted_children = sorted(node.children, key=lambda x:x.val)
+        # print("sorted children", sorted_children)
+        new_children = []
+        for child in sorted_children:
+            if child.val < node.val:
+                new_children.append(Node(child.val, [], {}))
+            else:
+                new_children.append(child)
+        # print("new children", new_children)
+        node.children = new_children
+        queue.append(node)
+    return root
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
+################################################################
+
+Solution:
+['a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a']
+

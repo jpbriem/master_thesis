@@ -131,7 +131,9 @@ def get_samples(args, task, current_node, prompt_sample, stop):
         prompt_log = delimiter.join(["Sample Prompt:\n" + "\n\n".join(prompt.values()), "Sample Outputs:\n" + "\n------\n".join(samples)])
     elif isinstance(prompt, str):
         prompt_log = delimiter.join(["Sample Prompt:\n" + prompt, "Sample Outputs:\n" + "\n------\n".join(samples)])
-    
+    elif isinstance(prompt, list):                             
+        prompt_log = delimiter.join(["Sample Prompt:\n" + "\n\n".join(["#####\n"+v+":\n#####" if k == "role" else v for p in prompt for k, v in p.items()]), "Sample Outputs:\n" + "\n------\n".join(samples)])
+   
     # turn samples in nodes
     if current_node.level+1 == task.steps:
         leaf = True

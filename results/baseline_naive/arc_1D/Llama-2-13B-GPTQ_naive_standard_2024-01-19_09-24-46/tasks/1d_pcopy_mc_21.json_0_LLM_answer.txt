@@ -1,0 +1,98 @@
+Input token: 754
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'e', 'e', 'e', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'b', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'f', 'f', 'f', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'j', 'j', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'b', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'g', 'g', 'g', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'b', 'b', 'b', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'b', 'b', 'b', 'a', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'b', 'b', 'b', 'a', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import re
+from typing import List, Tuple
+
+class Solution:
+    def letterCasePermutation(self, s: str) -> List[str]:
+        if not s or len(s) == 0: return []
+        
+        # split string into words
+        words = [word for word in s.split()]
+        # remove empty strings from list of words
+        words = [w for w in words if w!= ""]
+        # sort words by length
+        sortedWords = sorted(words, key=len, reverse=True)
+        # create a dictionary to store all possible permutations
+        permDict = {}
+        # iterate over each word
+        for word in sortedWords:
+            # get all possible permutations of this word
+            perms = self.getAllPermutations(word)
+            # add them to the dict
+            permDict.update({''.join(perms): word})
+            
+        # iterate over all words in original sentence
+        result = []
+        for word in words:
+            # find all possible permutations of this word
+            perms = self.getAllPermutations(word)
+            # check if any of these is already present in the dict
+            if word in permDict:
+                # found it!
+                result.append(permDict[word])
+            else:
+                # didn't find it - append the original word
+                result.append(word)
+                
+        return result
+    
+    def getAllPermutations(self, word: str) -> List[str]:
+        """
+        Returns all possible permutations of given word
+        :param word: word to be permuted
+        :return: list of all possible permutations
+        """
+        # initialize output list
+        result = []
+        # iterate over characters in word
+        for char in word:
+            # iterate over all possible positions of this character
+            for pos in range(len(word)):
+                # copy rest of word
+                tempWord = word[:pos] + word[pos+1:]
+                # append current position of character to end of word
+                tempWord += char
+                # append to result
+                result.append(tempWord)
+        return result
+
+if __name__ == '__main__':
+    solution = Solution()
+    assert solution.letterCasePermutation('') == []
+    assert solution.letterCasePermutation('a') == ['a']
+    assert solution.letterCasePermutation('aa') == ['aa']
+    assert solution.letterCasePermutation('ab') == ['ab', 'ba']
+    assert solution.letterCasePermutation('abc') == ['abc', 'acb', 'bca', 'cab']
+    assert solution.letterCasePermutation('abcd') == ['abcd', 'acbd', 'adcb', 'bcda', 'bddc', 'cadb', 'dcba']
+    assert solution.letterCasePermutation('abcefg') == ['abcefg', 'acefbg', 'afbecg', 'afbeyg', 'afgebc', 'afgecb', 'agfebc', 'ahedgb', 'ahkdbg', 'ajhdeg', 'akbgfd', 'alhkdf', 'amlegb', 'aneghd', 'anlekg', 'aoefgh', 'apgfdc', 'asdhgf', 'atlqde', 'auihgd', 'avijed', 'awikdg', 'axehld', 'aygfcd', 'azhgcf', 'bacdef', 'badfeh', 'bagced', 'bahgfc', 'bdfheg', 'bfecad', 'bfhgae', 'bhgfae', 'bikefa', 'bkdjha', 'blaghf', 'bmnopq', 'bnmprx', 'boiudg', 'bouidg', 'bowled', 'brhqed', 'bsdfgc', 'btvgcr', 'byzxqwa',
+################################################################
+
+Solution:
+['a', 'b', 'b', 'b', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

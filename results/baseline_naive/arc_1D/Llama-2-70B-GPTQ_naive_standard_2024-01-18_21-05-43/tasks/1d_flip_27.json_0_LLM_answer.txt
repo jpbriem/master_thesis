@@ -1,0 +1,99 @@
+Input token: 502
+Output token: 701
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'h', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'd', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'h', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'i', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'i', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def buildTree(s):
+    if not s or len(s) == 0: return None
+    root = Node()
+    stack = [root]
+    i = 0
+    while True:
+        node = stack[-1]
+        if i >= len(s): break
+        char = s[i]
+        if char in node.meta:
+            node.meta[char].append(Node())
+            stack.append(node.meta[char][-1])
+        else:
+            node.addChild(Node(), char)
+            stack.append(node.getChildren()[-1])
+        i += 1
+    return root
+
+def getMeta(tree):
+    meta = {}
+    for child in tree.getChildren():
+        meta[child.val] = []
+        for grandchild in child.getChildren():
+            meta[grandchild.val].append(grandchild)
+    return meta
+
+def transform(tree, meta):
+    newRoot = Node()
+    stack = [newRoot]
+    queue = deque([])
+    queue.extend(tree.getChildren())
+    while queue:
+        node = queue.popleft()
+        if node.val in meta:
+            newRoot.addChild(node, meta[node.val][0])
+            queue.extend(node.getChildren())
+        elif node.hasChildren():
+            stack.append(node)
+            queue.extend(node.getChildren())
+            while stack and stack[-1].val!= node.val:
+                popped = stack.pop()
+                if popped.val in meta:
+                    newRoot.addChild(popped, meta[popped.val][0])
+                    queue.extend(popped.getChildren())
+                else:
+                    stack.append(popped)
+    return newRoot
+
+if __name__ == "__main__":
+    # Testing Input
+    test_case = ["a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "i", "b", "b", "b", "b", "b", "b", "a", "a"]
+    print("Input: ", end="")
+    print(' '.join(test_case))
+
+    # Actual Solution
+    solution = Solution().transformString(test_case)
+
+    # Solution required output format
+    print("Output: ", end="")
+    print(' '.join(solution))
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'i', 'a', 'a']
+

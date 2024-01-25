@@ -1,0 +1,129 @@
+Input token: 544
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path):
+    if node is None or len(path) == 0: return []
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"): return []
+    count = node.meta["count"]
+    if count > 0:
+        return [node] + dfs(node.parent, path[:-1])
+    else:
+        return dfs(node.parent, path[:-1])
+
+def bfs(root, path):
+    queue = collections.deque()
+    queue.append((root, path))
+    while queue:
+        node, path = queue.popleft()
+        yield (node, path)
+        if node is not None:
+            for child in node.children:
+                queue.append((child, path+[child]))
+
+def get_next_indexes(node, path):
+    indexes = set([i for i, n in enumerate(path) if n == node])
+    return list(sorted(indexes))
+
+def transform(tree, path):
+    # print("transform", tree, path)
+    if tree is None: return []
+    if not hasattr(tree, "meta") or not hasattr(tree.meta, "count"): return []
+    count = tree.meta["count"]
+    if count < 0:
+        return [(tree, path)]
+    elif count == 0:
+        return []
+    else:
+        return [(tree, path)] + transform(tree.parent, path[:-1])
+
+def find_replacement(node, path):
+    if node is None: return None
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"): return None
+    count = node.meta["count"]
+    if count <= 0: return None
+    next_nodes = transform(node, path)
+    if len(next_nodes)!= 1: return None
+    next_node, _ = next_nodes[0]
+    return next_node
+
+def replace(node, path):
+    if node is None: return None
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"): return None
+    count = node.meta["count"]
+    if count <= 0: return None
+    next_nodes = transform(node, path)
+    if len(next_nodes)!= 1: return None
+    next_node, _ = next_nodes[0]
+    return next_node
+
+def build_tree(input_list):
+    root = Node()
+    current = root
+    for char in input_list:
+        current.addChild(Node(char), True)
+        current = current.lastChild
+    return root
+
+def solve(input_list):
+    root = build_tree(input_list)
+    for node in bfs(root, []):
+        node, path = node
+        if node.isLeaf(): continue
+        if node.getChildrenCount() >= 4:
+            node.setMeta({"count": -1})
+        else:
+            node.setMeta({"count": 0})
+    for node in bfs(root, []):
+        node, path = node
+        if node.isLeaf(): continue
+        if node.getChildrenCount() == 3:
+            node.setMeta({"count": 1})
+        elif node.getChildrenCount() == 2:
+            node.setMeta({"count": 2})
+        else:
+            pass
+    for node in bfs(root, []):
+        node, path = node
+        if node.isLeaf(): continue
+        if node.getChildrenCount() == 1:
+            node.setMeta({"count": 3})
+        else:
+            pass
+    for node in bfs(root, []):
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a']
+

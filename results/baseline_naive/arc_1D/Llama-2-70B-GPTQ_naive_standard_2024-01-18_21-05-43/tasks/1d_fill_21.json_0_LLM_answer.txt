@@ -1,0 +1,85 @@
+Input token: 418
+Output token: 484
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'a', 'a', 'a', 'd', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'a', 'a', 'd', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'a']
+
+Example_3:
+input: ['a', 'a', 'h', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, result):
+    if node is None or len(result) == 0: return
+    if not node.is_leaf():
+        for child in node.getChildren():
+            dfs(child, result)
+    else:
+        result[node] = True
+
+def bfs(root, result):
+    queue = [root]
+    while queue:
+        node = queue.pop()
+        if node is None or len(result) == 0: continue
+        if not node.is_leaf():
+            for child in node.getChildren():
+                queue.append(child)
+        else:
+            result[node] = True
+
+class Solution(object):
+    def replaceElements(self, arr):
+        """
+        :type arr: List[str]
+        :rtype: List[str]
+        """
+        # 1. Build tree
+        root = Node('')
+        stack = []
+        for i, c in enumerate(arr):
+            curNode = root
+            while curNode.hasParent():
+                curNode = curNode.getParent()
+            curNode.setVal(c)
+            if i > 0:
+                curNode.addChild(stack[-1])
+                stack[-1].setParent(curNode)
+            stack.append(curNode)
+        
+        # 2. Find all leaves
+        result = {}
+        dfs(root, result)
+        bfs(root, result)
+        
+        # 3. Replace elements
+        newArr = list(map(lambda x: x.val, result))
+        return newArr
+################################################################
+
+Solution:
+['h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a']
+

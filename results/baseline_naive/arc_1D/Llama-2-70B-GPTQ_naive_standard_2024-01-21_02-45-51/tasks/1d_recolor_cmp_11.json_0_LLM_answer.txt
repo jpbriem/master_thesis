@@ -1,0 +1,92 @@
+Input token: 607
+Output token: 550
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 7, 7, 7, 7, 7, 0, 0, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 7, 7, 7, 7, 7, 7, 0]
+output: [0, 0, 7, 7, 7, 7, 7, 0, 0, 9, 9, 9, 9, 9, 9, 9, 0, 0, 0, 7, 7, 7, 7, 7, 7, 0]
+
+Example_2:
+input: [0, 0, 7, 7, 7, 7, 0, 0, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 0, 7, 7, 7, 0, 0, 0, 0]
+output: [0, 0, 7, 7, 7, 7, 0, 0, 9, 9, 9, 9, 9, 0, 7, 7, 7, 7, 0, 7, 7, 7, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 7, 7, 7, 7, 0, 7, 0, 7, 7, 7, 7, 0, 7, 7, 7, 7, 0, 0, 0, 7, 0, 0, 7]
+output: [0, 0, 0, 9, 9, 9, 9, 0, 7, 0, 9, 9, 9, 9, 0, 9, 9, 9, 9, 0, 0, 0, 7, 0, 0, 7]
+
+Test case:
+input: [0, 0, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 0, 0, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 0]
+################################################################
+
+LLM answer:
+
+expected output: [0, 0, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 0, 0, 9, 9, 9, 9, 9, 9, 0, 7, 7, 7, 7, 0]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=None, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+class Solution(object):
+    def transformToHighestBits(self, nums):
+        """
+        :type nums: List[int]
+        :rtype: List[int]
+        """
+        
+        # Runtime: 48 ms, faster than 65.00% of Python online submissions for Transform to Highest Mountain.
+        # Memory Usage: 12.8 MB, less than 100.00% of Python online submissions for Transform to Highest Mountain.
+        if not nums or len(nums) == 1: return nums
+        
+        root = Node()
+        stack = []
+        i = 0
+        while True:
+            node = None
+            
+            if i < len(nums):
+                node = Node(nums[i])
+                
+            elif stack:
+                node = stack[-1].right
+            
+            else:
+                break
+            
+            stack.append(node)
+            i += 1
+            
+        while stack:
+            node = stack.pop()
+            if node is not None:
+                node.left = stack[-1] if stack else None
+                node.right = stack[-1] if stack else None
+                stack.append(node)
+    
+        return self._transform(root)
+    
+    def _transform(self, root):
+        if root is None: return []
+        
+        result = []
+        queue = collections.deque([root])
+        while queue:
+            node = queue.popleft()
+            if node.left:
+                queue.extend((node.left,))
+            if node.right:
+                queue.extend((node.right,))
+            result.append(node.val)
+        
+        return result
+################################################################
+
+Solution:
+[0, 0, 7, 7, 7, 0, 9, 9, 9, 9, 9, 9, 0, 0, 9, 9, 9, 9, 9, 9, 0, 7, 7, 7, 7, 0]
+

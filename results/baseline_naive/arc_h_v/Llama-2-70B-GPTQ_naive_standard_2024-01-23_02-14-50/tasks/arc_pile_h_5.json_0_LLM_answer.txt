@@ -1,0 +1,70 @@
+Input token: 405
+Output token: 497
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.], ['.', 'h', '.', '.], ['.', 'a', '.', 'a], ['d', 'd', '.', 'd']]
+output: [['.', '.', '.', '.], ['h', '.', '.', '.], ['a', 'a', '.', '.], ['d', 'd', 'd', '.']]
+
+Example_2:
+input: [['.', 'g', 'g', 'g], ['.', '.', 'i', '.], ['e', 'e', 'e', '.], ['.', '.', '.', 'c']]
+output: [['g', 'g', 'g', '.], ['i', '.', '.', '.], ['e', 'e', 'e', '.], ['c', '.', '.', '.']]
+
+Example_3:
+input: [['h', 'h', '.', 'h], ['.', '.', 'f', '.], ['i', '.', '.', 'i], ['.', '.', '.', '.']]
+output: [['h', 'h', 'h', '.], ['f', '.', '.', '.], ['i', 'i', '.', '.], ['.', '.', '.', '.']]
+
+Test case:
+input: [['g', '.', 'g', '.', '.', 'g], ['.', '.', '.', '.', 'i', '.], ['c', '.', '.', '.', '.', 'c], ['d', 'd', '.', 'd', '.', '.], ['.', '.', 'b', 'b', '.', '.], ['.', 'h', '.', 'h', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['g', '.', 'g', '.', '.', 'g], ['.', '.', '.', '.', 'i', '.], ['c', '.', '.', '.', '.', 'c], ['d', 'd', '.', 'd', '.', '.], ['.', '.', 'b', 'b', '.', '.], ['.', 'h', '.', 'h', '.', '.']]
+"""
+from typing import List, Tuple
+
+class Solution:
+    def findWords(self, board: List[List[str]]) -> List[Tuple[int, int]]:
+        words = []
+        
+        for i in range(len(board)):
+            for j in range(len(board[0])):
+                if board[i][j] == ".": continue
+                
+                # check left to right
+                word = self._findWord(board, (i, j), 0)
+                if word is not None:
+                    words.append((word[0], word[1]))
+                    
+                # check top to bottom
+                word = self._findWord(board, (i, j), 90)
+                if word is not None:
+                    words.append((word[0], word[1]))
+            
+        return words
+    
+    def _findWord(self, board: List[List[str]], start: tuple, angle: int):
+        x, y = start
+        direction = {0: (-1, -1), 90: (1, 0)}
+        dx, dy = direction[angle]
+        
+        stack = [(x, y)]
+        while len(stack) > 0:
+            x, y = stack.pop()
+            if board[y][x]!= "." or board[y][x] == "o": break
+            board[y][x] = "*"
+            stack.extend([(x+dx, y+dy), (x-dx, y-dy)])
+        
+        if board[start[1]][start[0]] == "*":
+            return (start[0]+1, start[1]+1)
+        else:
+            return None
+
+################################################################
+
+Solution:
+[['g', 'g', 'g', '.', '.', '.], ['i', '.', '.', '.', '.', '.], ['c', 'c', '.', '.', '.', '.], ['d', 'd', 'd', '.', '.', '.], ['b', 'b', '.', '.', '.', '.], ['h', 'h', '.', '.', '.', '.']]
+

@@ -1,0 +1,145 @@
+Input token: 502
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'i', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'i', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'f', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'f', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'f', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', 'f', 'f', 'f', 'f', 'f', 'f', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def buildTree(s):
+    if not s or len(s) == 0: return None
+    root = Node()
+    stack = [root]
+    i = 0
+    while True:
+        node = stack[-1]
+        if i >= len(s): break
+        char = s[i]
+        if char in node.meta:
+            node.meta[char].append(Node())
+            stack.append(node.meta[char][-1])
+        else:
+            node.addChild(char, Node())
+            stack.append(node.getChildrenDict()[char])
+        i += 1
+    return root
+
+def getMeta(node):
+    meta = {}
+    for child in node.getChildren():
+        meta[child.val] = []
+    return meta
+
+def addToMeta(node, meta):
+    for key in meta:
+        if key in node.meta:
+            node.meta[key].extend(meta[key])
+        else:
+            node.meta[key] = meta[key]
+
+def transform(tree, meta):
+    queue = [(tree, tree)]
+    while queue:
+        parent, child = queue.pop()
+        if child.val!= '.':
+            continue
+        if child.parent is None:
+            continue
+        if child.parent.val == '.':
+            continue
+        if child.parent.val in meta:
+            newParent = Node(child.parent.val, [], {})
+            newParent.setChildren(child.parent.getChildren())
+            newParent.meta['.'].remove(child.parent)
+            newParent.meta['.'].insert(0, child)
+            child.parent = newParent
+            queue.append((newParent, child))
+        elif child.parent.val in child.parent.meta:
+            newParent = Node(child.parent.val, {}, {})
+            newParent.setChildren(child.parent.getChildren())
+            newParent.meta[child.parent.val].remove(child.parent)
+            newParent.meta[child.parent.val].insert(0, child)
+            child.parent = newParent
+            queue.append((newParent, child))
+        else:
+            newParent = Node('.', {}, {})
+            newParent.setChildren([child.parent])
+            child.parent = newParent
+            queue.append((newParent, child))
+
+def transformHelper(node, meta):
+    if node.isLeaf():
+        return
+    if node.val == '.':
+        return
+    if node.val in meta:
+        transform(node, meta)
+    else:
+        for child in node.getChildren():
+            transformHelper(child, meta)
+
+def transformAll(tree, meta):
+    queue = [(tree, tree)]
+    while queue:
+        parent, child = queue.pop()
+        if child.val!= '.':
+            continue
+        if child.parent is None:
+            continue
+        if child.parent.val == '.':
+            continue
+        if child.parent.val in meta:
+            newParent = Node(child.parent.val, {}, {})
+            newParent.setChildren([child.parent])
+            child.parent = newParent
+            queue.append((newParent, child))
+        else:
+            newParent = Node('.', {}, {})
+            newParent.setChildren([child.parent])
+            child.parent = newParent
+            queue.append((newParent, child))
+
+def transformHelperAll(node, meta):
+    if node.isLeaf():
+        return
+    if node.val == '.':
+        return
+    if node.val in meta:
+        transformAll(node, meta)
+    else:
+        for child in node.getChildren():
+            transformHelperAll(child, meta)
+
+def transformRecursive(tree, meta):
+    queue = [(tree,
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'c', 'a']
+

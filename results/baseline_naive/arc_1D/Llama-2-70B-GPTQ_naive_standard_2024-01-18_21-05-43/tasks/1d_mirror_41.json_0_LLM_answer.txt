@@ -1,0 +1,79 @@
+Input token: 355
+Output token: 412
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'h', 'h', 'h', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'j', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'b', 'b', 'b', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'b', 'b', 'b', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'e', 'e', 'e', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'j', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'd', 'd', 'd', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'd', 'd', 'd', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def buildTree(s):
+    if not s or len(s) == 0: return None
+    root = Node()
+    stack = [root]
+    i = 0
+    while True:
+        node = stack[-1]
+        if i >= len(s): break
+        c = s[i].lower()
+        if c in node.children:
+            child = node.children[c]
+        else:
+            child = Node(c)
+            node.children[c] = child
+        stack.append(child)
+        i += 1
+    return root
+
+def dfs(node, result):
+    if not node: return
+    if node.val!= '.':
+        result.append(node.val)
+    for child in node.children.values():
+        dfs(child, result)
+
+def getResult(tree):
+    result = []
+    dfs(tree, result)
+    return result
+
+def transform(s):
+    tree = buildTree(s)
+    result = []
+    for key in sorted(tree.children.keys(), reverse=True):
+        node = tree.children[key]
+        if node.val == '.': continue
+        result.extend(['.' for _ in range(len(result))])
+        result.extend(getResult(node))
+    return result
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'd', 'd', 'd', 'a', 'a', 'a']
+

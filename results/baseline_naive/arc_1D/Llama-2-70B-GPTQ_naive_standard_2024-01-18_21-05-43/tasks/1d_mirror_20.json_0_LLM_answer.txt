@@ -1,0 +1,95 @@
+Input token: 397
+Output token: 847
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['g', 'g', 'g', 'g', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'j', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'f', 'f', 'f', 'f', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'f', 'f', 'f', 'f', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'g', 'g', 'g', 'g', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'h', 'h', 'h', 'h', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'h', 'h', 'h', 'h', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def buildTree(s):
+    if not s or len(s) == 0: return None
+    root = Node()
+    stack = [root]
+    i = 0
+    while True:
+        node = stack[-1]
+        if i >= len(s): break
+        c = s[i].lower()
+        if c in node.meta:
+            node.meta[c].append(Node())
+            stack.append(node.meta[c][-1])
+        else:
+            node.meta[c] = [Node(), ]
+            stack.append(node.meta[c][0])
+        i += 1
+    return root
+
+def getMeta(tree, word):
+    if tree is None: return {}
+    result = {}
+    for k, v in tree.items():
+        if type(v)!= list: continue
+        if word[0] == k:
+            result[k] = []
+            for child in v:
+                result[k].extend(getMeta(child, word))
+    return result
+
+def transform(word, tree):
+    if tree is None: return word
+    newWord = []
+    for char in word:
+        if char in tree.keys():
+            newWord.extend([char]*len(tree[char]))
+        elif char in tree['_'].keys():
+            newWord.extend([char]*len(tree['_']['_']))
+        else:
+            newWord.append(char)
+    return newWord
+
+if __name__ == "__main__":
+    # Testing Inputs
+    test_case_1 = ["g", "g", "g", "g", "a", "j", "a", "a", "a", "a", "a", "a", "a", "a", "a"]
+    test_case_2 = ["a", "a", "f", "f", "f", "f", "a", "j", "a", "a", "a", "a", "a", "a", "a", "a"]
+    test_case_3 = ["a", "g", "g", "g", "g", "a", "j", "a", "a", "a", "a", "a", "a", "a", "a", "a"]
+    test_case_4 = ["a", "a", "h", "h", "h", "h", "a", "j", "a", "a", "a", "a", "a", "a", "a", "a"]
+    
+    print("Input: ", test_case_1)
+    print("Output: ", transform(test_case_1, buildTree(test_case_1)))
+    print("\nInput: ", test_case_2)
+    print("Output: ", transform(test_case_2, buildTree(test_case_2)))
+    print("\nInput: ", test_case_3)
+    print("Output: ", transform(test_case_3, buildTree(test_case_3)))
+    print("\nInput: ", test_case_4)
+    print("Output: ", transform(test_case_4, buildTree(test_case_4)))
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'h', 'h', 'h', 'h', 'a', 'a', 'a']
+

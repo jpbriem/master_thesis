@@ -1,0 +1,113 @@
+Input token: 465
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'b', 'a', 'a], ['a', 'b', 'c', 'a], ['a', 'a', 'a', 'a], ['a', 'b', 'a', 'a']]
+output: [['a', 'a', 'a', 'a], ['a', 'b', 'a', 'a], ['a', 'b', 'a', 'a], ['a', 'b', 'c', 'a']]
+
+Example_2:
+input: [['b', 'a', 'a', 'a], ['b', 'a', 'c', 'f], ['b', 'a', 'a', 'f], ['a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a], ['b', 'a', 'a', 'a], ['b', 'a', 'a', 'f], ['b', 'a', 'c', 'f']]
+
+Example_3:
+input: [['i', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'j', 'a], ['a', 'a', 'a', 'a', 'e], ['a', 'a', 'a', 'j', 'a], ['a', 'a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'j', 'a], ['i', 'a', 'a', 'j', 'e']]
+
+Test case:
+input: [['a', 'd', 'a', 'g], ['a', 'd', 'a', 'a], ['f', 'd', 'a', 'a], ['a', 'a', 'h', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a'], ['a', 'd', 'a', 'a'], ['f', 'd', 'a', 'a'], ['a', 'a', 'h', 'a']]
+"""
+import collections
+from typing import List, Optional, Tuple
+
+
+def merge(list_of_lists):
+    """Merge two lists of lists into one list."""
+    if len(list_of_lists) == 0:
+        return []
+    elif len(list_of_lists[0])!= len(list_of_lists[-1]):
+        raise ValueError("The length of each sublist must be equal.")
+    else:
+        merged = []
+        for i in range(len(list_of_lists)):
+            merged += list_of_lists[i]
+        return merged
+
+
+def remove_duplicates(list_of_lists):
+    """Remove duplicates from a list of lists."""
+    if not isinstance(list_of_lists, (tuple, list)):
+        raise TypeError("Input should be a tuple or a list")
+    if len(list_of_lists) < 2:
+        return list_of_lists
+    else:
+        result = []
+        for item in list_of_lists:
+            if item not in result:
+                result.append(item)
+        return result
+
+
+def get_transformation_patterns(input_list: List[List[str]]) -> List[Tuple]:
+    """Get all possible transformations patterns from an input list."""
+    if not isinstance(input_list, (tuple, list)):
+        raise TypeError("Input should be a tuple or a list")
+    if len(input_list) <= 1:
+        return []
+    else:
+        result = []
+        for i in range(len(input_list)-1):
+            for j in range(i+1, len(input_list)):
+                if input_list[i][0] == input_list[j][0]:
+                    result.append((input_list[i], input_list[j]))
+        return result
+
+
+def get_transformed_list(input_list: List[List[str]], transformation_patterns: List[Tuple]) -> List[List[str]]:
+    """Transform an input list using given transformation patterns."""
+    if not isinstance(input_list, (tuple, list)) or not isinstance(transformation_patterns, (tuple, list)):
+        raise TypeError("Input should be a tuple or a list")
+    if len(input_list) <= 1:
+        return []
+    else:
+        transformed_list = []
+        for tp in transformation_patterns:
+            transformed_list += transform_sublist(tp, input_list)
+        return transformed_list
+
+
+def transform_sublist(transformation_pattern: Tuple, input_list: List[List[str]]) -> List[List[str]]:
+    """Transform a sublist according to its transformation pattern."""
+    if not isinstance(transformation_pattern, (tuple, list)):
+        raise TypeError("Transformation pattern should be a tuple or a list")
+    if len(transformation_pattern) > 2:
+        raise IndexError("Transformation pattern can only have at most 2 elements")
+    if len(input_list) < 2:
+        return []
+    else:
+        transformed_list = []
+        for i in range(len(input_list)):
+            if i >= len(input_list)-1:
+                break
+            if transformation_pattern[0] == input_list[i][0]:
+                transformed_list += transform_sublist(transformation_pattern[1], input_list[i+1:])
+        return transformed_list
+
+
+def test():
+    """Test cases."""
+    input_list = [[['a', 'd', 'a', 'g'], ['a', 'd', 'a', 'a'], ['f', 'd', 'a', 'a'], ['a', 'a', 'h', 'a']],
+                   [['a', 'd', 'a', 'g'], ['a', 'd', 'a', 'a'], ['f', 'd', 'a', 'a'], ['a', 'a', 'h', 'a']],
+                   [['a', 'd', 'a', 'g'], ['a', 'd', 'a', 'a'], ['f
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a], ['a', 'd', 'a', 'a], ['a', 'd', 'a', 'a], ['f', 'd', 'h', 'g']]
+

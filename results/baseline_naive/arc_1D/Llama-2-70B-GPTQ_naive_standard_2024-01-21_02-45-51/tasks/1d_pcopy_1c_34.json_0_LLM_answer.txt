@@ -1,0 +1,129 @@
+Input token: 754
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 8, 8, 8, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 8, 8, 8, 0, 0, 0, 8, 8, 8, 0, 0, 0, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 7, 7, 7, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 7, 7, 7, 0, 0, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 6, 6, 6, 0, 0, 6, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 6, 6, 6, 0, 6, 6, 6, 0, 0, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 5, 5, 5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 5, 5, 5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+"""
+
+import numpy as np
+from skimage import io
+from skimage.transform import resize
+
+def main():
+    """
+    Main function to run the program
+    """
+    # Read image from file
+    img = io.imread('../images/test_imgs/test_img_4.png')
+    
+    # Resize image
+    resized_img = resize(img,(192,192))
+    
+    # Convert image into a list of lists
+    img_list = []
+    for i in range(len(resized_img)):
+        row = []
+        for j in range(len(resized_img[i])):
+            if (resized_img[i][j]) == 0:
+                row.append(0)
+            else:
+                row.append(1)
+        img_list.append(row)
+        
+    # Print out the original image
+    print("Original Image")
+    print(img_list)
+    
+    # Run the algorithm on the image
+    new_img_list = run_algorithm(img_list)
+    
+    # Print out the final result
+    print("\nFinal Result")
+    print(new_img_list)
+    
+    # Save the final result
+    io.imsave('../results/result_4.png',np.array(new_img_list).astype(int))
+
+# Function that runs the algorithm
+def run_algorithm(img):
+    """
+    This is the function that runs the algorithm
+    Input: A list of lists representing an image
+    Output: A list of lists representing the transformed image
+    """
+    # Initialize variables
+    current_index = 0
+    previous_index = -1
+    next_index = 1
+    current_value = img[current_index]
+    previous_value = img[previous_index]
+    next_value = img[next_index]
+    direction = "right"
+    count = 0
+    while True:
+        # Check if we have reached the end of the array
+        if ((current_index + 1) >= len(img)):
+            break
+            
+        # If the value at the current index is not equal to zero
+        elif (current_value!= 0):
+            # If the value at the current index is one
+            if (current_value == 1):
+                # If the value at the previous index is also one
+                if (previous_value == 1):
+                    # If the value at the next index is also one
+                    if (next_value == 1):
+                        # Replace the values at the current index with zeros
+                        img[current_index] = [0]*count
+                        # Increment the number of times this has happened
+                        count += 1
+                        # Set the value at the current index back to one
+                        img[current_index].insert(0,1)
+                        # Update the value at the current index
+                        current_value = img[current_index]
+                        # Update the value at the previous index
+                        previous_value = img[previous_index]
+                        # Update the value at the next index
+                        next_value = img[next_index]
+                        # Decrement the current index by two
+                        current_index -= 2
+                        # Decrement the previous index by two
+                        previous_index -= 2
+                        # Decrement the next index by two
+                        next_index -= 2
+                        # Change the direction
+                        direction = "left"
+                    # Else if the value at the next index is zero
+                    elif (next_value == 0):
+                        # Replace the values at the current index with ones
+                        img[current_index] = [1]*count
+                        # Increment the number of times this has happened
+                        count += 1
+                        # Set the value at the current index back to zero
+                        img[current_index].pop()
+                        #
+################################################################
+
+Solution:
+[0, 0, 5, 5, 5, 0, 0, 0, 5, 5, 5, 0, 0, 0, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+

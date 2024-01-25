@@ -1,0 +1,94 @@
+Input token: 481
+Output token: 490
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'g', 'a', 'a', 'a', 'g', 'g', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a']
+output: ['a', 'j', 'a', 'a', 'a', 'd', 'd', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a']
+
+Example_2:
+input: ['a', 'g', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'g', 'g', 'a', 'g', 'a', 'a', 'g', 'a', 'a', 'a']
+output: ['a', 'j', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'd', 'd', 'a', 'j', 'a', 'a', 'j', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'g', 'a', 'a', 'g', 'g', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'g', 'a', 'g', 'g', 'g']
+output: ['a', 'a', 'j', 'a', 'a', 'd', 'd', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'j', 'a', 'e', 'e', 'e']
+
+Test case:
+input: ['a', 'a', 'g', 'g', 'g', 'a', 'g', 'g', 'a', 'g', 'a', 'a', 'a', 'g', 'g', 'a', 'a', 'g', 'g', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'j', 'j', 'j', 'a', 'd', 'd', 'a', 'd', 'a', 'a', 'a', 'g', 'e', 'e', 'a', 'e', 'e', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, children=None):
+        self.val = val
+        self.children = children
+
+
+class Solution(object):
+    def serialize(self, root):
+        """
+        :type root: TreeNode
+        :rtype: str
+        """
+        if not root or not root.children:
+            return ''
+        
+        result = []
+        queue = [root]
+        while len(queue) > 0:
+            node = queue[0]
+            queue.pop(0)
+            
+            if node.left is None:
+                result.append('N')
+            else:
+                result.extend(['L' + self.serialize(node.left), 'R'])
+                
+            if node.right is None:
+                result.append('N')
+            else:
+                result.extend([self.serialize(node.right), 'R'])
+            
+            queue.extend(node.children)
+        return ''.join(result)
+    
+    def deserialize(self, data):
+        """
+        :type data: str
+        :rtype: TreeNode
+        """
+        if not data:
+            return None
+        
+        stack = [(None, '')]
+        while len(stack) > 0:
+            parent, data = stack[-1]
+            if data == '':
+                stack.pop()
+                continue
+            
+            if data[0] in ('L', 'R'):
+                stack.append((parent, data[1:]))
+                continue
+            
+            if data[0]!= 'N':
+                child = Node(data[0])
+                parent.addChild(child)
+                stack.append((child, data[1:]))
+                continue
+            
+            stack.pop()
+
+################################################################
+
+Solution:
+['a', 'a', 'e', 'e', 'e', 'a', 'd', 'd', 'a', 'j', 'a', 'a', 'a', 'd', 'd', 'a', 'a', 'd', 'd', 'a']
+

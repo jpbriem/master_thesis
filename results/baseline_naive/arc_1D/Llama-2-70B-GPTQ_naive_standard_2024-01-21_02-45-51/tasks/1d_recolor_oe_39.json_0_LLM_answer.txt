@@ -1,0 +1,125 @@
+Input token: 460
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 8, 8, 8, 8, 8, 8, 0, 8, 0, 8, 8, 8, 0, 8, 8, 8, 0]
+output: [0, 0, 1, 1, 1, 1, 1, 1, 0, 5, 0, 5, 5, 5, 0, 5, 5, 5, 0]
+
+Example_2:
+input: [0, 0, 8, 8, 0, 8, 8, 8, 8, 8, 0, 0, 0, 8, 8, 8, 8, 0, 0]
+output: [0, 0, 1, 1, 0, 5, 5, 5, 5, 5, 0, 0, 0, 1, 1, 1, 1, 0, 0]
+
+Example_3:
+input: [0, 0, 8, 8, 8, 8, 8, 8, 0, 0, 0, 8, 8, 8, 0, 0, 0, 0, 0]
+output: [0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 5, 5, 5, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 0, 8, 8, 8, 8, 0, 8, 8, 8, 8, 8, 0, 0, 0, 8, 0, 0]
+################################################################
+
+LLM answer:
+
+expected output: [0, 0, 0, 1, 1, 1, 1, 0, 5, 5, 5, 5, 5, 0, 0, 0, 1, 0, 0]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=None, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def get_max_depth(root):
+    if root is None: return 0
+    else:
+        ld = get_max_depth(root.left)
+        rd = get_max_depth(root.right)
+        return max(ld,rd)+1
+
+def get_min_depth(root):
+    if root is None: return float('inf')
+    else:
+        ld = get_min_depth(root.left)
+        rd = get_min_depth(root.right)
+        return min(ld,rd)-1
+
+def get_height(root):
+    return abs(get_max_depth(root)-get_min_depth(root))
+
+def get_balance_factor(node):
+    if node is None: return 0
+    else:
+        return get_height(node.left)-get_height(node.right)
+
+def get_levels(root):
+    levels = []
+    queue = [(root, 1)]
+    while len(queue)>0:
+        cur_node, level = queue[0]
+        queue.pop(0)
+        if cur_node is not None:
+            levels.append([cur_node.val])
+            queue += [(cur_node.left, level+1), (cur_node.right, level+1)]
+    return levels
+
+def get_path(root, path):
+    if root is None or root.val == path[-1]: return True
+    elif root.val > path[-1]: return False
+    else:
+        return get_path(root.left, path) or get_path(root.right, path)
+
+def get_paths(root, paths):
+    if root is None: return []
+    else:
+        new_paths = []
+        for p in paths:
+            new_p = list(p)
+            new_p.extend([root.val])
+            new_paths.append(new_p)
+        new_paths.extend(get_paths(root.left, paths))
+        new_paths.extend(get_paths(root.right, paths))
+        return new_paths
+
+def get_all_paths(root):
+    if root is None: return [[],[]]
+    else:
+        left_paths, right_paths = get_all_paths(root.left)
+        new_left_paths = get_paths(root, left_paths)
+        new_right_paths = get_paths(root, right_paths)
+        return new_left_paths + new_right_paths
+
+def get_longest_path(root):
+    if root is None: return [], 0
+    else:
+        left_paths, right_paths = get_all_paths(root)
+        longest_len = 0
+        longest_path = []
+        for i in range(len(left_paths)):
+            if len(left_paths[i])>longest_len:
+                longest_len = len(left_paths[i])
+                longest_path = left_paths[i]
+        for j in range(len(right_paths)):
+            if len(right_paths[j])>longest_len:
+                longest_len = len(right_paths[j])
+                longest_path = right_paths[j]
+        return longest_path
+
+def get_shortest_path(root):
+    if root is None: return [], 0
+    else:
+        left_paths, right_paths = get_all_paths(root)
+        shortest_len = float('inf')
+        shortest_path = []
+        for i in range(len(left_paths)):
+            if len(left_paths[i])<shortest_len:
+                shortest_len = len(left_paths[i])
+                shortest_path = left_paths[i]
+        for j in range(len(right_paths
+################################################################
+
+Solution:
+[0, 0, 0, 1, 1, 1, 1, 0, 5, 5, 5, 5, 5, 0, 0, 0, 5, 0, 0]
+

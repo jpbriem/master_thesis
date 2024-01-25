@@ -1,0 +1,94 @@
+Input token: 439
+Output token: 625
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'a']
+output: ['a', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'j', 'j', 'a', 'a', 'a', 'j', 'j', 'j', 'j', 'a']
+
+Example_2:
+input: ['a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'h', 'h', 'h', 'a', 'h', 'h', 'h', 'a', 'a', 'a']
+output: ['a', 'j', 'j', 'j', 'j', 'j', 'j', 'a', 'd', 'd', 'd', 'a', 'd', 'd', 'd', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'a', 'h', 'h', 'h', 'h', 'a', 'a', 'h']
+output: ['a', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'j', 'j', 'a', 'j', 'j', 'j', 'j', 'a', 'a', 'd']
+
+Test case:
+input: ['a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'j', 'j', 'a', 'j', 'j', 'j', 'j', 'a', 'a', 'd']
+"""
+import sys
+from collections import defaultdict, deque
+from typing import List, Optional, Tuple
+
+
+def get_next(current_state: str) -> int:
+    """Returns next state based on current state."""
+    if len(current_state) == 0:
+        return "a"
+    elif current_state[0] in ["a", "d"]:
+        return "a"
+    else:
+        return "d"
+
+
+def is_valid(current_state: str):
+    """Checks whether given string is valid or not."""
+    if len(current_state) < 4:
+        return False
+    for i in range(len(current_state)):
+        if (i + 1) % 2!= 0:
+            continue
+        if current_state[i]!= current_state[(i - 1)]:
+            return False
+    return True
+
+
+class Solution:
+    def findTheDifference(self, words: List[str]) -> int:
+        """
+        :type words: List[str]
+        :rtype: int
+        """
+        # dictionary to store previous states of each letter
+        d = defaultdict(lambda: 0)
+        for word in words:
+            for char in word:
+                d[char] += 1
+        # initialize current state as first character of the last word
+        curr_state = [word[-1]] * 2
+        # keep track of number of times a letter has been seen so far
+        n = 0
+        while n < len(curr_state):
+            if curr_state[n] == "a":
+                curr_state[n], curr_state[n+1] = get_next(curr_state[:n+1])
+            else:
+                curr_state[n], curr_state[n+1] = get_next("d")
+            n += 1
+        # check if current state is valid
+        if not is_valid(curr_state):
+            return -1
+        # count how many times we have encountered this state before
+        cnt = 0
+        for i in range(len(curr_state)):
+            if curr_state[i] == "a":
+                cnt += 1
+        # print(f'{cnt}')
+        # if cnt > 0:
+        #     return cnt
+        # else:
+        #     return -1
+        return 0
+
+################################################################
+
+Solution:
+['a', 'a', 'j', 'j', 'j', 'j', 'j', 'j', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'd', 'a', 'a']
+

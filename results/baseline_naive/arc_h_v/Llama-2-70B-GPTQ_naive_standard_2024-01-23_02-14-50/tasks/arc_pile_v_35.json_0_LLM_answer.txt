@@ -1,0 +1,75 @@
+Input token: 539
+Output token: 720
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', 'e', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', 'e', '.], ['d', '.', '.', 'h', 'e', '.], ['d', '.', 'f', '.', '.', '.], ['.', '.', '.', 'h', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', 'e', '.], ['d', '.', '.', 'h', 'e', '.], ['d', '.', 'f', 'h', 'e', '.']]
+
+Example_2:
+input: [['.', '.', '.', 'a], ['.', 'b', '.', '.], ['.', 'b', 'g', '.], ['.', 'b', '.', '.']]
+output: [['.', '.', '.', '.], ['.', 'b', '.', '.], ['.', 'b', '.', '.], ['.', 'b', 'g', 'a']]
+
+Example_3:
+input: [['.', 'a', '.', '.', '.', '.], ['.', 'a', 'i', '.', '.', '.], ['.', '.', '.', 'g', '.', '.], ['.', '.', 'i', '.', '.', '.], ['.', '.', '.', '.', '.', 'b], ['.', '.', 'i', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', 'i', '.', '.', '.], ['.', 'a', 'i', '.', '.', '.], ['.', 'a', 'i', 'g', '.', 'b']]
+
+Test case:
+input: [['h', '.', '.', 'f], ['h', 'c', 'd', 'f], ['h', 'c', 'd', '.], ['.', 'c', 'd', '.']]
+################################################################
+
+LLM answer:
+
+output: [['h', '.', '.', 'f], ['h', 'c', 'd', 'f], ['h', 'c', 'd', '.'], ['.', 'c', 'd', 'h']]
+"""
+from typing import List, Tuple
+
+class Solution:
+    def reconstructPath(self, grid: List[List[str]]) -> str:
+        """
+        1. 找到起点和终点，并标记为'#'。
+        2. 从起点开始遍历，每次向四个方向走一步，如果是空格则跳过，否则就标记为'#'。
+        3. 当前位置的上下左右四个方向中有一个方向不存在时，说明已经到达边界了，那么将该方向的所有元素都标记为'#'。
+        4. 重复第二步直到没有可以走的路。
+        5. 最后再去除所有的'#'字符。
+        :param grid:
+        :return:
+        """
+        if not grid or not grid[0]: return ''
+        start = end = None
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == 'S':
+                    start = (i, j)
+                elif grid[i][j] == 'E':
+                    end = (i, j)
+        assert start is not None and end is not None,\
+            "Invalid input."
+        queue = [(start[0], start[1])]
+        visited = set()
+        while queue:
+            x, y = queue.pop(0)
+            if grid[x][y]!= '#':
+                continue
+            # 这里需要注意的是，如果是纯数组表示的图，那么这里应该用visited.add((x, y))来代替visited.add((x, y)).
+            # 因为Python的list是引用类型，而tuple是值类型。
+            visited.add((x, y))
+            for dx, dy in ((0, -1), (-1, 0), (0, 1), (1, 0)):
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < len(grid) and 0 <= ny < len(grid[nx]) \
+                        and grid[nx][ny]!= '#' and (nx, ny) not in visited:
+                    queue.append((nx, ny))
+                    grid[nx][ny] = '#'
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == '#':
+                    grid[i][j] = '.'
+        return ''.join([row[::-1] for row in grid])
+
+################################################################
+
+Solution:
+[['.', '.', '.', '.], ['h', 'c', 'd', '.], ['h', 'c', 'd', 'f], ['h', 'c', 'd', 'f']]
+

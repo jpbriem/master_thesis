@@ -1,0 +1,95 @@
+Input token: 544
+Output token: 650
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'c', 'c', 'c', 'c', 'a', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'a', 'a', 'c', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'j', 'j', 'j', 'j', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'h', 'a', 'a', 'h', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'a', 'c', 'a', 'c', 'c', 'c', 'a']
+output: ['a', 'a', 'a', 'j', 'j', 'j', 'j', 'j', 'j', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'h', 'a', 'h', 'h', 'h', 'a']
+
+Example_3:
+input: ['a', 'c', 'c', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'c', 'c', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'c', 'c', 'a']
+output: ['a', 'j', 'j', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'h', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'h', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'c', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'j', 'j', 'j', 'j', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'j', 'j', 'j', 'a', 'a', 'a', 'h', 'h', 'a']
+"""
+from typing import List, Optional
+
+
+class Solution:
+    def transform(self, s: str) -> str:
+        """
+        思路：找到最长的连续字符串，然后将其转换为对应的字母。
+                如果不存在这样的字符串，则返回原始字符串。
+        """
+        if not s or len(s) <= 4:
+            return s
+
+        # 记录每个字符出现的次数
+        char_count = [0] * (ord('z') + 1 - ord('a'))
+        for c in s:
+            char_count[ord(c)] += 1
+
+        # 查找最大值
+        max_value = max(char_count)
+        if max_value == 0:
+            return s
+
+        # 获取最多出现的字符
+        max_index = char_count.index(max_value)
+        max_letter = chr(ord('a') + max_index)
+
+        # 判断是否有相同的字符出现了两次以上
+        count = 0
+        for i in range(len(s)):
+            if s[i]!= max_letter:
+                continue
+            count += 1
+            if count > 1:
+                break
+
+        # 没有相同的字符出现了两次以上，直接返回原始字符串
+        if count < 2:
+            return s
+
+        # 寻找第一个非 max_letter 字符开头的子序列
+        start = None
+        for i in range(len(s)):
+            if s[i]!= max_letter:
+                start = i
+                break
+
+        # 从 start 位置开始向前遍历，直至发现非 max_letter 字符
+        end = None
+        for j in range(start):
+            if s[j]!= max_letter:
+                end = j
+                break
+
+        # 更新结果字符串
+        result = ''
+        for k in range(end+1):
+            result += s[k]
+
+        # 删除重复的字符
+        for l in range(end+1, len(s)-1):
+            result += s[l]
+
+        return result
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'j', 'j', 'j', 'j', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'j', 'j', 'a']
+

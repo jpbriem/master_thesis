@@ -1,0 +1,65 @@
+Input token: 502
+Output token: 397
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'a']
+
+Example_2:
+input: ['a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+*/
+public class Solution {
+    public String reorganizeString(String S) {
+        if (S == null || S.length() <= 1) return S;
+        int[] count = new int[26];
+        for (char c : S.toCharArray()) {
+            ++count[c - 'a'];
+        }
+        PriorityQueue<Integer> pq = new PriorityQueue<>(new Comparator<Integer>() {
+            @Override
+            public int compare(Integer o1, Integer o2) {
+                return o2 - o1;
+            }
+        });
+        for (int i = 0; i < 26; ++i) {
+            if (count[i] > 0) {
+                pq.offer(count[i]);
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        while (!pq.isEmpty()) {
+            int maxCount = pq.poll();
+            char ch = (char)(maxCount + 'a');
+            --maxCount;
+            if (maxCount > 0) {
+                pq.offer(maxCount);
+            }
+            sb.append(ch);
+            if (pq.peek()!= null &&!sb.toString().equals("")) {
+                sb.append((char)(pq.poll() + 'a'));
+            }
+        }
+        return sb.toString();
+    }
+}
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+

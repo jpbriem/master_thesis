@@ -1,0 +1,85 @@
+Input token: 670
+Output token: 810
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'h', 'h', 'a', 'a', 'a', 'h', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'd', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'c', 'c', 'a', 'a', 'a', 'd', 'a', 'a', 'd', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'h', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'd', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'c', 'c', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'h', 'h', 'a', 'h', 'h', 'h', 'a', 'h', 'a', 'a', 'a', 'h', 'h', 'a', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'c', 'c', 'a', 'g', 'g', 'g', 'a', 'd', 'a', 'a', 'a', 'c', 'c', 'a', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'h', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'a', 'a', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'c', 'c', 'a', 'g', 'g', 'g', 'a', 'd', 'a', 'a', 'a', 'c', 'c', 'a', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import re
+from typing import List, Tuple
+
+class Solution:
+    def letterCasePermutation(self, s: str) -> List[str]:
+        if not s or len(s) == 0: return []
+        result = [[]]
+        for i in range(len(s)):
+            result += self._letterCasePermutationHelper(s, i)
+        return result
+    
+    def _letterCasePermutationHelper(self, s: str, index: int) -> List[List[str]]:
+        if index >= len(s): return [[s]]
+        
+        # get current character
+        c = s[index]
+        # get all characters that come before it
+        charsBefore = s[:index]
+        # get all characters that come after it
+        charsAfter = s[index+1:]
+        
+        # split into uppercase and lowercase letters
+        upperCases = set([char.upper() for char in charsBefore])
+        lowerCases = set([char.lower() for char in charsBefore])
+        upperCases.update({c})
+        lowerCases.update({c})
+        
+        # create a regex to match any of these cases
+        regex = r''.join('|'.join(map(re.escape, group)) for group in zip(upperCases, lowerCases))
+        # find all permutations of this regex
+        matches = re.findall(regex, s)
+        
+        # add each permutation to the list
+        for m in matches:
+            # remove the matched character from the string
+            newS = s[:index] + s[index+1:]
+            
+            # append the permutation to the list
+            yield [newS]
+            
+            # recursively call with the remaining string
+            yield from self._letterCasePermutationHelper(newS, index+1)
+
+if __name__ == "__main__":
+    solution = Solution()
+    assert solution.letterCasePermutation("") == [""]
+    assert solution.letterCasePermutation("a") == ["a"]
+    assert solution.letterCasePermutation("aa") == ["aa", "Aa"]
+    assert solution.letterCasePermutation("ab") == ["ab", "Ab", "ba", "Ba"]
+    assert solution.letterCasePermutation("abc") == ["abc", "ABC", "acb", "ACB", "bca", "BCA", "cab", "CAB"]
+    assert solution.letterCasePermutation("abcd") == ["abcd", "ABCD", "acbd", "ACBD", "adcb", "ADCB", "bcda", "BCDA", "cadb", "CADB"]
+    assert solution.letterCasePermutation("abcddee") == ["abcddee", "ABCDDEE", "acdbdee", "ACDBDEE", "adcbdee", "ADCBDEE", "bcddae", "BCDDAE", "caddbe", "CADDBE", "dacbbee", "DACBBEE"]
+
+################################################################
+
+Solution:
+['a', 'd', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'c', 'c', 'a', 'a', 'c', 'c', 'a', 'a', 'a', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

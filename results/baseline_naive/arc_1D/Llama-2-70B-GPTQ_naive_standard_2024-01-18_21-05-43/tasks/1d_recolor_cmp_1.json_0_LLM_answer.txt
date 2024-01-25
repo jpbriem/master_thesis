@@ -1,0 +1,83 @@
+Input token: 481
+Output token: 504
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'e', 'e', 'e', 'e', 'a']
+output: ['a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'e', 'e', 'e', 'e', 'a']
+
+Example_2:
+input: ['a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a']
+output: ['a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'e', 'e', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'a', 'f', 'f', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, result):
+    if node is None or len(result) == 0: return
+    if not node.isLeaf():
+        for child in node.getChildren():
+            dfs(child, result)
+    else:
+        result[node] += 1
+
+def bfs(root, result):
+    queue = [root]
+    while queue:
+        node = queue.pop()
+        if node is None or len(result) == 0: continue
+        if not node.isLeaf():
+            for child in node.getChildren():
+                queue.append(child)
+        else:
+            result[node] += 1
+
+class Solution(object):
+    def transformToExclamationMarks(self, s):
+        """
+        :type s: str
+        :rtype: str
+        """
+        # 1. build tree
+        root = Node('')
+        stack = []
+        for i, c in enumerate(reversed(s)):
+            node = Node(c)
+            if i > 0:
+                node.setParent(stack[-1])
+            stack.append(node)
+            if i < len(s)-1:
+                node.addChild(Node())
+        # 2. traverse tree to get count of each leaf node
+        result = {}
+        dfs(root, result)
+        # 3. replace all leaves with exclamation mark
+        for k, v in result.items():
+            if v >= 3:
+                k.replaceVal('!')
+        return ''.join([n.val for n in reversed(root.getAllNodes())])
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'a', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a']
+

@@ -1,0 +1,78 @@
+Input token: 271
+Output token: 446
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'f', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'd', 'a', 'a', 'd', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a']
+output: ['h', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def get_node(root, path):
+    if not root or len(path) == 0: return None
+    node = root
+    for i in range(len(path)):
+        try:
+            node = node[int(path[i])]
+        except KeyError as e:
+            print("KeyError", e)
+            break
+    return node
+
+def dfs(node, path):
+    if not node: return []
+    res = [node.val] + dfs(get_node(node, path), path[:-1])
+    return res
+
+def bfs(node, path):
+    if not node: return []
+    q = [(node, path)]
+    while q:
+        n, p = q.pop()
+        yield n.val
+        for c in n.children:
+            q.append((c, p+[str(n.children.index(c))]))
+
+def transform(root, path):
+    if not root: return []
+    if isinstance(root, list):
+        return root
+    else:
+        return [root.val] + transform(get_node(root, path), path[:-1])
+
+if __name__ == "__main__":
+    # Testing code here...
+    test_cases = ["a", "b"]
+    for tc in test_cases:
+        print("\n\ntest case: ", tc)
+        print("Expected Output:")
+        print(transform([Node('a')]*5, [0]*5))
+
+################################################################
+
+Solution:
+['a', 'e', 'a', 'e', 'a', 'a', 'a', 'a', 'a', 'a']
+

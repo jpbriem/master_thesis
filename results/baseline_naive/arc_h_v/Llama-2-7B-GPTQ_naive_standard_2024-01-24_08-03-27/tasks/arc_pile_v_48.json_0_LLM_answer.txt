@@ -1,0 +1,80 @@
+Input token: 492
+Output token: 616
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['d', 'a', 'e', 'a', 'a], ['d', 'a', 'e', 'a', 'c], ['a', 'a', 'a', 'a', 'a], ['d', 'a', 'a', 'a', 'c], ['a', 'a', 'a', 'g', 'a']]
+output: [['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['d', 'a', 'a', 'a', 'a], ['d', 'a', 'e', 'a', 'c], ['d', 'a', 'e', 'g', 'c']]
+
+Example_2:
+input: [['b', 'j', 'a', 'a], ['b', 'a', 'a', 'a], ['b', 'a', 'e', 'c], ['a', 'j', 'a', 'a']]
+output: [['a', 'a', 'a', 'a], ['b', 'a', 'a', 'a], ['b', 'j', 'a', 'a], ['b', 'j', 'e', 'c']]
+
+Example_3:
+input: [['d', 'a', 'i', 'a], ['d', 'a', 'a', 'e], ['a', 'g', 'i', 'a], ['d', 'g', 'i', 'a']]
+output: [['a', 'a', 'a', 'a], ['d', 'a', 'i', 'a], ['d', 'g', 'i', 'a], ['d', 'g', 'i', 'e']]
+
+Test case:
+input: [['h', 'j', 'a', 'a', 'i], ['h', 'a', 'a', 'a', 'a], ['a', 'j', 'a', 'f', 'i], ['a', 'a', 'b', 'f', 'a], ['a', 'a', 'a', 'a', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a']]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_next(current_state: str) -> Tuple[str, int]:
+    """Return next state and index of current state."""
+    if len(current_state) == 0:
+        return "", -1
+    elif current_state[-1] in "ae":
+        return "".join([x for x in current_state[:-1]]), (len(current_state)-1)
+    else:
+        return "".join([x for x in current_state]), (len(current_state))
+
+
+class Solution:
+    def findTheDifference(self, words: List[str]) -> None:
+        """
+        Do not edit original data; create a copy instead.
+        :param words: A list of strings containing words to be compared.
+        :return: Nothing
+        """
+        # type: ignore
+        n = len(words)
+        dp = [[False]*n for _ in range(n)]
+        for i in range(n):
+            for j in range(i+1, n):
+                if words[i][:-1]!= words[j][:-1]:
+                    continue
+                if words[i][-1] == words[j][-1]:
+                    if words[i][-1] == 'a' or words[j][-1] == 'a':
+                        if words[i][-2:] == words[j][-2:]:
+                            dp[i][j] = True
+                    elif words[i][-1] == 'e' or words[j][-1] == 'e':
+                        if words[i][-2:] == words[j][-2:]:
+                            dp[i][j] = False
+                    else:
+                        dp[i][j] = True
+        diffs = []
+        for i in range(n):
+            for j in range(i+1, n):
+                if dp[i][j]:
+                    diffs.append((i, j))
+        print("diffs", diffs)
+
+if __name__ == "__main__":
+    s = Solution()
+    words = ["hijacked", "jacked", "jacques", "jade"]
+    s.findTheDifference(words)
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['h', 'j', 'a', 'f', 'i], ['h', 'j', 'b', 'f', 'i']]
+

@@ -1,0 +1,79 @@
+Input token: 355
+Output token: 466
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'e', 'a']
+output: ['a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'e', 'a']
+
+Example_2:
+input: ['a', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'a', 'a']
+output: ['a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'e', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'e', 'a']
+output: ['a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'e', 'a']
+
+Test case:
+input: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'e', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'e', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path):
+    if node is None or len(path) == 0: return []
+    if not hasattr(node, "meta") or not hasattr(node.meta, "count"):
+        node.meta["count"] = 0
+    count = node.meta["count"] + 1
+    node.meta["count"] = count
+    result = [node]
+    for child in node.children:
+        result += dfs(child, path[:])
+    return result
+
+def bfs(root, path):
+    queue = collections.deque()
+    queue.append((root, path))
+    while queue:
+        node, path = queue.popleft()
+        yield (node, path)
+        if node is not None:
+            for child in node.children:
+                queue.append((child, path[:]))
+
+class Solution(object):
+    def transformToPreorder(self, A):
+        """
+        :type A: List[int]
+        :rtype: List[List[int]]
+        """
+        root = Node(A[0])
+        stack = [(root, [])]
+        while stack:
+            parent, path = stack.pop()
+            if parent is not None:
+                for i in range(len(parent.children)):
+                    child = parent.children[i]
+                    if child is not None:
+                        stack.append((child, path[:]))
+                        path.extend([child.val])
+                        break
+        return list(bfs(root, []))
+
+################################################################
+
+Solution:
+['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'e', 'a', 'a']
+

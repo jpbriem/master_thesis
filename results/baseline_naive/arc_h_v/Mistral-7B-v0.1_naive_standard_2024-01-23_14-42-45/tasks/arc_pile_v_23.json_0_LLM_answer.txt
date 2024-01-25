@@ -1,0 +1,71 @@
+Input token: 441
+Output token: 570
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', 'b', '.', 'h', '.], ['.', '.', '.', 'h', '.], ['.', 'b', '.', '.', '.], ['.', '.', 'd', 'h', '.], ['.', 'b', 'd', '.', '.']]
+output: [['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', 'b', '.', 'h', '.], ['.', 'b', 'd', 'h', '.], ['.', 'b', 'd', 'h', '.']]
+
+Example_2:
+input: [['.', 'c', '.', 'a], ['.', '.', '.', '.], ['.', 'c', '.', 'a], ['g', '.', '.', 'a']]
+output: [['.', '.', '.', '.], ['.', '.', '.', 'a], ['.', 'c', '.', 'a], ['g', 'c', '.', 'a']]
+
+Example_3:
+input: [['.', '.', 'h', '.', '.], ['.', '.', '.', '.', 'a], ['.', '.', '.', '.', '.], ['.', 'd', 'h', '.', 'a], ['.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', '.', 'h', '.', 'a], ['.', 'd', 'h', '.', 'a']]
+
+Test case:
+input: [['c', 'i', 'e', '.], ['c', '.', 'e', 'b], ['c', '.', '.', 'b], ['.', 'i', 'e', 'b']]
+################################################################
+
+LLM answer:
+
+output: [['c', 'i', 'e', '.], ['c', '.', 'e', 'b], ['c', '.', '.', 'b], ['.', 'i', 'e', 'b']]
+*/
+public class Solution {
+    public int[][] updateBoard(int[][] board, int[] click) {
+        if (board == null || board.length == 0 || board[0].length == 0) return board;
+        int m = board.length, n = board[0].length;
+        Queue<Integer> q = new LinkedList<>();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (board[i][j] == -1) continue;
+                if (i == click[0] && j == click[1]) {
+                    board[i][j] = -1;
+                    q.add(i * n + j);
+                } else if (board[i][j] > 0) {
+                    board[i][j] *= -1;
+                    q.add(i * n + j);
+                }
+            }
+        }
+        while (!q.isEmpty()) {
+            int index = q.poll();
+            int x = index / n, y = index % n;
+            if (x!= 0 && board[x - 1][y] >= 0) {
+                board[x - 1][y] *= -1;
+                q.add((x - 1) * n + y);
+            }
+            if (x!= m - 1 && board[x + 1][y] >= 0) {
+                board[x + 1][y] *= -1;
+                q.add((x + 1) * n + y);
+            }
+            if (y!= 0 && board[x][y - 1] >= 0) {
+                board[x][y - 1] *= -1;
+                q.add(x * n + y - 1);
+            }
+            if (y!= n - 1 && board[x][y + 1] >= 0) {
+                board[x][y + 1] *= -1;
+                q.add(x * n + y + 1);
+            }
+        }
+        return board;
+    }
+}
+################################################################
+
+Solution:
+[['.', '.', '.', '.], ['c', '.', 'e', 'b], ['c', 'i', 'e', 'b], ['c', 'i', 'e', 'b']]
+

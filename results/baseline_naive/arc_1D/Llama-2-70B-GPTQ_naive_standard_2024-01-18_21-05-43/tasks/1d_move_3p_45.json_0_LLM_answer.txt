@@ -1,0 +1,76 @@
+Input token: 397
+Output token: 519
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'a']
+
+Example_3:
+input: ['a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, children=None):
+        self.val = val
+        self.children = children
+
+
+class Solution(object):
+    def transformToPreorder(self, inorder, postorder):
+        """
+        :type inorder: List[int]
+        :type postorder: List[int]
+        :rtype: TreeNode
+        """
+        
+        # 1. Build dictionary of preorder traversal
+        # {node value: [indexes]}
+        preorder_dict = {}
+        for i, node in enumerate(postorder):
+            if not preorder_dict.get(node):
+                preorder_dict[node] = []
+            
+            preorder_dict[node].append(i)
+        
+        # 2. Find root node
+        root_value = None
+        for key in sorted(preorder_dict.keys()):
+            if len(preorder_dict[key]) == 1:
+                root_value = key
+                break
+                
+        assert root_value is not None, "No root found!"
+        
+        # 3. Recursively build tree from root to leaves
+        return self._buildTreeFromRoot(inorder, postorder, preorder_dict, root_value)
+    
+    def _buildTreeFromRoot(self, inorder, postorder, preorder_dict, root_value):
+        left_idx = preorder_dict[root_value][0] - 1
+        right_idx = preorder_dict[root_value][-1] + 1
+        
+        left_subtree = self._buildTreeFromRoot(inorder, postorder, preorder_dict, postorder[left_idx])
+        right_subtree = self._buildTreeFromRoot(inorder, postorder, preorder_dict, postorder[right_idx])
+        
+        return Node(root_value, [left_subtree, right_subtree])
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a']
+

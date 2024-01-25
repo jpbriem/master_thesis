@@ -1,0 +1,103 @@
+Input token: 376
+Output token: 699
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'f', 'f', 'f', 'a', 'a', 'f', 'f', 'a', 'f', 'f', 'a', 'a', 'a', 'a']
+output: ['a', 'b', 'b', 'b', 'a', 'a', 'h', 'h', 'a', 'h', 'h', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'f', 'f', 'f', 'a', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'b', 'b', 'b', 'a', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'f', 'f', 'f', 'f', 'a', 'f', 'f', 'f', 'a', 'a', 'f', 'f', 'f']
+output: ['a', 'a', 'h', 'h', 'h', 'h', 'a', 'b', 'b', 'b', 'a', 'a', 'b', 'b', 'b']
+
+Test case:
+input: ['a', 'f', 'f', 'f', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'b', 'b', 'b', 'a', 'a', 'c', 'c', 'c', 'd', 'e', 'e', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path=''):
+    if node is None or not hasattr(node, "children") or len(node.children) == 0:
+        return []
+    
+    result = [path]
+    for child in node.children:
+        result += dfs(child, path + str(child.val))
+        
+    return result
+
+def bfs(root, queue):
+    while queue:
+        node = queue.pop()
+        yield node
+        for child in node.children:
+            queue.append(child)
+            
+def get_next_node(node, path):
+    next_nodes = []
+    for i in range(len(node.children)):
+        if node.children[i].val!= int(path[-1])+1:
+            next_nodes.append((node.children[i], path+'%d' % (int(path[-1])+1)))
+    return next_nodes
+
+def find_longest_path(root, path=""):
+    longest_length = 0
+    longest_path = ""
+    for node in bfs(root, deque([root])):
+        current_length = len(dfs(node, path))
+        if current_length > longest_length:
+            longest_length = current_length
+            longest_path = path
+    return longest_path
+
+def transform(root, path="", max_depth=-1):
+    if root is None or not hasattr(root, "children") or len(root.children) == 0:
+        return
+    
+    # print("transforming ", path)
+    if len(path) >= max_depth:
+        return
+    
+    next_nodes = get_next_node(root, path)
+    for next_node, new_path in next_nodes:
+        transform(next_node, new_path, max_depth)
+        if len(new_path) < len(find_longest_path(root)):
+            continue
+        else:
+            break
+    return
+
+if __name__ == "__main__":
+    import sys
+    f = open('test.txt')
+    lines = f.readlines()
+    f.close()
+    for line in lines:
+        line = line[:-1]
+        words = line.split(', ')
+        root = Node(words[0][:-1])
+        for word in words[1::]:
+            root.addChild(Node(word[:-1]))
+        transform(root, '', -1)
+        print(find_longest_path(root))
+################################################################
+
+Solution:
+['a', 'b', 'b', 'b', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a']
+

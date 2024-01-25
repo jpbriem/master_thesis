@@ -1,0 +1,79 @@
+Input token: 733
+Output token: 723
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 5, 5, 5, 0, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 5, 5, 5, 0, 0, 0, 5, 5, 5, 0, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 2, 2, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 2, 2, 2, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 5, 5, 5, 0, 0, 5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 5, 5, 5, 0, 5, 5, 5, 0, 0, 5, 5, 5, 0, 0, 0, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 7, 7, 7, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 7, 7, 7, 0, 0, 0, 7, 7, 7, 0, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+"""
+
+import unittest
+from typing import List
+
+class Solution:
+    def findMaxForm(self, nums: List[int]) -> List[List[int]]:
+        if len(nums) < 4: return []
+        
+        # 1. Find all possible subarrays of length 4 or more that have at least one 0 in them.
+        # 2. For each such subarray, check whether it can be transformed into a number by replacing some nonzero elements with zeros.
+        # 3. If so, add this to the result list.
+        # 4. Repeat steps 1-3 until no new results are found.
+        result = []
+        for i in range(len(nums)-3):
+            subarr = nums[i:(i+4)]
+            if any([j == 0 for j in subarr]):
+                arr = self._transform(subarr)
+                if arr not in result:
+                    result.append(arr)
+        return result
+    
+    def _transform(self, arr: List[int]) -> List[int]:
+        res = []
+        while True:
+            if len(res) > 0:
+                break
+            
+            for i in range(len(arr)):
+                if arr[i]!= 0: continue
+                res.extend([0]*i)
+                res.extend(arr[:i])
+                res.extend([0]*(len(arr)-i))
+                break
+        return res
+
+class TestCase(unittest.TestCase):
+    def test_findMaxForm(self):
+        tc = [
+            ([[0, 0, 5, 5, 5], [0, 0, 0, 0, 0]], [[0, 0, 5, 5, 5], [0, 0, 0, 0, 0]]),
+            ([[0, 2, 2, 2, 0], [0, 0, 0, 0, 0]], [[0, 2, 2, 2, 0], [0, 0, 0, 0, 0]]),
+            ([[0, 5, 5, 5, 0], [0, 0, 5, 0, 0]], [[0, 5, 5, 5, 0], [0, 0, 5, 0, 0]])
+        ]
+        for t, r in tc:
+            s = Solution()
+            self.assertEqual(r, s.findMaxForm(t[0]))
+
+if __name__ == '__main__':
+    unittest.main()
+################################################################
+
+Solution:
+[0, 0, 7, 7, 7, 0, 0, 0, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+

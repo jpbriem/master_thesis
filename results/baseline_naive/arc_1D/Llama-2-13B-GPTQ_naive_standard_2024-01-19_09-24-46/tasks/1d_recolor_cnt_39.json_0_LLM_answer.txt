@@ -1,0 +1,89 @@
+Input token: 649
+Output token: 803
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'e', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'e', 'e', 'a', 'a', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'j', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'f', 'f', 'a', 'a', 'f', 'f', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'a', 'e', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'h', 'h', 'h', 'a', 'a', 'a', 'f', 'f', 'a', 'j', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'e', 'e', 'a', 'a', 'a', 'e', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'f', 'f', 'a', 'a', 'a', 'j', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'a', 'e', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'f', 'f', 'a', 'a', 'a', 'j', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import re
+from typing import List, Tuple
+
+class Solution:
+    def letterCasePermutation(self, s: str) -> List[str]:
+        if not s or len(s) == 0: return []
+        
+        # find all vowels in string
+        vowels = set()
+        for c in s:
+            if c.lower() in "aeiou":
+                vowels.add(c)
+                
+        # create a list of tuples (vowel, index)
+        indices = [(vowel, i) for i, vowel in enumerate(s) if vowel.lower() in "aeiou"]
+        
+        # sort by index
+        sortedIndices = sorted(indices, key=lambda x: x[1])
+        
+        # get permutations
+        result = [[]]
+        for idx, char in enumerate(sortedIndices):
+            result.append([char[0]] + result[-1])
+            
+        # remove duplicates
+        result = list(set(result))
+        
+        # replace vowels with new characters
+        for r in result:
+            for i, vowel in enumerate(r):
+                r[i] = self._replaceVowel(vowel, vowels)
+        
+        return result
+    
+    def _replaceVowel(self, oldChar: str, vowels: Set[str]) -> str:
+        """
+        Replace vowel with another character from the given set
+        :param oldChar: original character to be replaced
+        :param vowels: set of possible replacements
+        :return: replacement character
+        """
+        for vowel in vowels:
+            if oldChar.lower() == vowel.lower():
+                return vowel
+        raise ValueError("No such vowel")
+
+if __name__ == "__main__":
+    solution = Solution()
+    assert solution.letterCasePermutation('') == []
+    assert solution.letterCasePermutation('a') == ['a']
+    assert solution.letterCasePermutation('aa') == ['a', 'a']
+    assert solution.letterCasePermutation('aab') == ['a', 'b']
+    assert solution.letterCasePermutation('aba') == ['a', 'b', 'a']
+    assert solution.letterCasePermutation('abc') == ['a', 'b', 'c']
+    assert solution.letterCasePermutation('abcd') == ['a', 'b', 'c', 'd']
+    assert solution.letterCasePermutation('abcde') == ['a', 'b', 'c', 'd', 'e']
+    assert solution.letterCasePermutation('abcdefghijklmnopqrstuvwxyz') == ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l','m', 'n', 'o', 'p', 'q', 'r','s', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+################################################################
+
+Solution:
+['a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'f', 'f', 'a', 'j', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a']
+

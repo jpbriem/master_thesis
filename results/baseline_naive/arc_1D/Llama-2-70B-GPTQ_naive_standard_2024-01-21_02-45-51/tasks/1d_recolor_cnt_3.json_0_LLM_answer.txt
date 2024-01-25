@@ -1,0 +1,73 @@
+Input token: 712
+Output token: 588
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 7, 7, 7, 0, 0, 7, 0, 0, 0, 7, 7, 0, 0, 0, 7, 7, 7, 0, 0, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 6, 6, 6, 0, 0, 2, 0, 0, 0, 5, 5, 0, 0, 0, 6, 6, 6, 0, 0, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 7, 0, 0, 7, 7, 7, 0, 7, 7, 0, 7, 7, 7, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 2, 0, 0, 6, 6, 6, 0, 5, 5, 0, 6, 6, 6, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 7, 0, 0, 0, 7, 7, 0, 0, 0, 7, 7, 7, 0, 0, 0, 7, 7, 7, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 2, 0, 0, 0, 5, 5, 0, 0, 0, 6, 6, 6, 0, 0, 0, 6, 6, 6, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 7, 7, 0, 7, 0, 0, 0, 7, 7, 7, 0, 0, 7, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 4, 4, 0, 5, 0, 0, 0, 5, 5, 5, 0, 0, 2, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+"""
+
+import unittest
+from typing import List
+# from collections import deque
+
+
+class Solution:
+    def minCut(self, s: str) -> int:
+        """
+        思路：动态规划，dp[i][j]表示s[:i+j]的最小切分数量。
+                     dp[i][j] = min{dp[k][l]+1} (k <= i, l <= j), k + l >= i + j
+            初始化条件：
+                dp[i][0] = 0
+                dp[i][j] = ∞, if j < i
+            dp[i][j] = min{dp[k][l]+1}, where k <= i, l <= j, k + l >= i + j
+        :param s:
+        :return:
+        """
+        n = len(s)
+        # dp = [[float('inf') for _ in range(n)] for __ in range(n)]
+        dp = [[None for _ in range(n)] for __ in range(n)]
+        for i in range(n):
+            dp[i][0] = 0
+        for i in range(1, n):
+            for j in range(1, n):
+                if i == j or j == 0:
+                    continue
+                else:
+                    for k in range(max(0, i - j), i):
+                        for l in range(min(j, i), j):
+                            if dp[i][j] > dp[k][l] + 1:
+                                dp[i][j] = dp[k][l] + 1
+        return dp[-1][-1]
+
+
+if __name__ == '__main__':
+    solution = Solution()
+    assert solution.minCut("aab") == 1
+    assert solution.minCut("aaabb") == 2
+    assert solution.minCut("aaaa") == 0
+    assert solution.minCut("bcbcbbc") == 2
+
+################################################################
+
+Solution:
+[0, 5, 5, 0, 2, 0, 0, 0, 6, 6, 6, 0, 0, 2, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+

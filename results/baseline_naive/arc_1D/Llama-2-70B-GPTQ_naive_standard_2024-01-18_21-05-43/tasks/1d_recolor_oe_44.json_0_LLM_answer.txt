@@ -1,0 +1,121 @@
+Input token: 397
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'h', 'h', 'h', 'h', 'h', 'a']
+output: ['a', 'a', 'a', 'j', 'j', 'j', 'j', 'j', 'j', 'a', 'g', 'g', 'g', 'g', 'g', 'a']
+
+Example_2:
+input: ['a', 'h', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'h', 'a', 'h', 'h', 'h', 'a', 'a']
+output: ['a', 'j', 'j', 'j', 'j', 'a', 'a', 'g', 'g', 'g', 'a', 'g', 'g', 'g', 'a', 'a']
+
+Example_3:
+input: ['a', 'h', 'h', 'h', 'a', 'h', 'h', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'g', 'g', 'g', 'a', 'j', 'j', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'h', 'h', 'h', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'k', 'k', 'k', 'k', 'k', 'k', 'a', 'i', 'i', 'i', 'i', 'i', 'i']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def dfs(node, path=''):
+    if node is None or not hasattr(node, "children") or len(node.children) == 0:
+        return []
+    
+    result = [path]
+    for child in node.children:
+        result += dfs(child, path + str(child.val))
+        
+    return result
+
+def bfs(root, queue):
+    while queue:
+        node = queue.pop()
+        yield node
+        for child in node.children:
+            queue.append(child)
+            
+def get_next_char(prev_char, curr_char, next_char):
+    if prev_char!= 'a' and curr_char == 'a':
+        return 'j'
+    elif prev_char == 'a' and curr_char == 'a':
+        return 'k'
+    else:
+        return next_char
+
+def encode(root, char_map):
+    queue = deque([])
+    queue.append((root, ''))
+    while queue:
+        node, path = queue.popleft()
+        if node.val == 'a':
+            node.val = char_map[node.val]
+        else:
+            node.val = get_next_char(path[-1], node.val, char_map[node.val])
+        for child in node.children:
+            queue.append((child, path+str(node.val)))
+                
+    return root
+
+def decode(root, char_map):
+    queue = deque([])
+    queue.append((root, ''))
+    while queue:
+        node, path = queue.popleft()
+        if node.val == 'z':
+            node.val = char_map[node.val]
+        else:
+            node.val = get_next_char(path[-1], node.val, char_map['z'])
+        for child in node.children:
+            queue.append((child, path+str(node.val)))
+                
+    return root
+
+class Solution(object):
+    def encode(self, words):
+        """
+        :type words: List[str]
+        :rtype: List[str]
+        """
+        # https://leetcode.com/problems/encode-and-decode-strings/discuss/94586/My-Java-solution-(O(n)-time,-O(1)-space).
+        # Runtime: 7 ms, faster than 99.99% of Python online submissions for Encode and Decode Strings.
+        # Memory Usage: 12.3 MB, less than 100.00% of Python online submissions for Encode and Decode Strings.
+        # Key point: use a dictionary to map characters from one set to another.
+        # Time complexity: O(N), where N is the number of words.
+        # Space complexity: O(1).
+        char_map = {
+            'a':'a','b':'c','c':'d','d':'e','e':'f','f':'g','g':'h','h':'i','i':'j','j':'k','k':'l','l':'m','m':'n','n':'o','o':'p','p':'q','q':'r','r':'s','s':'t','t':'u','u':'v','v':'w','w':'x','x':'y','y':'z'}
+        }
+        encoded_words = []
+        for word in words:
+            encoded_word = ""
+            for i in range(len(word)):
+                encoded_word += char_map[word[i]]
+            encoded_words.append(encoded_word)
+        return encoded_words
+
+    def decode(self, s):
+        """
+        :type s: str
+        :rtype: str
+        """
+        # https://leetcode.com/problems/encode-and-decode-strings/discuss/94586/My
+################################################################
+
+Solution:
+['a', 'a', 'a', 'j', 'j', 'j', 'j', 'j', 'j', 'a', 'g', 'g', 'g', 'a', 'a', 'a']
+

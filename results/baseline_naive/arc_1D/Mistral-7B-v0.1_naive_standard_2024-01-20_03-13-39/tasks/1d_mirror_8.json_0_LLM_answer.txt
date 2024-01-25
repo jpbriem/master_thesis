@@ -1,0 +1,66 @@
+Input token: 502
+Output token: 434
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a']
+
+Example_3:
+input: ['a', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Constraints:
+0 <= arr.length <= 5 * 10^4
+arr[i] is either 'a' or 'b'.
+*/
+
+class Solution {
+    public String reorganizeString(String s) {
+        int[] count = new int[26];
+        for (char c : s.toCharArray()) {
+            count[c - 'a']++;
+        }
+        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> a[1] == b[1]? a[0] - b[0] : b[1] - a[1]);
+        for (int i = 0; i < 26; ++i) {
+            if (count[i] > 0) {
+                pq.offer(new int[]{i, count[i]});
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        while (!pq.isEmpty()) {
+            int[] cur = pq.poll();
+            char ch = (char)(cur[0] + 'a');
+            if (sb.length()!= 0 && sb.charAt(sb.length() - 1) == ch) {
+                continue;
+            }
+            --cur[1];
+            if (cur[1] == 0) {
+                pq.remove(cur);
+            } else {
+                pq.offer(cur);
+            }
+            sb.append(ch);
+        }
+        return sb.toString().equals("")? "" : sb.toString();
+    }
+}
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a']
+

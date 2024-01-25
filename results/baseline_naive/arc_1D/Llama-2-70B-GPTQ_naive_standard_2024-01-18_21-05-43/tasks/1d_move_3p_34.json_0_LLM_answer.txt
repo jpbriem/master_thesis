@@ -1,0 +1,76 @@
+Input token: 376
+Output token: 509
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'a', 'a']
+
+Example_2:
+input: ['a', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, depth):
+    if node is None or len(node) == 0: return []
+    result = [node[depth]]
+    for child in node[:]:
+        result += dfs(child, depth+1)
+    return result
+
+class Solution(object):
+    def transformToPreorder(self, A):
+        """
+        :type A: List[List[int]]
+        :rtype: List[int]
+        """
+        
+        # 2017/8/6
+        # O(nlogn), O(n)
+        # https://leetcode.com/problems/transform-to-preorder/discuss/94521/My-Java-solution-(O(N)-time,-O(N)-space).
+        # http://www.programcreek.com/2014/06/leetcode-transform-to-preorder/
+        # DFS
+        root = Node()
+        stack = [(root, 0)]
+        while stack:
+            curNode, depth = stack.pop()
+            
+            if not curNode.children: continue
+            leftmostChild = curNode.children[-1].val
+            rightmostChild = curNode.children[0].val
+            if (leftmostChild < rightmostChild):
+                stack.append((curNode, depth))
+                
+            for i in range(len(A)):
+                if A[i][depth] > leftmostChild and A[i][depth] <= rightmostChild:
+                    curNode.children.append(Node(A[i][depth]))
+                    
+            stack.append((curNode, depth + 1))
+        return dfs(root, 0)
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a']
+

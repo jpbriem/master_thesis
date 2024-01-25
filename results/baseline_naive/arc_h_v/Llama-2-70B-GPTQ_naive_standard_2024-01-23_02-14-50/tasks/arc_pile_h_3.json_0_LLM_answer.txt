@@ -1,0 +1,75 @@
+Input token: 442
+Output token: 727
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', 'a', '.', '.', '.], ['.', '.', 'f', '.', '.], ['.', '.', '.', '.', 'c], ['.', '.', '.', '.', '.], ['b', 'b', '.', '.', '.']]
+output: [['a', '.', '.', '.', '.], ['f', '.', '.', '.', '.], ['c', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['b', 'b', '.', '.', '.']]
+
+Example_2:
+input: [['b', '.', '.', 'b], ['.', '.', '.', '.], ['.', '.', '.', '.], ['.', '.', '.', '.']]
+output: [['b', 'b', '.', '.], ['.', '.', '.', '.], ['.', '.', '.', '.], ['.', '.', '.', '.']]
+
+Example_3:
+input: [['.', '.', '.', '.', '.], ['e', '.', '.', '.', 'e], ['f', '.', '.', '.', '.], ['.', '.', '.', 'i', '.], ['c', '.', '.', '.', 'c']]
+output: [['.', '.', '.', '.', '.], ['e', 'e', '.', '.', '.], ['f', '.', '.', '.', '.], ['i', '.', '.', '.', '.], ['c', 'c', '.', '.', '.']]
+
+Test case:
+input: [['h', '.', 'h', '.', 'h], ['.', 'b', '.', 'b', '.], ['.', '.', 'g', 'g', '.], ['.', '.', '.', '.', 'a], ['.', '.', 'i', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['h', 'h', 'h', '.', '.], ['.', 'b', 'b', '.', '.], ['.', '.', 'g', 'g', '.], ['.', '.', '.', '.', 'a'], ['.', '.', 'i', '.', '.']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def findWords(self, board: List[List[str]]) -> List[Optional[str]]:
+        """
+        1. 找到所有的单词，并且将其转换为字符串。
+        2. 对于每个单词，我们可以使用一个固定长度的数组来表示该单词中的每个字母。
+        3. 然后，我们可以在这些数组之间进行比较，以查看是否存在任何重复项。
+        4. 如果发现了重复项，则说明该单词不应包含在最终结果中。
+        5. 最后，返回一个列表，其中包含所有未被删除的单词。
+        """
+        words = [] # type: ignore
+        for i in range(len(board)):
+            for j in range(len(board[0])):
+                if board[i][j] == ".":
+                    continue
+                word = self._findWord(board, i, j)
+                if word is not None:
+                    words.append(word)
+        return words
+    
+    def _findWord(self, board: List[List[str]], i: int, j: int) -> str:
+        """
+        1. 首先，我们需要确保单词的第一个字母位于给定的点上。
+        2. 接下来，我们需要确保该单词的每个字母都位于相邻的格子中（即左右、上下）。
+        3. 最后，我们需要确保该单词的每个字母都与其他字母不同。
+        """
+        if board[i][j]!= "." or (i < 0 or i >= len(board)) or (j < 0 or j >= len(board[0])):
+            return ""
+        word = list()
+        stack = [(i, j)]
+        while stack:
+            x, y = stack.pop()
+            word.append(board[x][y])
+            if x > 0:
+                stack.append((x - 1, y))
+            elif x + 1 < len(board):
+                stack.append((x + 1, y))
+            if y > 0:
+                stack.append((x, y - 1))
+            elif y + 1 < len(board[0]):
+                stack.append((x, y + 1))
+        return "".join(word)
+
+################################################################
+
+Solution:
+[['h', 'h', 'h', '.', '.], ['b', 'b', '.', '.', '.], ['g', 'g', '.', '.', '.], ['a', '.', '.', '.', '.], ['i', '.', '.', '.', '.']]
+

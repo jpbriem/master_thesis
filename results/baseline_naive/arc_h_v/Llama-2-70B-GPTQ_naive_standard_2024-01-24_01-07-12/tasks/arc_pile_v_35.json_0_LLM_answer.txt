@@ -1,0 +1,75 @@
+Input token: 651
+Output token: 496
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'a', 'f', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'f', 'a], ['e', 'a', 'a', 'i', 'f', 'a], ['e', 'a', 'g', 'a', 'a', 'a], ['a', 'a', 'a', 'i', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'f', 'a], ['e', 'a', 'a', 'i', 'f', 'a], ['e', 'a', 'g', 'i', 'f', 'a']]
+
+Example_2:
+input: [['a', 'a', 'a', 'b], ['a', 'c', 'a', 'a], ['a', 'c', 'h', 'a], ['a', 'c', 'a', 'a']]
+output: [['a', 'a', 'a', 'a], ['a', 'c', 'a', 'a], ['a', 'c', 'a', 'a], ['a', 'c', 'h', 'b']]
+
+Example_3:
+input: [['a', 'b', 'a', 'a', 'a', 'a], ['a', 'b', 'j', 'a', 'a', 'a], ['a', 'a', 'a', 'h', 'a', 'a], ['a', 'a', 'j', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'c], ['a', 'a', 'j', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a', 'a], ['a', 'a', 'j', 'a', 'a', 'a], ['a', 'b', 'j', 'a', 'a', 'a], ['a', 'b', 'j', 'h', 'a', 'c']]
+
+Test case:
+input: [['i', 'a', 'a', 'g], ['i', 'd', 'e', 'g], ['i', 'd', 'e', 'a], ['a', 'd', 'e', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['i', 'a', 'a', 'a'], ['i', 'd', 'e', 'a'], ['i', 'd', 'e', 'a'], ['a', 'd', 'e', 'a']]
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution:
+    def transform(self, arr):
+        """
+        思路：
+            将每一个元素的值转换为字典，然后对比两个字典的差集。如果差集不为空，则说明这两个元素是相邻的。
+            O(n) time complexity.
+            O(n) space complexity.
+        :param arr:
+        :return:
+        """
+        if not arr or len(arr[0])!= 6:
+            return []
+
+        # 记录每一行中出现过的所有元素
+        elements = set()
+        for row in arr:
+            elements |= {x for x in row}
+
+        # 构建每一个元素的字典
+        element_dicts = {}
+        for e in elements:
+            element_dicts[e] = collections.Counter([e])
+
+        # 找到所有相邻元素
+        adjacent_elements = []
+        for i in range(len(arr)):
+            for j in range(i + 1, len(arr)):
+                a, b = arr[i], arr[j]
+                if all((element_dicts[a[k]] - element_dicts[b[k]]) == 0 for k in range(4)) \
+                        and (element_dicts[a[-1]] & element_dicts[b[-1]]) > 0:
+                    adjacent_elements.append((a, b))
+
+        # 更新数组
+        new_arr = list(arr)
+        for a, b in adjacent_elements:
+            new_arr[min(i for i, _ in enumerate(new_arr) if _ == a)] = b
+
+        return new_arr
+
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a], ['i', 'd', 'e', 'a], ['i', 'd', 'e', 'g], ['i', 'd', 'e', 'g']]
+

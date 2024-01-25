@@ -1,0 +1,135 @@
+Input token: 583
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', 'e', '.], ['.', 'c', '.', '.', '.', '.], ['a', '.', '.', '.', '.', 'b], ['.', 'c', '.', '.', '.', 'b], ['.', '.', '.', 'g', '.', 'b], ['.', '.', 'h', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', 'b], ['.', 'c', '.', '.', '.', 'b], ['a', 'c', 'h', 'g', 'e', 'b']]
+
+Example_2:
+input: [['.', '.', '.', 'd', 'e', '.], ['.', '.', '.', 'd', '.', '.], ['.', '.', 'g', '.', 'e', '.], ['.', 'b', 'g', 'd', '.', '.], ['.', 'b', 'g', '.', '.', '.], ['.', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', '.', '.', '.', '.], ['.', '.', 'g', 'd', '.', '.], ['.', 'b', 'g', 'd', 'e', '.], ['.', 'b', 'g', 'd', 'e', '.']]
+
+Example_3:
+input: [['.', '.', '.', 'i', '.], ['.', 'd', '.', '.', '.], ['.', '.', 'b', '.', '.], ['.', 'd', '.', '.', '.], ['.', 'd', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.], ['.', '.', '.', '.', '.], ['.', 'd', '.', '.', '.], ['.', 'd', '.', '.', '.], ['.', 'd', 'b', 'i', '.']]
+
+Test case:
+input: [['.', 'i', 'c', 'g], ['a', 'i', '.', '.], ['.', '.', '.', '.], ['a', '.', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', 'i', 'c', 'g'], ['.', 'i', 'c', 'g'], ['.', 'i', 'c', 'g'], ['.', 'i', 'c', 'g'], ['.', 'i', 'c', 'g'], ['.', 'i', 'c', 'g']]
+"""
+
+import sys
+from collections import deque, defaultdict
+from typing import List, Optional, Tuple
+
+
+def get_next(current_state):
+    """Returns next state given current state."""
+    if len(current_state) == 0:
+        return "."
+    elif len(current_state) > 4:
+        return ".".join([str(x) for x in current_state])
+    else:
+        return str(current_state[0]).zfill(5 - len(current_state)) + "."
+
+
+class StateMachine:
+    def __init__(self, initial_state=None):
+        self._initial = initial_state or [""]
+        self._states = {}
+        self._transitions = []
+
+    @property
+    def states(self):
+        return list(self._states.keys())
+
+    def add_transition(self, source, target, action="", transition_type=""):
+        """Add a new transition to the machine."""
+        if not isinstance(source, str):
+            raise TypeError("Source must be string.")
+        if not isinstance(target, str):
+            raise TypeError("Target must be string.")
+        if not isinstance(action, str):
+            raise TypeError("Action must be string.")
+        if not isinstance(transition_type, str):
+            raise TypeError("Transition type must be string.")
+        if transition_type not in ("forward", "backward") and \
+                transition_type not in ("left", "right"):
+            raise ValueError("Invalid transition type.")
+        if transition_type!= "" and (not isinstance(transition_type, str)):
+            raise TypeError("Transition type must be string.")
+        if transition_type == "":
+            transition_type = None
+        self._transitions.append((source, target, action, transition_type))
+
+    def set_initial(self, initial_state):
+        """Set initial state of the machine."""
+        self._initial = initial_state
+
+    def run(self, input_string: str):
+        """Run the machine on an input string."""
+        current_state = self._initial[:]
+        while True:
+            if current_state[-1] == ".":
+                current_state += input_string
+            else:
+                break
+        return current_state
+
+    def reset(self):
+        """Reset the machine."""
+        self._initial = self._initial[:]
+
+    def get_next(self, current_state: str):
+        """Get next state from the current one."""
+        if current_state == "":
+            return "."
+        elif len(current_state) >= 6:
+            return ".".join([str(x) for x in current_state])
+        else:
+            return str(current_state[0]).zfill(5 - len(current_state)) + "."
+
+    def get_all_possible_paths(self, current_state: str):
+        """Get all possible paths from the current state."""
+        path = []
+        if current_state == "":
+            return path
+        elif len(current_state) < 6:
+            return path
+        else:
+            for i in range(len(current_state), 6):
+                if current_state[i] == ".":
+                    continue
+                else:
+                    path.append(".")
+            return path
+
+    def get_path_to_end(self, current_state: str):
+        """Get path to end from the current state."""
+        if current_state == "":
+            return "."
+        elif len(current_state) <= 6:
+            return current_state
+        else:
+            return current_state[:6].split(".")
+
+    def get_path_to_start(self, current_state: str):
+        """Get path to start from the current state."""
+        if current_state == "":
+            return "."
+        elif len(current_state) <= 6:
+            return current_state
+        else:
+            return current_
+################################################################
+
+Solution:
+[['.', '.', '.', '.], ['.', '.', '.', '.], ['a', 'i', '.', '.], ['a', 'i', 'c', 'g']]
+

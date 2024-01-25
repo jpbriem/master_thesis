@@ -1,0 +1,76 @@
+Input token: 733
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 2, 0, 2, 2, 2, 0, 0, 0, 2, 2, 2, 2, 0, 0, 2, 2, 2, 2, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 0]
+output: [0, 0, 0, 2, 0, 2, 2, 2, 0, 0, 0, 3, 3, 3, 3, 0, 0, 3, 3, 3, 3, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 2, 2, 0, 2, 0, 2, 2, 2, 0, 0, 0, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 2, 2, 0, 0]
+output: [0, 0, 2, 2, 0, 2, 0, 2, 2, 2, 0, 0, 0, 2, 2, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 2, 2, 0, 0]
+
+Example_3:
+input: [0, 2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 2, 2, 0, 0, 0, 2, 2, 2, 0]
+output: [0, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 0, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0, 2, 2, 0, 0, 0, 2, 2, 2, 0]
+
+Test case:
+input: [0, 0, 0, 2, 2, 2, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 2, 2, 0, 2, 2, 2, 0, 0, 0, 2, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 0, 2, 2, 2, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 2, 2, 0, 2, 2, 2, 0, 0, 0, 2, 0, 0, 0]
+"""
+
+import unittest
+from typing import List
+# from collections import deque
+
+
+class Solution:
+    def transform(self, nums: List[int]) -> List[int]:
+        """
+        思路：双端队列，从头和尾循环执行相同的操作。
+            - 如果当前元素等于0，则将其转换为2；
+            - 否则，如果当前元素等于2，则将其转换为0。
+                - 注意：这里不能直接将所有的2都转换成0，因为可能会导致一个数字被重复处理两次（例如，在输入中出现了连续的2）。
+                    而且，我们需要保持每组连续的2的长度不变。
+        :param nums:
+        :return:
+        """
+        # 定义双端队列
+        queue = []
+        for i in range(len(nums)):
+            if nums[i] == 0:
+                queue.appendleft(2)
+            else:
+                queue.appendleft(0)
+        while len(queue):
+            head = queue.pop()
+            tail = queue.popright()
+            if head == 0 or tail == 0:
+                continue
+            elif head == 2 and tail == 2:
+                queue.appendleft(head)
+                queue.appendleft(tail)
+            else:
+                queue.appendleft(tail)
+                queue.appendleft(head)
+        return list(queue)
+
+
+if __name__ == '__main__':
+    solution = Solution()
+    assert solution.transform([0, 0, 0, 2, 2, 2, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 2, 2, 0, 2, 2, 2, 0, 0, 0, 2, 0, 0, 0]) == \
+           [0, 0, 0, 2, 2, 2, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 2, 2, 0, 2, 2, 2, 0, 0, 0, 2, 0, 0, 0]
+    assert solution.transform([0, 2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 2, 2, 0, 0, 0, 2, 2, 2, 0]) == \
+           [0, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 0, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0, 2, 2, 0, 0, 0, 2, 2, 2, 0]
+    assert solution.transform([0, 0, 0, 2, 2, 2, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 2, 2, 0, 2, 2, 2, 0, 0, 0, 2, 0, 0, 0])
+################################################################
+
+Solution:
+[0, 0, 0, 3, 3, 3, 3, 0, 2, 0, 0, 0, 3, 3, 3, 3, 0, 0, 0, 2, 2, 0, 2, 2, 2, 0, 0, 0, 2, 0, 0, 0]
+

@@ -1,0 +1,104 @@
+Input token: 418
+Output token: 752
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'c', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'h', 'h', 'h', 'h', 'h', 'h', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'e', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'e', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'c', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'c', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def buildTree(arr):
+    if not arr or len(arr) == 0: return None
+    root = Node()
+    q = [root]
+    while q:
+        node = q.pop(0)
+        for i in range(len(node.children)):
+            child = node.children[i]
+            if isinstance(child, int):
+                childNode = Node(child)
+                node.children[i] = childNode
+                q.append(childNode)
+            else:
+                child.parent = node
+    return root
+
+def dfs(node, result):
+    if not node: return
+    result.append(node.val)
+    for child in node.children:
+        dfs(child, result)
+
+def bfs(node, result):
+    if not node: return
+    result.append(node.val)
+    queue = []
+    queue.extend([child for child in node.children])
+    while queue:
+        currentChild = queue.pop(0)
+        result.append(currentChild.val)
+        queue.extend([child for child in currentChild.children])
+
+def getNextVal(curNode, curIndex, nextIndex, arr):
+    # find the first index of the next value that's different from the current one
+    for i in range(nextIndex + 1, len(arr)):
+        if arr[i]!= curNode.val:
+            return i - 1
+    return len(arr) - 1
+
+def transform(root, arr):
+    if not root: return
+    result = []
+    dfs(root, result)
+    newResult = []
+    for i in range(len(result)):
+        if i < len(result) - 1 and result[i] == result[i+1]:
+            continue
+        newResult.append(result[i])
+    newResult.reverse()
+    for i in range(len(newResult)-1):
+        if newResult[i] == newResult[i+1]:
+            continue
+        newResult.insert(getNextVal(root, i, i+1, arr), newResult[i+1])
+    return newResult
+
+if __name__ == "__main__":
+    testArr = ["a", "a", "a", "a", "a", "a", "a", "a", "e", "d", "d", "d", "d"]
+    print("Input: ", testArr)
+    tree = buildTree(testArr)
+    print("tree: ")
+    dfs(tree, result)
+    print("DFS Result: ", result)
+    print("BFS Result: ", end="")
+    bfs(tree, result)
+    print(transform(tree, testArr))
+################################################################
+
+Solution:
+['a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

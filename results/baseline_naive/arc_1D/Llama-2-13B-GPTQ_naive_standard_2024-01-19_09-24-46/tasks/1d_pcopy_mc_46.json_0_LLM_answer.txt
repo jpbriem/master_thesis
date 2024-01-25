@@ -1,0 +1,73 @@
+Input token: 733
+Output token: 567
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'j', 'j', 'j', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'j', 'j', 'j', 'a', 'a', 'a', 'j', 'j', 'j', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'g', 'g', 'g', 'a', 'a', 'a', 'b', 'a', 'a', 'a', 'a', 'f', 'a', 'a', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'g', 'g', 'g', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'j', 'j', 'j', 'a', 'a', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'j', 'j', 'j', 'a', 'a', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import re
+from typing import List, Tuple
+
+class Solution:
+    def transform(self, s: str) -> str:
+        """
+        :type s: str
+        :rtype: str
+        """
+        # 1. split string into words
+        words = [word for word in s.split() if len(word)>0]
+        
+        # 2. find all substrings of length 4 that contain only letters a or g
+        matches = []
+        for i in range(len(words)-3):
+            match = ''
+            for j in range(i+1, len(words)):
+                match += words[i]+words[j]
+                if match == 'ag' or match == 'ga':
+                    matches.append((match, i, j))
+            
+        # 3. sort by index
+        sorted_matches = sorted(matches, key=lambda x:x[1])
+        
+        # 4. replace each substring with its index
+        result = ''
+        for match, start, end in sorted_matches:
+            result += words[start:end] + match
+        return result
+    
+if __name__=='__main__':
+    solution = Solution()
+    assert solution.transform('') == '', "Empty testcase failed"
+    assert solution.transform('a') == 'a', "Trivial testcase failed"
+    assert solution.transform('aa') == 'aa', "Trivial testcase failed"
+    assert solution.transform('ab') == 'ab', "Trivial testcase failed"
+    assert solution.transform('abc') == 'abc', "Trivial testcase failed"
+    assert solution.transform('abcd') == 'abcd', "Trivial testcase failed"
+    assert solution.transform('abcde') == 'abcde', "Trivial testcase failed"
+    assert solution.transform('abcdefghijklmnopqrstuvwxyz') == 'abcdefghijklmnopqrstuvwxyz', "Longest testcase failed"
+
+################################################################
+
+Solution:
+['a', 'j', 'j', 'j', 'a', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

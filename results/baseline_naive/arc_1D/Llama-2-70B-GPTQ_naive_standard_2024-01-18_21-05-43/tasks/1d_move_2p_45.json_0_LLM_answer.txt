@@ -1,0 +1,99 @@
+Input token: 397
+Output token: 668
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a']
+
+Example_3:
+input: ['a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, children=None):
+        self.val = val
+        self.children = children
+
+
+class Solution(object):
+    def transformToPreorder(self, inorder, postorder):
+        """
+        :type inorder: List[int]
+        :type postorder: List[int]
+        :rtype: TreeNode
+        """
+        
+        # 1. Build dictionary of preorder traversal
+        # key is value, value is index in post order array
+        preOrderDict = {}
+        for i, v in enumerate(postorder):
+            if v not in preOrderDict:
+                preOrderDict[v] = [i]
+            else:
+                preOrderDict[v].append(i)
+                
+        # 2. Find root node
+        rootVal = inorder[0]
+        rootIndexes = preOrderDict[rootVal]
+        rootIndex = rootIndexes[-1]
+        root = Node(inorder[0])
+        
+        # 3. Recursively build tree from left to right
+        self.buildTreeHelper(preOrderDict, inorder, postorder, root, rootIndex)
+        
+        return root
+    
+    def buildTreeHelper(self, preOrderDict, inorder, postorder, parent, currentPostOrderIndex):
+        """
+        :type preOrderDict: dict
+        :type inorder: list
+        :type postorder: list
+        :type parent: Node
+        :type currentPostOrderIndex: int
+        :rtype: None
+        """
+        # Base Case
+        if len(parent.children) == 0 or currentPostOrderIndex >= len(postorder)-1:
+            return
+            
+        # Get next child's value
+        childValue = postorder[currentPostOrderIndex+1]
+        childIndexInInorder = preOrderDict[childValue][0]
+        
+        # Add child to parent
+        parent.addChild(inorder[childIndexInInorder], postorder[currentPostOrderIndex+1])
+        
+        # Recurse on child
+        self.buildTreeHelper(preOrderDict, inorder, postorder, parent.getChildren()[len(parent.children)-1], currentPostOrderIndex + 2)
+        
+        # Remove child from parent
+        del parent.children[len(parent.children)-1]
+        
+        # Return to parent
+        currentPostOrderIndex += 1
+        
+        # Recurse on parent
+        self.buildTreeHelper(preOrderDict, inorder, postorder, parent, currentPostOrderIndex)
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'a']
+

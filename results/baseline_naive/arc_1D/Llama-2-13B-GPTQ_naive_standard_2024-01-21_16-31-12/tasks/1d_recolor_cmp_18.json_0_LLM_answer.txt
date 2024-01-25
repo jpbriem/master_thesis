@@ -1,0 +1,72 @@
+Input token: 733
+Output token: 589
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 5, 5, 5, 0, 0, 5, 0, 0, 0, 5, 5, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 5, 5, 0, 5, 5, 5, 5, 0, 5, 5]
+output: [0, 5, 5, 5, 0, 0, 5, 0, 0, 0, 5, 5, 0, 0, 0, 3, 3, 3, 3, 0, 0, 0, 5, 5, 0, 3, 3, 3, 3, 0, 5, 5]
+
+Example_2:
+input: [0, 0, 0, 5, 5, 5, 5, 5, 5, 0, 0, 5, 5, 5, 5, 5, 5, 5, 0, 0, 5, 5, 5, 5, 0, 0, 0, 5, 5, 5, 0, 0]
+output: [0, 0, 0, 5, 5, 5, 5, 5, 5, 0, 0, 3, 3, 3, 3, 3, 3, 3, 0, 0, 5, 5, 5, 5, 0, 0, 0, 5, 5, 5, 0, 0]
+
+Example_3:
+input: [0, 5, 5, 5, 0, 5, 5, 0, 0, 5, 5, 5, 5, 5, 0, 0, 5, 5, 5, 0, 5, 5, 5, 0, 0, 0, 5, 5, 5, 0, 0, 0]
+output: [0, 5, 5, 5, 0, 5, 5, 0, 0, 3, 3, 3, 3, 3, 0, 0, 5, 5, 5, 0, 5, 5, 5, 0, 0, 0, 5, 5, 5, 0, 0, 0]
+
+Test case:
+input: [0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 0, 0, 5, 5, 5]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 5, 5, 5]
+"""
+
+import re
+from typing import List
+
+class Solution:
+    def findMaxForm(self, nums: List[int]) -> int:
+        if len(nums) < 4: return -1
+        
+        # 1. Find all possible patterns of length 4
+        pat = []
+        for i in range(len(nums)):
+            if i > 0 and nums[i] == nums[i-1]: continue
+            
+            pat.append([nums[i], nums[i+1], nums[i+2], nums[i+3]])
+        
+        # 2. Find all possible patterns of length 3
+        pat += [[nums[i], nums[i+1], nums[i+2]] for i in range(len(nums)-2)]
+        
+        # 3. Find all possible patterns of length 2
+        pat += [[nums[i], nums[i+1]] for i in range(len(nums)-1)]
+        
+        # 4. Find all possible patterns of length 1
+        pat += [nums[i]]
+        
+        # 5. Sort by frequency
+        freq = {}
+        for p in pat:
+            freq[p] = freq.get(p, 0) + 1
+        
+        maxfreq = -1
+        maxpat = None
+        for k, v in sorted(freq.items(), key=lambda x:x[1], reverse=True):
+            if v >= maxfreq:
+                maxfreq = v
+                maxpat = k
+                
+        return maxpat[-1]
+
+if __name__ == "__main__":
+    s = Solution()
+    print(s.findMaxForm([0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 5, 5, 5, 5, 5, 5, 0, 0, 5, 5, 5, 0, 0, 0, 5, 5, 5]))
+################################################################
+
+Solution:
+[0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 0, 0, 5, 5, 5]
+

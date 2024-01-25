@@ -1,0 +1,78 @@
+Input token: 502
+Output token: 449
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'b', 'a']
+output: ['a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'b', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'b', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'b', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'b', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'b', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'b', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'b', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def dfs(node, level):
+    if node is None or len(node) == 0: return []
+    res = [node[level]]
+    for child in node[level+1]:
+        res += dfs(child, level + 1)
+    return res
+
+class Solution(object):
+    def transformToHighestBits(self, arr):
+        """
+        :type arr: List[int]
+        :rtype: List[int]
+        """
+        
+        # 1. build tree
+        root = Node()
+        for i in range(len(arr)):
+            curNode = root
+            while True:
+                if curNode.val!= arr[i]:
+                    break
+                else:
+                    curNode = curNode.children[-1]
+            
+            newNode = Node(arr[i])
+            curNode.addChildren([newNode])
+            newNode.setParent(curNode)
+    
+        # 2. find max depth of all nodes
+        maxDepth = 0
+        for node in root.getAllNodes():
+            if len(node) > maxDepth:
+                maxDepth = len(node)
+        
+        # 3. get highest bits from each subtree
+        result = []
+        for node in root.getAllNodes():
+            result += dfs(node, maxDepth - 1)
+        return result
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'b', 'a']
+

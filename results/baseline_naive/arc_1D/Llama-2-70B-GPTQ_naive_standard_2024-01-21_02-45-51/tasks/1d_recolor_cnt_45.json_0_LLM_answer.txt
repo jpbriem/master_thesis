@@ -1,0 +1,85 @@
+Input token: 628
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 8, 8, 0, 0, 8, 8, 8, 0, 8, 0, 8, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 3, 3, 0, 0, 2, 2, 2, 0, 7, 0, 3, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 8, 8, 0, 0, 8, 0, 8, 8, 8, 0, 0, 0, 8, 8, 0, 0, 8, 8, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 3, 3, 0, 0, 7, 0, 2, 2, 2, 0, 0, 0, 3, 3, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 8, 8, 8, 0, 0, 8, 0, 0, 0, 8, 8, 0, 0, 8, 8, 0, 8, 8, 8, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 2, 2, 2, 0, 0, 7, 0, 0, 0, 3, 3, 0, 0, 3, 3, 0, 2, 2, 2, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 8, 8, 8, 0, 0, 8, 8, 0, 0, 0, 8, 0, 8, 8, 8, 0, 0, 0, 8, 8, 0, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 3, 3, 3, 0, 0, 7, 7, 0, 0, 0, 7, 0, 2, 2, 2, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0]
+"""
+
+import unittest
+from typing import List
+# from collections import deque
+
+
+class Solution:
+    def transform(self, nums: List[int]) -> List[int]:
+        """
+        思路：双端队列，左右两个指针分别从头和尾开始向中间移动。
+            每次取出一个元素，如果是0则直接放入结果数组；
+                如果不为0，则判断当前位置的左侧和右侧是否都有相同的非0值，
+                    如果有则将其转换成对应的非0值，并抛弃原来的非0值。
+                (注意：这里需要特判处理最后一个元素)
+            O(n)时间复杂度，O(1)空间复杂度
+        :param nums:
+        :return:
+        """
+        if not nums or len(nums) == 1:
+            return nums
+        # 双端队列
+        q = []
+        for i in range(len(nums)):
+            q.append((i, nums[i]))
+        while q:
+            left, right = q.popleft(), q.pop()
+            left_val, right_val = left[1], right[1]
+            if left_val!= 0 and right_val!= 0:
+                if left_val > right_val:
+                    left_val -= right_val
+                    right_val = 0
+                else:
+                    right_val -= left_val
+                    left_val = 0
+            elif left_val!= 0:
+                left_val -= right_val
+                right_val = 0
+            elif right_val!= 0:
+                right_val -= left_val
+                left_val = 0
+            result = [x for x in nums]
+            result[right[0]] = right_val
+            result[left[0]] = left_val
+            q.extend([(right[0]+1, result[right[0]+1]), (left[0]-1, result[left[0]-1])])
+        return result
+
+
+if __name__ == '__main__':
+    solution = Solution()
+    assert solution.transform([0, 0, 0, 8, 8, 0, 0, 8, 8, 8, 0, 8, 0, 8, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0]) \
+               == [0, 0, 0, 3, 3, 0, 0, 2, 2, 2, 0, 7, 0, 3, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0]
+    assert solution.transform([0, 0, 0, 8, 8, 8, 0, 0, 8, 0, 8, 8, 8, 0, 0, 0, 8, 8, 0, 8, 8, 8, 0, 0, 0, 0, 0]) \
+               == [0, 0, 0, 2, 2, 2, 0, 0, 7, 0, 2, 2, 2, 0, 0, 0, 3, 3, 0, 2, 2, 2, 0, 0, 0, 0, 0]
+    assert solution.transform([0, 0, 8, 8, 8, 0, 0, 8, 8
+################################################################
+
+Solution:
+[0, 0, 2, 2, 2, 0, 0, 3, 3, 0, 0, 0, 7, 0, 2, 2, 2, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0]
+

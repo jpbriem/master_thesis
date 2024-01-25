@@ -1,0 +1,70 @@
+Input token: 418
+Output token: 473
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'a', 'a']
+
+Example_3:
+input: ['a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+"""
+
+import re
+from typing import List, Tuple
+
+class Solution:
+    def transform(self, s: str) -> str:
+        if not s or len(s) == 0: return ''
+        # find all a's in string
+        as = [m for m in re.finditer('a', s)]
+        # find all f's in string
+        fs = [m for m in re.finditer('f', s)]
+        
+        # get index of first a
+        i = next((x for x in range(len(as)) if as[x][0] > fs[0][0]), None)
+        # get index of last a
+        j = next((x for x in reversed(range(len(as))) if as[-x][0] < fs[-x][0]), None)
+        # get index of first f
+        k = next((x for x in range(len(fs)) if fs[x][0] > as[0][0]), None)
+        # get index of last f
+        l = next((x for x in reversed(range(len(fs))) if fs[-x][0] < as[-x][0]), None)
+        
+        # check if there is no a
+        if i is None: return s
+        # check if there is no f
+        if l is None: return s
+        
+        # remove everything between first a and first f
+        if i!= k:
+            s = s[:i+k] + s[l:]
+            
+        # remove everything between last a and last f
+        if j!= l:
+            s = s[:j+l] + s[i:]
+        
+        return s
+    
+if __name__ == "__main__":
+    solution = Solution()
+    print(solution.transform(""))
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a']
+

@@ -1,0 +1,74 @@
+Input token: 292
+Output token: 360
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'b', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'g', 'g', 'b', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'd', 'h', 'h', 'h', 'h', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'd', 'a', 'a']
+
+Example_3:
+input: ['f', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['g', 'g', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'a', 'e', 'f', 'f', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'a', 'a', 'a', 'a', 'f', 'f', 'e', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, children=None):
+        self.val = val
+        self.children = children
+
+
+class Solution(object):
+    def sortString(self, s):
+        """
+        :type s: str
+        :rtype: str
+        """
+        # 1. build tree from string
+        root = Node('')
+        stack = [root]
+        for c in reversed(s):
+            node = stack[-1].children[c] if c in stack[-1].children else None
+            if not node:
+                node = Node(c)
+                stack[-1].add_child(node)
+            stack.append(node)
+        
+        # 2. traverse tree to get sorted string
+        res = []
+        while len(stack) > 0:
+            node = stack.pop()
+            if node == root or not node.parent:
+                continue
+            
+            parent = node.parent
+            if parent.left is node:
+                parent.right = parent.right.next
+            elif parent.right is node:
+                parent.left = parent.left.prev
+                
+            node.parent = None
+            node.prev = None
+            node.next = None
+            res.insert(0, node.val)
+    
+        return "".join(res)
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'f', 'f', 'e', 'a', 'a', 'a']
+

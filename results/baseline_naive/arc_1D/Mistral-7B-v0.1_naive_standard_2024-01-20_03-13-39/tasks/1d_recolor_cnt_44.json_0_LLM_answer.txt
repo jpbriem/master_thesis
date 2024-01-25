@@ -1,0 +1,56 @@
+Input token: 544
+Output token: 345
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'c', 'c', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'c', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'd', 'd', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'd', 'd', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'c', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'c', 'c', 'a', 'c', 'a', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'h', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'd', 'd', 'a', 'h', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'c', 'c', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'a', 'a', 'c', 'a', 'a', 'a', 'c', 'a', 'a']
+output: ['a', 'a', 'd', 'd', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'h', 'a', 'a', 'h', 'a', 'a', 'a', 'h', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'c', 'c', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'a', 'a', 'c', 'c', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'd', 'd', 'a', 'd', 'd', 'd', 'a', 'a', 'h', 'a', 'a', 'h', 'a', 'a', 'h', 'a', 'h', 'h', 'a', 'a', 'a']
+
+Constraints:
+0 <= len(s) <= 5 * 10^4
+s consists of lowercase English letters only.
+*/
+class Solution {
+public:
+    string reorganizeString(string s) {
+        unordered_map<char, int> m;
+        for (auto c : s) ++m[c];
+        priority_queue<pair<int, char>> pq;
+        for (auto [k, v] : m) if (v > 0) pq.push({v, k});
+        vector<char> res;
+        while (!pq.empty()) {
+            auto [cnt, ch] = pq.top(); pq.pop();
+            --cnt;
+            if (res.size() && cnt == 0) return "";
+            res.emplace_back(ch);
+            if (cnt > 0) pq.push({cnt, ch});
+            if (res.size() % 2 == 0) continue;
+            else res.emplace_back('?');
+        }
+        reverse(begin(res), end(res));
+        return string(begin(res), end(res));
+    }
+};
+################################################################
+
+Solution:
+['a', 'a', 'd', 'd', 'a', 'b', 'b', 'b', 'a', 'a', 'h', 'a', 'a', 'd', 'd', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a']
+

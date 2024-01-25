@@ -1,0 +1,74 @@
+Input token: 565
+Output token: 457
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 6, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 6, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0]
+output: [0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+"""
+# Definition for a binary tree node.
+class TreeNode(object):
+    def __init__(self, x):
+        self.val = x
+        self.left = None
+        self.right = None
+
+class Solution(object):
+    def _isLeaf(self, root):
+        return not (root.left or root.right)
+
+    def _getLevels(self, root):
+        if not root:
+            return []
+        levels = [[root]]
+        while len(levels[-1]) > 0:
+            newLevel = []
+            for node in levels[-1]:
+                if node.left:
+                    newLevel.append(node.left)
+                if node.right:
+                    newLevel.append(node.right)
+            levels.append(newLevel)
+        return levels
+
+    def _fillTree(self, root, level, value):
+        if not root:
+            return
+        if self._isLeaf(root):
+            root.val += value * (len(level)-1)
+        else:
+            self._fillTree(root.left, level[0:-1], value*2)
+            self._fillTree(root.right, level[0:-1], value*2)
+
+    def fillTree(self, t):
+        """
+        :type t: TreeNode
+        :rtype: void Do not return anything, modify t instead.
+        """
+        levels = self._getLevels(t)
+        for i in range(len(levels)):
+            self._fillTree(levels[i][0], levels[:i+1], 1<<i)
+
+################################################################
+
+Solution:
+[0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+

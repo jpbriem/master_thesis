@@ -1,0 +1,120 @@
+Input token: 397
+Output token: 825
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'e']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'e']
+
+Example_2:
+input: ['a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a', 'e', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'e', 'a', 'a']
+
+Example_3:
+input: ['g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'e', 'a']
+output: ['a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'e', 'a']
+
+Test case:
+input: ['b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], meta={}):
+        self.val = val
+        self.children = children
+        self.meta = meta
+
+def buildTree(s):
+    if not s or len(s) == 0: return None
+    root = Node()
+    stack = [root]
+    i = 0
+    while True:
+        node = stack[-1]
+        if i >= len(s): break
+        char = s[i]
+        if char in node.meta:
+            node.meta[char].append(Node())
+            stack.append(node.meta[char][-1])
+        else:
+            node.addChild(char, Node())
+            stack.append(node.getChildrenDict()[char])
+        i += 1
+    return root
+
+def getLeafNodes(tree):
+    if tree is None: return []
+    result = []
+    queue = [tree]
+    while queue:
+        node = queue.pop(0)
+        if node.isLeaf(): result.append(node)
+        for child in node.getChildrenList():
+            queue.append(child)
+    return result
+
+def getAllPathsFromRootToLeaves(tree):
+    if tree is None: return []
+    paths = []
+    queue = [(tree, [])]
+    while queue:
+        (node, path) = queue.pop(0)
+        if node.isLeaf(): paths.append(path + [node.val])
+        for child in node.getChildrenList():
+            queue.append((child, path + [node.val]))
+    return paths
+
+def getCommonPrefixLength(paths):
+    prefixLen = 0
+    for path in paths:
+        commonPrefix = path[:len(set(path))]
+        if len(commonPrefix) > prefixLen: prefixLen = len(commonPrefix)
+    return prefixLen
+
+def getSuffixesOfEachPath(paths):
+    suffixes = {}
+    for path in paths:
+        suffix = path[prefixLen:]
+        if suffix not in suffixes: suffixes[suffix] = []
+        suffixes[suffix].append(path)
+    return suffixes
+
+def getMostFrequentSuffix(suffixes):
+    maxCount = -1
+    mostFreqSuffix = ''
+    for suffix, count in suffixes.items():
+        if count > maxCount:
+            maxCount = count
+            mostFreqSuffix = suffix
+    return mostFreqSuffix
+
+def getNewOrderedPaths(mostFreqSuffix, suffixes):
+    newOrderedPaths = []
+    for suffix, paths in suffixes.items():
+        if suffix!= mostFreqSuffix:
+            for path in paths:
+                newOrderedPaths.append([mostFreqSuffix] + path[prefixLen:-1])
+    return newOrderedPaths
+
+def reorderInputString(inputStr, orderedPaths):
+    output = []
+    for path in orderedPaths:
+        for c in path:
+            output.append(c)
+    return output
+
+if __name__ == "__main__":
+    print("Hello World")
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'e', 'a', 'a']
+

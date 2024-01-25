@@ -1,0 +1,121 @@
+Input token: 607
+Output token: 872
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a']
+
+Example_3:
+input: ['a', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val=0, children=[], parent=None):
+        self.val = val
+        self.children = children
+        self.parent = parent
+
+def buildTree(arr):
+    if not arr or len(arr) == 0: return None
+    root = Node()
+    stack = [root]
+    i = 0
+    while True:
+        node = stack[-1]
+        if i >= len(arr): break
+        child = Node(arr[i])
+        node.addChild(child)
+        stack.append(child)
+        i += 1
+    return root
+
+def dfs(node, result):
+    if not node: return
+    result.append(node.val)
+    for c in node.getChildren():
+        dfs(c, result)
+
+def bfs(node, result):
+    queue = []
+    queue.append((node, 0))
+    while queue:
+        (node, level) = queue.pop(0)
+        result.append(node.val)
+        for c in node.getChildren():
+            queue.append((c, level + 1))
+
+def getLevelOrder(root):
+    if not root: return []
+    result = []
+    dfs(root, result)
+    return result
+
+def getBFSOrder(root):
+    if not root: return []
+    result = []
+    bfs(root, result)
+    return result
+
+def findParentNode(root, targetVal):
+    if not root: return None
+    if root.val == targetVal: return root
+    for c in root.getChildren():
+        p = findParentNode(c, targetVal)
+        if p is not None: return p
+    return None
+
+def findSiblingNodes(root, targetVal):
+    if not root: return []
+    if root.val == targetVal: return []
+    siblings = []
+    for c in root.getChildren():
+        s = findSiblingNodes(c, targetVal)
+        if s!= []: siblings.extend(s)
+    return siblings
+
+def transform(root, targetVal):
+    if not root: return
+    parent = findParentNode(root, targetVal)
+    if parent is None: return
+    siblings = findSiblingNodes(root, targetVal)
+    if siblings == []: return
+    newRoot = Node(targetVal)
+    newRoot.setChildren([])
+    for s in siblings:
+        newRoot.addChild(s)
+    parent.replaceChild(newRoot)
+    for n in newRoot.getChildren():
+        transform(n, targetVal)
+
+if __name__ == "__main__":
+    # Testing Input
+    testArr = ["a", "a", "c", "c", "c", "c", "c", "c", "a", "a", "j", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"]
+    print("Input: ", testArr)
+    # Actual Algorithm Execution
+    tree = buildTree(testArr)
+    print("Output: ")
+    dfs(tree, outputList)
+    print(outputList)
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'j', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a']
+

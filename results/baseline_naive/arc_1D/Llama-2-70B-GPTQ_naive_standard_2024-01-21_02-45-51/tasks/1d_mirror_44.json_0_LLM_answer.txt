@@ -1,0 +1,85 @@
+Input token: 439
+Output token: 585
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 7, 7, 7, 7, 7, 0, 9, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 7, 7, 7, 7, 7, 0]
+
+Example_2:
+input: [0, 3, 3, 3, 3, 3, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 9, 0, 3, 3, 3, 3, 3, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 3, 3, 3, 3, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 3, 3, 3, 3, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 1, 1, 1, 1, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+################################################################
+
+LLM answer:
+
+output: [0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+"""
+
+import numpy as np
+from skimage import io
+from skimage.transform import resize
+
+def main():
+    """
+    Main function to run the program
+    """
+    # Read image from file
+    img = io.imread('../images/test_imgs/test_img_1.png')
+    
+    # Resize image
+    resized_img = resize(img,(50,50))
+    
+    # Convert image into array of values
+    arr = np.array(resized_img)
+    
+    # Find all nonzero indices in the array
+    nonzeros = np.nonzero(arr)
+    
+    # Get the first index value for each row
+    first_indexes = list()
+    for i in range(len(nonzeros[0])):
+        first_indexes.append([])
+        
+        for j in range(len(nonzeros)):
+            if (i == 0):
+                first_indexes[-1].append(nonzeros[j][0])
+            
+            elif ((first_indexes[-1][-1]+1) < nonzeros[j][0]):
+                first_indexes[-1].append((first_indexes[-1][-1]+1))
+                
+            else:
+                first_indexes[-1].append(nonzeros[j][0])
+    
+    # Create a new array with the same dimensions as the original one
+    new_arr = np.empty_like(arr)
+    
+    # Fill the new array with zeros
+    new_arr[:] = 0
+    
+    # Iterate through the rows of the array
+    for i in range(len(new_arr)):
+        # If there is at least one nonzero element in this row
+        if len(first_indexes[i]) > 0:
+            # Set the last nonzero element's value to be equal to the next nonzero element's value
+            new_arr[i, first_indexes[i][-1]:] = new_arr[i, first_indexes[i][-1]]
+    
+    # Display the result
+    print(np.array(new_arr).tolist())
+    
+if __name__ == '__main__':
+    main()
+################################################################
+
+Solution:
+[0, 0, 0, 0, 0, 0, 0, 9, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0]
+

@@ -1,7 +1,7 @@
 import os
 import re
 from tot.tasks.base import Task, DATA_PATH
-from tot.prompts.arc import * # TODO: use ARC prompts  
+from tot.prompts.arc import *   
 from tot.models import gpt
 from tot.methods.arc_utils import *
 from tot.methods import arc_utils
@@ -18,6 +18,7 @@ class ARCTask(Task):
 
     # class variables
     prompt_modules = prompt_modules
+    few_shot_ex = few_shot_ex
     use_object_representation = False
     
     def __init__(self):
@@ -85,7 +86,11 @@ class ARCTask(Task):
             output = output.LLM_answer
             try_cnt += 1 
             output_key = list(output_format.keys())[-1]
-            test_output_grid = extract_json_value(output, output_format, output_key) 
+            # add potential keys, in case model used a slightly different one
+            potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
+            output_keys = [output_key] + [k for k in potential_keys if k != output_key]
+            # extract answer and check if correct
+            test_output_grid = extract_json_value(output, output_format, output_keys) 
             test_output_grid = grid_to_2D_nparray(test_output_grid)
             solution_grid = grid_to_2D_nparray(solution)
             is_success = np.array_equal(test_output_grid, solution_grid)
@@ -107,7 +112,7 @@ class ARCTask(Task):
             if self.success[task_name] > 0:
                 self.solved_tasks.append((task_name, self.success[task_name]))
             # print('------------')
-            info = {'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category])}
+            info = {'solution': str(solution), 'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category])}
         
         return info
     
@@ -134,7 +139,10 @@ class ARCTask(Task):
             # first, check if output is in json format with answer in the end
             output_key = list(output_format.keys())[-1]
             try:
-                test_output_grid = extract_json_value(output, output_format, output_key) 
+                # add potential keys, in case model used a slightly different one
+                potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
+                output_keys = [output_key] + [k for k in potential_keys if k != output_key]
+                test_output_grid = extract_json_value(output, output_format, output_keys) 
                 if test_output_grid:
                     test_output_grid = grid_to_2D_nparray(test_output_grid)
                     solution_grid = grid_to_2D_nparray(solution)
@@ -158,7 +166,7 @@ class ARCTask(Task):
             
         if self.success[task_name] > 0:
             self.solved_tasks.append((task_name, self.success[task_name]))
-        info = {'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+        info = {'solution': str(solution), 'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
         return info
     
     def update_prompt_modules(self, type: str="naive", p: dict=prompt_modules_naive):
@@ -190,9 +198,11 @@ class ARCTask(Task):
         return prompt
 
     @staticmethod # TODO: distingusih between abstraction & application
-    def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=None, dataset: str="arc") -> str:
+    def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=None, few_shot_ex: dict=None, dataset: str="arc") -> str:
         if prompt_modules is None:
             prompt_modules = ARCTask.prompt_modules
+        if few_shot_ex is None:
+            few_shot_ex = ARCTask.few_shot_ex
         current_step = node.level
         
         # get arc examples
@@ -241,7 +251,8 @@ class ARCTask(Task):
         prompt = cot_prompt.copy()
         prompt["system"] = cot_prompt["system"].format(output=output_format, special_instructions=instruct)
         prompt["user"] = cot_prompt["user"].format(context=task_context, test_input=task_input[0], previous_thoughts=previous_thoughts)
-
+        if few_shot_ex is not None:
+            prompt.update({"few_shot_ex": few_shot_ex})
         return prompt 
 
     @staticmethod

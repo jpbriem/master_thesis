@@ -1,0 +1,84 @@
+Input token: 313
+Output token: 426
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'd', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'd', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'd', 'a']
+output: ['a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'd', 'a']
+
+Example_3:
+input: ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'd']
+output: ['a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'd']
+
+Test case:
+input: ['a', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'd', 'a']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, children=None):
+        self.val = val
+        self.children = children
+
+
+class Solution(object):
+    def transformToPreorder(self, inorder, postorder):
+        """
+        :type inorder: List[int]
+        :type postorder: List[int]
+        :rtype: List[List[int]]
+        """
+        if not inorder or not postorder:
+            return []
+        
+        root = None
+        stack = [Node(postorder[-1])]
+        for i in range(len(inorder)):
+            node = stack.pop()
+            
+            if i == 0:
+                root = node
+                
+            elif len(stack) > 0:
+                parent = stack[-1].children
+                while parent is not None:
+                    if parent.val == inorder[i]:
+                        break
+                    
+                    parent = parent.children
+                
+                if parent is not None:
+                    parent.append(node)
+                    continue
+                
+                # append to last child of current stack
+                stack[-1].children.append(node)
+            else:
+                raise Exception("Invalid input")
+            
+            stack.append(node)
+        
+        return [root.val] + self._transformToPostOrder(root.children)
+    
+    def _transformToPostOrder(self, nodes):
+        result = []
+        for node in nodes:
+            result += self._transformToPostOrder(node.children)
+            result.append(node.val)
+        return result
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'd', 'a']
+

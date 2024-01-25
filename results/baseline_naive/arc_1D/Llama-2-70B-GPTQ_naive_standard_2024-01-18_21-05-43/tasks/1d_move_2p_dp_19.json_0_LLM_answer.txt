@@ -1,0 +1,119 @@
+Input token: 313
+Output token: 692
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'j', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'j', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'j', 'a']
+output: ['a', 'a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'j', 'a']
+
+Example_3:
+input: ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'j', 'a', 'a']
+output: ['a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'j', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'g', 'g', 'g', 'g', 'a', 'a', 'j', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+expected output: ['a', 'a', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'j', 'a', 'a']
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, children=None):
+        self.val = val
+        self.children = children
+
+
+class Solution(object):
+    def transformToPreorder(self, inOrder, postOrder):
+        """
+        :type inOrder: List[str]
+        :type postOrder: List[str]
+        :rtype: str
+        """
+        
+        # 1. Build the tree from pre-order traversal
+        root = None
+        if len(postOrder) > 0:
+            root = Node(postOrder[-1])
+            
+        stack = []
+        for i in range(len(inOrder)):
+            node = Node(inOrder[i], [])
+            while not stack or (stack[-1].val == node.val and stack[-1].val!= root.val):
+                stack.pop()
+                
+            if stack:
+                stack[-1].addChild(node)
+            else:
+                root = node
+                stack.append(root)
+                
+        return root.toPostOrder()
+    
+    def buildTreeFromInOrderTraversal(self, inOrder):
+        """
+        :type inOrder: List[int]
+        :rtype: TreeNode
+        """
+        if not inOrder:
+            return None
+        
+        root = Node(inOrder[0])
+        stack = [(root,)]
+        for i in range(1, len(inOrder)):
+            current = stack.pop()
+            current.right = Node(inOrder[i])
+            stack.append((current,))
+            stack.append((current.right,))
+        
+        return root
+    
+    def buildTreeFromPostOrderTraversal(self, postOrder):
+        """
+        :type postOrder: List[int]
+        :rtype: TreeNode
+        """
+        if not postOrder:
+            return None
+        
+        root = Node(postOrder[-1])
+        stack = [(root,)]
+        for i in reversed(range(len(postOrder)-1)):
+            current = stack.pop()
+            current.left = Node(postOrder[i])
+            stack.append((current,))
+            stack.append((current.left,))
+        
+        return root
+    
+    def toPostOrder(self, root):
+        """
+        :type root: TreeNode
+        :rtype: List[int]
+        """
+        if not root:
+            return []
+        
+        result = []
+        stack = [(root,)]
+        while stack:
+            current = stack.pop()
+            result += [current.val]
+            stack.extend([(child,) for child in reversed(current.getChildren())])
+        
+        return result
+
+################################################################
+
+Solution:
+['a', 'a', 'a', 'a', 'g', 'g', 'g', 'g', 'j', 'a', 'a', 'a']
+

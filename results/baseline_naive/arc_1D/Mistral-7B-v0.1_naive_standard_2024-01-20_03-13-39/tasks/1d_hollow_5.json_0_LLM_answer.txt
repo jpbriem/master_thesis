@@ -1,0 +1,58 @@
+Input token: 376
+Output token: 429
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'a', 'e', 'a']
+
+Example_2:
+input: ['a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'a', 'a', 'a', 'a', 'a', 'a']
+output: ['a', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'i', 'a', 'a', 'i', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'h', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+*/
+public class Solution {
+    public String[] reorganizeString(String S) {
+        int n = S.length();
+        if (n == 0 || n % 2!= 0) return new String[0];
+        Map<Character, Integer> map = new HashMap<>();
+        for (int i = 0; i < n; ++i) {
+            char c = S.charAt(i);
+            map.put(c, map.getOrDefault(c, 0) + 1);
+        }
+        PriorityQueue<Map.Entry<Character, Integer>> pq = new PriorityQueue<>((o1, o2) -> o2.getValue() - o1.getValue());
+        for (Map.Entry<Character, Integer> entry : map.entrySet()) {
+            pq.offer(entry);
+        }
+        List<String> res = new ArrayList<>(n / 2);
+        while (!pq.isEmpty()) {
+            Map.Entry<Character, Integer> e1 = pq.poll(), e2 = pq.poll();
+            if (e1.getValue() > n / 2) return new String[0];
+            res.add("" + e1.getKey());
+            res.add("" + e2.getKey());
+            --e1.setValue();
+            --e2.setValue();
+            if (e1.getValue() > 0) pq.offer(e1);
+            if (e2.getValue() > 0) pq.offer(e2);
+        }
+        return res.toArray(new String[res.size()]);
+    }
+}
+################################################################
+
+Solution:
+['a', 'a', 'a', 'h', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+

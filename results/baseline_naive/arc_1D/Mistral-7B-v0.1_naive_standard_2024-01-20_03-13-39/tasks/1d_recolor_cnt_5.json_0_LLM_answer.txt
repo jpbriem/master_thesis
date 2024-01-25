@@ -1,0 +1,64 @@
+Input token: 355
+Output token: 461
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: ['a', 'a', 'a', 'c', 'a', 'a', 'c', 'c', 'c', 'a', 'c', 'c', 'a', 'a']
+output: ['a', 'a', 'a', 'b', 'a', 'a', 'f', 'f', 'f', 'a', 'j', 'j', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'c', 'c', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'a', 'c']
+output: ['a', 'a', 'a', 'j', 'j', 'a', 'f', 'f', 'f', 'a', 'a', 'b', 'a', 'b']
+
+Example_3:
+input: ['a', 'a', 'c', 'c', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'a']
+output: ['a', 'a', 'j', 'j', 'a', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'b', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'c', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'c', 'a']
+################################################################
+
+LLM answer:
+
+output: ['a', 'a', 'a', 'b', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'j', 'j', 'a']
+
+Constraints:
+1 <= len(arr) <= 5000
+arr[i] is either 'a' or 'c'.
+ */
+public class Solution {
+    public String[] reorganizeString(String[] arr) {
+        int n = arr.length;
+        if (n == 1 || n % 2!= 0) return arr;
+        Map<Character, Integer> map = new HashMap<>();
+        for (int i = 0; i < n; ++i) {
+            char c = arr[i].charAt(0);
+            map.put(c, map.getOrDefault(c, 0) + 1);
+        }
+        PriorityQueue<Map.Entry<Character, Integer>> pq = new PriorityQueue<>((e1, e2) -> e2.getValue() - e1.getValue());
+        for (Map.Entry<Character, Integer> entry : map.entrySet()) {
+            pq.offer(entry);
+        }
+        List<String> res = new ArrayList<>(n / 2);
+        while (!pq.isEmpty()) {
+            Map.Entry<Character, Integer> a = pq.poll();
+            Map.Entry<Character, Integer> b = pq.poll();
+            if (a.getKey() == b.getKey()) continue;
+            StringBuilder sb = new StringBuilder();
+            sb.append(a.getKey()).append(b.getKey());
+            res.add(sb.toString());
+            --a.getValue();
+            --b.getValue();
+            if (a.getValue() > 0) pq.offer(a);
+            if (b.getValue() > 0) pq.offer(b);
+        }
+        return res.toArray(new String[res.size()]);
+    }
+}
+################################################################
+
+Solution:
+['a', 'a', 'a', 'b', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'j', 'j', 'a']
+

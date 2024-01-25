@@ -1,0 +1,117 @@
+Input token: 579
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'e', 'e', 'a], ['b', 'a', 'a', 'b], ['i', 'i', 'a', 'i], ['d', 'd', 'd', 'a']]
+output: [['e', 'e', 'a', 'a], ['b', 'b', 'a', 'a], ['i', 'i', 'i', 'a], ['d', 'd', 'd', 'a']]
+
+Example_2:
+input: [['a', 'a', 'a', 'a', 'a], ['i', 'a', 'i', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['d', 'd', 'a', 'd', 'a], ['a', 'a', 'h', 'h', 'h']]
+output: [['a', 'a', 'a', 'a', 'a], ['i', 'i', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['d', 'd', 'd', 'a', 'a], ['h', 'h', 'h', 'a', 'a']]
+
+Example_3:
+input: [['a', 'a', 'a', 'c', 'a], ['a', 'a', 'g', 'g', 'g], ['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'h', 'h']]
+output: [['c', 'a', 'a', 'a', 'a], ['g', 'g', 'g', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'a], ['h', 'h', 'a', 'a', 'a']]
+
+Test case:
+input: [['a', 'a', 'a', 'a', 'c', 'c], ['a', 'j', 'a', 'j', 'a', 'j], ['a', 'e', 'a', 'a', 'a', 'a], ['a', 'a', 'a', 'a', 'b', 'a], ['f', 'a', 'f', 'a', 'f', 'a], ['a', 'i', 'a', 'i', 'a', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['c', 'c', 'a', 'a', 'a'], ['j', 'j', 'a', 'a', 'a'], ['e', 'e', 'a', 'a', 'a'], ['b', 'b', 'a', 'a', 'a'], ['f', 'f', 'a', 'a', 'a'], ['i', 'i', 'a', 'a', 'a']]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_input(filename):
+    with open(filename) as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def get_output(filename):
+    with open(filename) + '.out' as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def main():
+    filename = sys.argv[1] if len(sys.argv) > 1 else "input.txt"
+    input_list = get_input(filename)
+    output_list = get_output(filename)
+
+    # 0. 입력과 출력의 길이가 다름
+    if len(input_list)!= len(output_list):
+        print("Input length is different from Output length")
+        exit()
+
+    # 1. 패턴을 만들기 위한 전처리
+    # 숫자를 제외하고 모든 문자는 소문자로 바꾼다.
+    # 그리고 약수에서 나오는 부분은 아무거나 생략해도 상관없다.
+    def preprocess(s):
+        s = set([char for char in s]) - {'0'}
+        return ''.join([''.join(sorted(set(ch)) for ch in s)), '.' * (len(s) % 2)]
+
+    # 2. 피어 트리 구현
+    def pear_tree(s):
+        if not s:
+            return []
+        elif len(s) == 1:
+            return [preprocess(s)]
+        else:
+            return [pear_tree(s[:6]), pear_tree(s[6:])]
+
+    # 3. 피어 트리 중 원소를 삭제하기 위한 방법
+    def remove_node(root, node):
+        if root == None or node == None:
+            return False
+        elif root == node:
+            return True
+        else:
+            left = remove_node(root.left, node)
+            right = remove_node(root.right, node)
+            if left and right:
+                return True
+            else:
+                return False
+
+    # 4. 피어 트리 중 원소를 삭제하기 위한 방법
+    def delete_node(root, node):
+        if root == None or node == None:
+            return False
+        elif root == node:
+            return True
+        else:
+            left = delete_node(root.left, node)
+            right = delete_node(root.right, node)
+            if left and right:
+                return True
+            else:
+                return False
+
+    # 5. 피어 트리 중 원소를 삭제하기 위한 방법
+    def delete_all_nodes(root):
+        if root == None:
+            return
+        else:
+            delete_all_nodes(root.left)
+            delete_all_nodes(root.right)
+
+    # 6. 피어 트리 중 원소를 삭제하기 위한 방법
+    def delete_all_nodes_recursive(root):
+        if root == None:
+            return
+        else:
+            delete_all_nodes_recursive(root.left)
+            delete_all_nodes_recursive(root.right)
+
+    # 7. 피어 
+################################################################
+
+Solution:
+[['c', 'c', 'a', 'a', 'a', 'a], ['j', 'j', 'j', 'a', 'a', 'a], ['e', 'a', 'a', 'a', 'a', 'a], ['b', 'a', 'a', 'a', 'a', 'a], ['f', 'f', 'f', 'a', 'a', 'a], ['i', 'i', 'a', 'a', 'a', 'a']]
+

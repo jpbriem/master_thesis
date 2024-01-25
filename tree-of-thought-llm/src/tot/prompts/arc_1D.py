@@ -15,11 +15,14 @@ standard_prompt = {
 	"user": '''{context}{test_input}'''
 }
 
+# cot_prompt = {
+#     "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+# 	"user": '''{context}{previous_thoughts}{test_input}'''
+#  }
 cot_prompt = {
-    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format, fill the values as described: {output}. Do not use quotation marks ' or " within the fields.\n''',
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
-
 
 vote_prompt = {
     "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
@@ -279,6 +282,66 @@ prompt_modules = {
 #    }
 
 ################## Prompt modules Single CoT ################
+# few shot examples
+few_shot_ex = None
+# few_shot_ex = {
+# 	"ex_1": ['''The following input-output pairs are examples and share the same underlying transformation pattern.
+# Example_1:
+# input: ['f', '.', '.', '.', 'b', '.', '.']
+# output: ['f', 'f', 'f', 'f', 'b', '.', '.']
+
+# test case:
+# input: ['.', '.', 'f', '.', '.', 'b', '.']
+# ''', '''
+# {
+# "object_description": {
+# "Example_1": "The input sequence has two objects: [{colour: 'f', start_index: 0, end_index: 0, size: 1}, {colour: 'b', start_index: 4, end_index: 4, size: 1}]. The output sequence has two objects: [{colour: 'f', start_index: 0, end_index: 3, size: 4}, {colour: 'b', start_index: 4, end_index: 4, size: 1}].",
+# },
+# "overall_pattern": "The number of objects is the same in all input-output pairs. The transformation pattern involves scaling the first input object until it touches the second input object.",
+# "instructions": "To transform a new input sequence, follow these steps:
+# 1. Identify the objects in the input sequence, and determine their colour, position and size.
+# 2. Scale the first input object: Extend its end_index until it is one less than the second objects's start_index.",
+# "transformation": {
+# "input": "['.', '.', 'f', '.', '.', 'b', '.']",
+# "object_description": "The input sequence has two objects: [{colour: 'f', start_index: 2, end_index: 2, size: 1}, {colour: 'b', start_index: 5, end_index: 5, size: 1}].",
+# "transformed_objects": "After the transformation, the output sequence has two objects object: [{colour: 'f', start_index: 2, end_index: 4, size: 3}, {colour: 'b', start_index: 5, end_index: 5, size: 1}].",
+# "output": "['.', '.', 'f', 'f', 'f', 'b', '.']"
+# },
+# "test_output": "['.', '.', 'f', 'f', 'f', 'b', '.']"
+# }'''],
+# 	"ex_2": ['''The following input-output pairs are examples and share the same underlying transformation pattern.
+# Example_1:
+# input: ['.', 'a', 'a', 'a', '.', '.', '.', '.', '.']
+# output: ['.', '.', 'b', 'b', 'b', '.', '.', '.', '.']
+
+# Example_2:
+# input: ['a', 'a', 'a', 'a', 'a', '.', '.', '.', '.']
+# output: ['.', 'b', 'b', 'b', 'b', 'b', '.', '.', '.']
+
+# test case:
+# input: ['.', '.', '.', 'a', 'a', 'a', 'a', 'a', '.']
+# ''', '''
+# {
+# "object_description": {
+# "Example_1": "The input sequence has one object: [{colour: 'a', start_index: 1, end_index: 3, size: 3}]. The output sequence has one object: [{colour: 'b', start_index: 2, end_index: 4, size: 3}].",
+# "Example_2": "The input sequence has one object: [{colour: 'a', start_index: 0, end_index: 4, size: 4}]. The output sequence has one object: [{colour: 'b', start_index: 1, end_index: 5, size: 4}].",
+# },
+# "overall_pattern": "The number of objects is the same in all input-output pairs. The transformation pattern involves moving the input object 1 pixel right and recoloring it to colour 'b'.",
+# "instructions": "To transform a new input sequence, follow these steps:
+# 1. Identify the object in the input sequence, and determine its colour, position and size.
+# 2. Shift the object 1 pixel right and keep the same size.
+# 3. Recolor the object to colour 'b'.",
+# "transformation": {
+# "input": "['.', '.', '.', 'a', 'a', 'a', 'a', 'a', '.']",
+# "object_description": "The input sequence has one object: [{colour: 'a', start_index: 3, end_index: 7, size: 5}].",
+# "transformed_objects": "After the transformation, the output sequence has one object: [{colour: 'b', start_index: 4, end_index: 8, size: 5}].",
+# "output": "['.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b']"
+# },
+# "test_output": "['.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b']"
+# }''']
+# }
+
+
 # NOTE: Derzeit bestes mit 4/10 in shuffle move_1p, flip, scale tasks
 prompt_modules_naive = {
 	"0": {
