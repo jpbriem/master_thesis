@@ -14,7 +14,11 @@ class ARC_h_v(ARCTask):
     Input Example:  [[0, 1, 0], [1, 0, 1], [0, 1, 0]]
     Output Example: [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
     """
-
+    
+    # class variable
+    prompt_modules = prompt_modules
+    few_shot_ex = few_shot_ex
+    
     def __init__(self):
         """
         several subfolders by task type
@@ -26,8 +30,10 @@ class ARC_h_v(ARCTask):
         self.success = {} # saves success rates for each task
         self.solved_tasks = []
         self.full_success = 0 # counts completely solved tasks
-        self.cat_success = {} # saves success rates for each category
+        self.cat_success, self.cat_failures = {}, {} # saves success rates for each category
+        self.solved_tasks = []
         self.value_cache = {}
+
 
     # NOTE No need to overwrite methods as logic, prompts, etc. are the same as in ARCTask (normal 2D ARC)
     

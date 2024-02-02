@@ -1,0 +1,58 @@
+Input token: 784
+Output token: 465
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[0, 0, 0, 0, 0, 0, 0], [0, 2, 2, 2, 0, 0, 0], [0, 0, 2, 0, 0, 0, 0], [0, 2, 2, 2, 2, 0, 0], [0, 0, 2, 2, 2, 0, 0], [0, 0, 0, 2, 0, 0, 0], [4, 0, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0, 0], [0, 4, 4, 4, 0, 0, 0], [0, 0, 4, 0, 0, 0, 0], [0, 4, 4, 4, 4, 0, 0], [0, 0, 4, 4, 4, 0, 0], [0, 0, 0, 4, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]
+
+Example_2:
+input: [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 3, 0, 0, 0], [0, 0, 3, 3, 3, 0, 0], [0, 3, 3, 3, 3, 0, 0], [0, 3, 3, 0, 0, 0, 0], [0, 0, 3, 3, 0, 0, 0], [6, 0, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 6, 0, 0, 0], [0, 0, 6, 6, 6, 0, 0], [0, 6, 6, 6, 6, 0, 0], [0, 6, 6, 0, 0, 0, 0], [0, 0, 6, 6, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]
+
+Test case:
+input: [[0, 0, 0, 0, 0, 0, 0], [0, 8, 8, 8, 0, 0, 0], [0, 8, 8, 8, 8, 8, 0], [0, 0, 0, 8, 8, 0, 0], [0, 0, 8, 8, 0, 0, 0], [0, 0, 8, 8, 8, 0, 0], [2, 0, 0, 0, 0, 0, 0]]
+################################################################
+
+LLM answer:
+
+output: [[0, 0, 0, 0, 0, 0, 0], [0, 2, 2, 2, 0, 0, 0], [0, 2, 2, 2, 2, 2, 0], [0, 2, 2, 2, 2, 0, 0], [0, 2, 2, 2, 2, 0, 0], [0, 2, 2, 2, 2, 0, 0], [0, 0, 0, 0, 0, 0, 0]]
+"""
+
+import numpy as np
+from typing import List
+
+class Solution:
+    def updateMatrix(self, matrix: List[List[int]]) -> List[List[int]]:
+        m = len(matrix)
+        n = len(matrix[0])
+        
+        for i in range(m):
+            for j in range(n):
+                if matrix[i][j] == 0: continue
+                
+                # find all neighbors of (i, j), including itself
+                neighbor_list = []
+                for k in [-1, 0, 1]:
+                    for l in [-1, 0, 1]:
+                        if -1 <= i + k < m and -1 <= j + l < n \
+                           and not ((k == 0 and l == 0) or (k!= 0 and l!= 0)):
+                            neighbor_list.append((i+k, j+l))
+                            
+                neighbor_list.remove((i, j))
+                
+                # sort by distance from (i, j)
+                neighbor_list.sort()
+                
+                # calculate new value at (i, j)
+                new_value = sum([matrix[a][b] for a, b in neighbor_list])
+                matrix[i][j] = min(new_value, 9)
+                
+        return matrix
+################################################################
+
+Solution:
+[[0, 0, 0, 0, 0, 0, 0], [0, 2, 2, 2, 0, 0, 0], [0, 2, 2, 2, 2, 2, 0], [0, 0, 0, 2, 2, 0, 0], [0, 0, 2, 2, 0, 0, 0], [0, 0, 2, 2, 2, 0, 0], [0, 0, 0, 0, 0, 0, 0]]
+

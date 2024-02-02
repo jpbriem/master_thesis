@@ -1,0 +1,101 @@
+Input token: 334
+Output token: 615
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['c', 'c', 'c'], ['c', 'b', 'i'], ['c', 'i', 'i']]
+output: [['c', 'c', 'c'], ['c', 'f', 'f'], ['c', 'f', 'f']]
+
+Example_2:
+input: [['b', 'b', 'b'], ['i', 'b', 'd'], ['i', 'c', 'c']]
+output: [['b', 'b', 'b'], ['f', 'b', 'f'], ['f', 'f', 'f']]
+
+Example_3:
+input: [['c', 'c', 'c'], ['i', 'i', 'c'], ['c', 'c', 'c']]
+output: [['c', 'c', 'c'], ['f', 'f', 'c'], ['c', 'c', 'c']]
+
+Example_4:
+input: [['d', 'd', 'i'], ['e', 'e', 'e'], ['i', 'b', 'b']]
+output: [['f', 'f', 'f'], ['e', 'e', 'e'], ['f', 'f', 'f']]
+
+Test case:
+input: [['b', 'd', 'c'], ['d', 'd', 'c'], ['b', 'd', 'c']]
+################################################################
+
+LLM answer:
+
+expected output: [['f', 'f', 'c'], ['f', 'f', 'c'], ['f', 'f', 'c']]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, children=None):
+        self.val = val
+        self.children = children
+
+def dfs(node, result):
+    if node is None or len(result) == 0: return
+    if not hasattr(node, "children") or not node.children:
+        return
+    for child in node.children:
+        if child[0].val!= result[-1]:
+            continue
+        dfs(child, result + [child[0]])
+
+class Solution(object):
+    def transformToSameStructure(self, root1, root2):
+        """
+        :type root1: TreeNode
+        :type root2: TreeNode
+        :rtype: void Do not return anything, modify tree in-place instead.
+        """
+        # write your code here
+        if root1 is None or root2 is None: return
+        stack1 = []
+        stack2 = []
+        while True:
+            while root1 is not None:
+                stack1.append((root1.val, root1))
+                root1 = root1.left
+            while root2 is not None:
+                stack2.append((root2.val, root2))
+                root2 = root2.right
+            if len(stack1) > 0 and len(stack2) > 0:
+                if stack1[-1][0] < stack2[-1][0]:
+                    stack1.pop()
+                elif stack1[-1][0] > stack2[-1][0]:
+                    stack2.pop()
+                else:
+                    break
+            elif len(stack1) > 0:
+                stack1.pop()
+            elif len(stack2) > 0:
+                stack2.pop()
+            else:
+                break
+        
+        result = []
+        while True:
+            if len(stack1) > 0 and len(stack2) > 0:
+                if stack1[-1][0] < stack2[-1][0]:
+                    stack1.pop()
+                elif stack1[-1][0] > stack2[-1][0]:
+                    stack2.pop()
+                else:
+                    break
+            elif len(stack1) > 0:
+                stack1.pop()
+            elif len(stack2) > 0:
+                stack2.pop()
+            else:
+                break
+            
+        dfs(root1, result)
+
+################################################################
+
+Solution:
+[['f', 'd', 'f'], ['d', 'd', 'f'], ['f', 'd', 'f']]
+

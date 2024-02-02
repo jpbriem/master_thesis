@@ -1,0 +1,94 @@
+Input token: 264
+Output token: 819
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'g'], ['a', 'e', 'a'], ['d', 'a', 'a']]
+output: [['a', 'a', 'g'], ['a', 'e', 'g'], ['d', 'e', 'g']]
+
+Example_2:
+input: [['a', 'c', 'a'], ['h', 'a', 'i'], ['a', 'a', 'a']]
+output: [['a', 'c', 'a'], ['h', 'c', 'i'], ['h', 'c', 'i']]
+
+Example_3:
+input: [['e', 'a', 'a'], ['a', 'c', 'a'], ['a', 'a', 'a']]
+output: [['e', 'a', 'a'], ['e', 'c', 'a'], ['e', 'c', 'a']]
+
+Test case:
+input: [['e', 'a', 'i'], ['a', 'a', 'a'], ['a', 'h', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['e', 'a', 'i'], ['e', 'a', 'i'], ['e', 'a', 'i']]
+*/
+public class Solution {
+    public List<List<String>> findLadders(String beginWord, String endWord, Set<String> wordDict) {
+        if (beginWord == null || endWord == null ||!wordDict.contains(endWord)) return new ArrayList<>();
+        Map<String, Integer> map = new HashMap<>();
+        for (String s : wordDict) {
+            map.put(s, 0);
+        }
+        Queue<Pair> queue = new LinkedList<>();
+        Pair p = new Pair(beginWord, 0);
+        queue.offer(p);
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            for (int i = 0; i < size; ++i) {
+                Pair cur = queue.poll();
+                String str = cur.str;
+                int level = cur.level + 1;
+                if (map.getOrDefault(endWord, -1)!= -1 && level <= map.get(endWord)) break;
+                char[] chars = str.toCharArray();
+                for (int j = 0; j < chars.length; ++j) {
+                    char c = chars[j];
+                    for (char k = 'a'; k <= 'z'; ++k) {
+                        if (k == c) continue;
+                        chars[j] = k;
+                        String nextStr = new String(chars);
+                        if (map.getOrDefault(nextStr, -1) == -1) {
+                            map.put(nextStr, level);
+                            queue.offer(new Pair(nextStr, level));
+                        } else if (map.get(nextStr) > level) {
+                            map.put(nextStr, level);
+                            queue.offer(new Pair(nextStr, level));
+                        }
+                    }
+                    chars[j] = c;
+                }
+            }
+        }
+        List<List<String>> res = new ArrayList<>();
+        dfs(res, new ArrayList<>(), beginWord, endWord, map);
+        return res;
+    }
+
+    private void dfs(List<List<String>> res, List<String> path, String beginWord, String endWord, Map<String, Integer> map) {
+        if (path.size() >= 5) return;
+        if (path.size() == 4 && map.get(endWord) == 0) {
+            res.add(new ArrayList<>(path));
+            return;
+        }
+        char[] chars = beginWord.toCharArray();
+        for (int i = 0; i < chars.length; ++i) {
+            char c = chars[i];
+            for (char k = 'a'; k <= 'z'; ++k) {
+                if (k == c) continue;
+                chars[i] = k;
+                String nextStr = new String(chars);
+                if (map.get(nextStr) == 0) continue;
+                path.add(nextStr);
+                dfs(res, path, nextStr, endWord, map);
+                path.remove(path.size() - 1);
+            }
+            chars[i] = c;
+        }
+    }
+}
+################################################################
+
+Solution:
+[['e', 'a', 'i'], ['e', 'a', 'i'], ['e', 'h', 'i']]
+

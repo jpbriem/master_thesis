@@ -1,0 +1,106 @@
+Input token: 694
+Output token: 581
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[6, 6, 6, 2], [6, 1, 6, 2], [7, 2, 7, 2], [1, 7, 2, 2]]
+output: [[2, 6, 6, 6], [2, 6, 1, 6], [2, 7, 2, 7], [2, 2, 7, 1]]
+
+Example_2:
+input: [[7, 7, 7, 6, 6, 6, 2], [6, 7, 1, 1, 7, 7, 1], [7, 7, 2, 1, 2, 6, 6], [2, 2, 7, 7, 7, 2, 2], [7, 2, 7, 1, 2, 7, 2], [6, 6, 6, 2, 2, 1, 1], [6, 2, 6, 6, 6, 6, 6]]
+output: [[2, 6, 6, 6, 7, 7, 7], [1, 7, 7, 1, 1, 7, 6], [6, 6, 2, 1, 2, 7, 7], [2, 2, 7, 7, 7, 2, 2], [2, 7, 2, 1, 7, 2, 7], [1, 1, 2, 2, 6, 6, 6], [6, 6, 6, 6, 6, 2, 6]]
+
+Example_3:
+input: [[1, 2, 7, 1, 1, 1], [2, 1, 7, 7, 2, 6], [2, 1, 2, 6, 2, 1], [1, 2, 1, 7, 6, 2], [2, 7, 1, 2, 7, 1], [2, 1, 6, 2, 7, 7]]
+output: [[1, 1, 1, 7, 2, 1], [6, 2, 7, 7, 1, 2], [1, 2, 6, 2, 1, 2], [2, 6, 7, 1, 2, 1], [1, 7, 2, 1, 7, 2], [7, 7, 2, 6, 1, 2]]
+
+Test case:
+input: [[7, 6, 1], [6, 7, 6], [6, 2, 2]]
+################################################################
+
+LLM answer:
+
+output: [[2, 6, 1], [6, 7, 6], [2, 2, 6]]
+"""
+
+import numpy as np
+from scipy import stats
+
+def get_pairs(data):
+    """
+    Get all possible pairs from a list of lists
+    
+    Parameters
+    ----------
+    data : list of lists
+        Lists containing values to be compared
+        
+    Returns
+    -------
+    pairs : list of tuples
+        All possible pairs in (x, y) format
+    """
+    return [(i, j) for i in range(len(data)) for j in range(i+1, len(data))]
+
+def get_correlation(data):
+    """
+    Calculate Pearson's correlation coefficient between two variables
+    
+    Parameters
+    ----------
+    x : array
+        First variable
+    y : array
+        Second variable
+        
+    Returns
+    -------
+    corr : float
+        Correlation value
+    """
+    return stats.pearsonr(x=np.array(data[0]), y=np.array(data[1]))[0]
+
+def transform(data):
+    """
+    Transform an image by swapping pixels with their most correlated neighbors
+    
+    Parameters
+    ----------
+    data : list of lists
+        Image represented as a list of lists
+        
+    Returns
+    -------
+    transformed : list of lists
+        Transformed image
+    """
+    # Find all possible pairs
+    pairs = get_pairs(data)
+    # Initialize empty list to store transformed image
+    transformed = []
+    # Loop through each pair
+    for p in pairs:
+        # Extract first element of pair
+        x = p[0][0]
+        # Extract second element of pair
+        y = p[1][0]
+        # Check if both elements have not been processed yet
+        if x not in transformed and y not in transformed:
+            # If so, find highest correlation value
+            maxcorr = max([get_correlation((d[x], d[y])) for d in data])
+            # Store index of that pair
+            idx = data.index((maxcorr, x, y))
+            # Swap elements at those indices
+            data[idx[0]], data[idx[2]] = data[idx[2]], data[idx[0]]
+            # Add new elements to transformed list
+            transformed += [x, y]
+    # Return transformed image
+    return data
+
+################################################################
+
+Solution:
+[[1, 6, 7], [6, 7, 6], [2, 2, 6]]
+

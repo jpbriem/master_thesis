@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '6,7'
+GPU = '0,4'
 
 #################### OPEN SOURCE ###############
 MAX_TOKEN = 4096
@@ -57,7 +57,7 @@ REVISIONS.append("main")
 
 #### LLAMA CONFIG ####
 MODEL_CONFIG_LLAMA = {
-    'max_new_tokens': 1024,
+    'max_new_tokens': 2048,
     'temperature': 0.001,
     'repetition_penalty': 1.15,
 }
@@ -72,7 +72,7 @@ MODEL_CONFIG_LLAMA = {
 
 ##### Falcon CONFIG ####
 MODEL_CONFIG_FALCON = {
-    'max_new_tokens': 1024,
+    'max_new_tokens': 2048,
     'temperature': 0.001,
 }
 
@@ -88,17 +88,17 @@ MODEL_CONFIG_GPT = {
 }
 
 #################### Prompt ####################
-CHANGE_REPRESENTATION = False
+CHANGE_REPRESENTATION = True
 NEW_REPRESENTATION = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
 
 POST_TEST_CASE = ""
 DELIMITER = {
     "arc": {
-        "item": ", ", # TODO: add apostroph if needed
+        "item": "', '", # TODO: add apostroph if needed
         "grid_start": "[",
-        "grid_end": "]]\n", # include end of last row # TODO: add apostroph if needed
-        "row_start": "[", # TODO: add apostroph if needed
-        "row_end": "], ", # except for last row
+        "grid_end": "']]\n", # include end of last row # TODO: add apostroph if needed
+        "row_start": "['", # TODO: add apostroph if needed
+        "row_end": "'], ", # except for last row # TODO: add apostroph if needed
         "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
         "example_end": "\n",
         "task_start": "Test case:\n",
@@ -109,10 +109,10 @@ DELIMITER = {
         "output_test": "",
     },
     "arc_1D": {
-        "item": "', '", # TODO: add apostroph if needed
+        "item": ", ", # TODO: add apostroph if needed
         "grid_start": "[",
-        "grid_end": "']\n", # include end of last row # TODO: add apostroph if needed
-        "row_start": "'", # TODO: add apostroph if needed
+        "grid_end": "]\n", # include end of last row # TODO: add apostroph if needed
+        "row_start": "", # TODO: add apostroph if needed
         "row_end": "", # except for last row
         "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
         "example_end": "\n",
@@ -208,3 +208,4 @@ TASK = "arc_h_v"
 # X = "ARC_datasets/LARC/training/"
 # X = "ARC_datasets/LARC/evaluation/"
 # TASK ="LARC"
+

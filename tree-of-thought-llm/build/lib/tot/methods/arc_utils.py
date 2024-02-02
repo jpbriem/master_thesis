@@ -3,8 +3,10 @@ from tot.methods.arc_config import *
 from tot.methods.credentials import *
 import numpy as np
 import tkinter as tk
+import itertools
 import json
 import re
+import ast
 import matplotlib.pyplot as plt
 import shutil
 import datetime
@@ -38,7 +40,7 @@ def load_llama(model_name, revision, max_token, model_config):
         model_name, trust_remote_code=True, device_map="auto", torch_dtype=torch.float16, revision=revision
     )
 
-    # fix bug for certain models 
+    # # fix bug for certain models - fixed in new Optimum version
     if model_name in ["TheBloke/Camel-Platypus2-70B-GPTQ", "TheBloke/Platypus2-70B-GPTQ", "TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ", "TheBloke/Llama-2-70B-GPTQ"]:
         model = exllama_set_max_input_length(model, 4096)
 
@@ -116,34 +118,90 @@ def count_tokens(prompt, model_name, tokenizer):
             token_limit = 4096
         elif "gpt-4" in model_name:
             token_limit = 8192
+        elif "gpt-4-1106-preview" in model_name:
+            token_limit = 128000
+        elif "gpt-3.5-turbo-1106" in model_name:
+            token_limit = 8192
     else: 
         num_tokens = len(tokenizer.encode(prompt, add_special_tokens=True))
         token_limit = tokenizer.model_max_length
     return num_tokens, token_limit
 
 def replace_quotes_in_text(res, json_format):  
+    # preprocess json format
+    output_format = {}
+    for key, value in json_format.items():
+        if "Example_1" in json_format:
+            for i in range(2, 11): # do for 10 examples
+                k = "Example_" + str(i)
+                output_format.update({k: ""})
+        output_format.update({key: ""})
+        if isinstance(value, dict):
+            if "Example_1" in value:
+                for i in range(2, 11): # do for 10 examples
+                    k = "Example_" + str(i)
+                    output_format.update({k: ""})
+            for key2, value2 in value.items():
+                output_format.update({key2: ""})
+                if isinstance(value2, dict):
+                    if "Example_1" in value2:
+                        for i in range(2, 11): # do for 10 examples
+                            k = "Example_" + str(i)
+                            output_format.update({k: ""})
+                    for key3, value3 in value2.items():
+                        output_format.update({key3: ""})   
+        keys = list(output_format.keys())
+    # add some potential artificially created keys from the model
+    keys += ["Choice", "test_case", "Test_case", "Test case", "test case", "test_output", "Test_output", "test output", "Test output", "output", "Test input", "Test_input", "test input", "test_input"]
+
+    # do some regex to remove unwanted line breakes
+    res = res.replace("\n", " ")
+    # check if this is already enough procesing:
+    try: 
+        json.loads(res)
+        return res
+    except:
+        pass
+    
     # do some regex to remove unwanted single aprostrophes
     res = res.replace("'", '"')
-    res = res.replace("\n", " ")
-    # replace any color name or other word enclosed in double quotation marks to single quotation marks, in case it is inside a string field
-    pattern = r'"([^\s"]+)"'
+
+    # replace any color name enclosed in double quotation marks to single quotation marks
+    # pattern = r'"([^\s"]+)"'
+    pattern = r'"((?:(?!np\.array)[^"\s])+)"'
     res = re.sub(pattern, r"'\1'", res)
     pattern = r'(\': \s*)\'(\w+)\'(, \s*\')'
     res = re.sub(pattern, r'\1"\2"\3', res)
 
     # replace only single aprostrophe at the end of a word
-    # pattern = r'\b(?<!")(\w+)"\s'
-    # res = re.sub(pattern, r'\1 ', res)
-    # print(res)
+    pattern = r'\b(?<!")(\w+)"\s*(?!\s*(,|}))'
+    res = re.sub(pattern, r'\1 ', res)
 
     # add back double quotes to header names
-    if isinstance(json_format, dict):
-        keys = list(json_format.keys())
-    elif isinstance(json_format, list):
-        keys = json_format
-    for key in keys+["Choice"]:
+    def replace_match(match):
+        # Check the preceding character
+        preceding_char = match.group(1)
+        if preceding_char in ['{', ',']:
+            # If it's '{' or ',', return the match without replacement
+            return match.group(0)
+        else:
+            # Otherwise, replace 'key' # ], ] "objec
+            new_string = match.group(1)+","+str(match.group(0))[1:]
+            return new_string
+    for key in keys:
         pattern = fr"'({key}(?:_\d+)?)'"
         res = re.sub(pattern, r'"\1"', res)
+        pattern = r'(.)\s*"' + re.escape(key)
+        res = re.sub(pattern, replace_match, res)
+
+    # check for wrong array '"output": '['.", '.'...
+    def replace_apostrophes(match):
+        before = match.group(2)  # The text between the single apostrophe and the next key or ending sequence
+        after = before.replace('"', "'")  # Replace single apostrophes with double
+        return f'"{match.group(1)}": "{after}{match.group(3)}'    
+    keys_pattern = '|'.join([re.escape(key) for key in keys])  # Escape each key and join with '|'
+    pattern = rf'"({keys_pattern})":\s*\'(.*?)("(?:, "({keys_pattern})")|\s*"\s*\}})'
+    res = re.sub(pattern, replace_apostrophes, res)   
 
     # ensure that we don't replace away aprostophes in text 
     res = re.sub(r"(\w)\"(\w)", r"\1'\2", res)
@@ -156,10 +214,19 @@ def replace_quotes_in_text(res, json_format):
     pattern = r"(\\[^nt])"
     res = re.sub(pattern, "", res)
 
-    # In case the test output is an array but with double quotes
-    pattern = r'(":\s*)(\[\[.*?\]\])'
-    res = re.sub(pattern, r'\1"\2"', res)
-    
+    # in case the model outputs the string "np.array" to indicate such an object
+    pattern = r'"np\.array\(([^)]*?)\)"'
+    res = re.sub(pattern, r'\1', res)
+    pattern = r'np\.array\(([^)]*?)\)'
+    res = re.sub(pattern, r'"\1"', res)
+
+    # In case any output is an array but with letters w/o double quotes
+    for k in keys:
+        pattern = r'('+k+'":\s*)(\[.*?)(],\s*")('+'|'.join(keys)+r'")'
+        res = re.sub(pattern, lambda m: m.group(1) +'"'+ str(m.group(2)).replace('"', "'") +']", "'+ m.group(4), res)
+        pattern = r'('+k+'":\s*)(\[.*?)(})'
+        res = re.sub(pattern, lambda m: m.group(1) +'"'+ str(m.group(2)).replace('"', "'") +'"'+ m.group(3), res)
+
     # # replace newline and tabs
     # res = res.replace("\n", "\\n").replace("\t", "\\t")
     return res
@@ -173,22 +240,18 @@ def get_json_from_text(string, json_format):
     try:
         list_of_jsons = []
         indices = []
-        # search for json-like segment in string, including nested jsons
-        while True:
-            # Find the start and end of the JSON segment in the string
-            json_start = string.find("{")
-            json_end = string.rfind("}") + 1
-            if any([json_start == -1, json_end == 0]):
-                break
-            
-            # Extract the JSON-like segment           
-            list_of_jsons.append(string[json_start:json_end])
-            indices.append((json_start, json_end))
-            try:
-                string = string[json_start+1:json_end-1]
-            except:
-                break
+        # Find the start and end of the JSON segment in the string
+        json_start = string.find("{")
+        json_end = string.rfind("}") + 1
         
+        # Extract the JSON-like segment           
+        list_of_jsons.append(string[json_start:json_end])
+        indices.append((json_start, json_end))
+        try:
+            string = string[json_start:json_end]
+            return json.loads(string)
+        except:
+            pass
         previous_segment = None
         for i, json_segment in reversed(list(enumerate(list_of_jsons))):
             if previous_segment:
@@ -226,24 +289,30 @@ def find_key(dictionary, target_key):
                 return result, keys
     return False, []
 
-def extract_json_value(string, json_format, key):
+def extract_json_value(string, json_format, keys):
     data = get_json_from_text(string, json_format)
     if isinstance(data, str): # error in json parsing
         # get path from beginning of string
         path = data.split(".txt")[0]+".txt"
         # get error from end of string
         data = data.split(".txt")[-1]
-        data += f'Key to extract:\n{key}'
+        data += f'Key to extract:\n{keys}'
         with open(path, "w") as text_file:
             text_file.write(data)
-        return data
+        return None
     
+    # if only one key is given, make it a list
+    # if a list of keys is given, use this list to find data, starting from first potential key
+    if isinstance(keys, str):
+        keys = [keys]    
+
     # Check if the key exists in the JSON, also check nested dictionaries
-    key_exists, keys = find_key(data, key)
-    if key_exists:
-        for key in keys:
-            data = data[key]
-    
+    for key in keys:
+        key_exists, key_path = find_key(data, key)
+        if key_exists:
+            for next_key in key_path:
+                data = data[next_key]
+            break
     # Return the value for the given key or entire dictionar if not found
     return data
 
@@ -274,15 +343,19 @@ def get_int_from_dict_value(d, key):
 
     return value
 
-def get_thought(LLM_answer, prompt_modules, current_step):
+def get_thought(LLM_answer, prompt_modules, current_step, isRevision=False):
     all_json_keys = extract_dict_keys(prompt_modules, "output_format")
-    output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
+    if isRevision:
+        output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
+    else:
+        output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
     thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
     thought_data = extract_json_value(LLM_answer, all_json_keys, thought_key)
     if isinstance(thought_data, dict):
-        thought = ""
+        thought = " ".join(thought_key.split("_")) + ":"
         for key, value in thought_data.items():
             thought += f'\n{" ".join(key.split("_"))}: {value}'
+        thought += "\n"
     else:
         thought = "\n" + " ".join(thought_key.split("_")) + ": "
         thought += f'{thought_data}'
@@ -294,12 +367,20 @@ def get_previous_thoughts(node, climbing_layers=-1):
         if climbing_layers == 0:
             break
         if node.thought != "":
-            thoughts = f'{node.thought}' + thoughts
+            thoughts = f'{node.thought}\n' + thoughts
         node = node.parent
         if node is None:
             break
         climbing_layers -= 1
     return thoughts
+
+# function to ensure correct Example numbering, when using abstraction revision on Examples
+current_number = 1  # Starting number for incrementation
+def incremental_replace(match):
+    global current_number
+    result = f'Example {current_number}'
+    current_number += 1
+    return result
 
 ##################### Prompt Helper #####################
 # read multi line user inputs 
@@ -322,8 +403,8 @@ def read_multiline_input(query):
 def get_prompts(dataset="arc"):
     if dataset=="arc":
         import tot.prompts.arc as prompts
-    elif dataset=="arc-1D":
-        import tot.prompts.arc_1D as prompts 
+    elif dataset=="arc_1D":
+        import tot.prompts.arc_1D as prompts # TODO: use ARC prompts
     arc_prompts = {
         "standard_prompt": prompts.standard_prompt,
         "cot_prompt": prompts.cot_prompt,
@@ -343,22 +424,63 @@ def load_arc_tasks(path, dataset="arc"):
         # train and test path
         paths.append(os.path.join(path, "training"))
         paths.append(os.path.join(path, "evaluation"))
-    elif dataset == "arc-1D":
+    elif dataset in ["arc_1D", "arc_h_v"]:
         paths = [os.path.join(path, f.name) for f in os.scandir(path) if f.is_dir()]
     
+    subdirecotries = []
     for path in paths:
+        subdirecotry = path.split("/")[-1]
         for task_file in sorted(os.listdir(path)):
             with open(os.path.join(path, task_file)) as fid:
                 task_json = json.load(fid)
             tasks_jsons.append(task_json)
             tasks_names.append(task_file)
+            subdirecotries.append(subdirecotry)
 
     print("Total number of tasks:", len(tasks_jsons))
-    return tasks_jsons, tasks_names
+    return tasks_jsons, tasks_names, subdirecotries
+
+import numpy as np
+
+# Find objects in 1D pixel sequences
+def find_objects(input_array, background_colour):
+    objects = []
+    current_object = None
+
+    for i, pixel in enumerate(input_array):
+        if pixel != background_colour:
+            if current_object is None:
+                # Start a new object
+                current_object = {'colour': pixel, 'start_index': i, 'end_index': i, 'size': 1}
+            elif pixel == current_object['colour']:
+                # Continue the current object
+                current_object['end_index'] = i
+                current_object['size'] += 1
+            else:
+                # Finish the current object and start a new one
+                objects.append(current_object)
+                current_object = {'colour': pixel, 'start_index': i, 'end_index': i, 'size': 1}
+        else:
+            if current_object is not None:
+                # Finish the current object
+                objects.append(current_object)
+                current_object = None
+
+    # Add the last object if it exists
+    if current_object is not None:
+        objects.append(current_object)
+
+    return objects
+
+
 
 # get context out of json
-def get_context(task_json, delimiter):
-    text = ""
+def get_context(task_json, delimiter, with_intro=True, use_object_representation=False):
+    if with_intro:
+        text = "The following input-output pairs are examples and share the same underlying transformation pattern.\n"
+    else:
+        text = ""
+        
     for i, sample in enumerate(task_json["train"], 1):
         if delimiter["example_start"] == "Example_X":
             text += f"Example_{i}:\n"
@@ -367,31 +489,47 @@ def get_context(task_json, delimiter):
         text += delimiter["input_train"]
         text += delimiter["grid_start"]
         for i, row in enumerate(sample["input"]):
-            text += delimiter["row_start"]
-            for j, value in enumerate(row):
-                text += str(value)
-                if j < len(row) - 1:
-                    text += delimiter["item"]
-            if i < len(sample["input"]) - 1:
-                text += delimiter["row_end"]
-            #text += delimiter["row_end"]
+            if use_object_representation:
+                if CHANGE_REPRESENTATION:
+                    bg_colour = NEW_REPRESENTATION[0]
+                else:
+                    bg_colour = 0
+                objects = find_objects(row, bg_colour)
+                for i, o in enumerate(objects, 1):
+                    text += "Object_" + str(i) + ": " + str(o) + ", "
+                text = text[:-2] + "\n"
+            else:
+                text += delimiter["row_start"]
+                for j, value in enumerate(row):
+                    text += str(value)
+                    if j < len(row) - 1:
+                        text += delimiter["item"]
+                if i < len(sample["input"]) - 1:
+                    text += delimiter["row_end"]
+                #text += delimiter["row_end"]
         text += delimiter["grid_end"]
         text += delimiter["output_train"]
         text += delimiter["grid_start"]
         for i, row in enumerate(sample["output"]):
-            text += delimiter["row_start"]
-            for j, value in enumerate(row):
-                text += str(value)
-                if j < len(row) - 1:
-                    text += delimiter["item"]
-            if i < len(sample["output"]) - 1:
-                text += delimiter["row_end"]
+            if use_object_representation:
+                objects = find_objects(row, bg_colour)
+                for i, o in enumerate(objects, 1):
+                    text += "Object_" + str(i) + ": " + str(o) + ", "
+                text = text[:-2] + "\n"
+            else:
+                text += delimiter["row_start"]
+                for j, value in enumerate(row):
+                    text += str(value)
+                    if j < len(row) - 1:
+                        text += delimiter["item"]
+                if i < len(sample["output"]) - 1:
+                    text += delimiter["row_end"]
         text += delimiter["grid_end"]
         text += delimiter["example_end"]
     return text
 
 # get tasks out of json
-def get_tasks(task_json, delimiter):
+def get_tasks(task_json, delimiter, use_object_representation=False):
     tasks = []
     solutions = []
     
@@ -400,26 +538,46 @@ def get_tasks(task_json, delimiter):
         task += delimiter["input_test"]
         task += delimiter["grid_start"]
         for i, row in enumerate(sample["input"]):
-            task += delimiter["row_start"]
-            for j, value in enumerate(row):
-                task += str(value)
-                if j < len(row) - 1:
-                    task += delimiter["item"]
-            if i < len(sample["input"]) - 1:
-                task += delimiter["row_end"]
+            if use_object_representation:
+                if CHANGE_REPRESENTATION:
+                    bg_colour = NEW_REPRESENTATION[0]
+                else:
+                    bg_colour = 0
+                objects = find_objects(row, bg_colour)
+                for i, o in enumerate(objects, 1):
+                    task += "Object_" + str(i) + ": " + str(o) + ", "
+                task = task[:-2] + "\n"
+            else:
+                task += delimiter["row_start"]
+                for j, value in enumerate(row):
+                    task += str(value)
+                    if j < len(row) - 1:
+                        task += delimiter["item"]
+                if i < len(sample["input"]) - 1:
+                    task += delimiter["row_end"]
         task += delimiter["grid_end"]
         task += delimiter["output_test"]
         task += delimiter["task_end"]
 
         solution = delimiter["grid_start"]
         for i, row in enumerate(sample["output"]):
-            solution += delimiter["row_start"]
-            for j, value in enumerate(row):
-                solution += str(value)
-                if j < len(row) - 1:
-                    solution += delimiter["item"]
-            if i < len(sample["output"]) - 1:
-                solution += delimiter["row_end"]
+            if use_object_representation:
+                if CHANGE_REPRESENTATION:
+                    bg_colour = NEW_REPRESENTATION[0]
+                else:
+                    bg_colour = 0
+                objects = find_objects(row, bg_colour)
+                for i, o in enumerate(objects, 1):
+                    solution += "Object_" + str(i) + ": " + str(o) + ", "
+                solution = solution[:-2] + "\n"
+            else:
+                solution += delimiter["row_start"]
+                for j, value in enumerate(row):
+                    solution += str(value)
+                    if j < len(row) - 1:
+                        solution += delimiter["item"]
+                if i < len(sample["output"]) - 1:
+                    solution += delimiter["row_end"]
         solution += delimiter["grid_end"]
         tasks.append(task)
         solutions.append(solution)
@@ -516,33 +674,34 @@ def get_LLM_result_as_json(tasks, results):
     return llm_task_results
 
 # create data generator for efficient loading of data
-def data_generator(model_name, directory_train, directory_eval, delimiter, prompt_template, sys, output_format, pre_test_case, post_test_case, instruction_end, tokenizer, change_representation=False, new_representation=None, LARC=False):
-    # get list of files and respective directories
-    directories = [directory_train]*len(os.listdir(directory_train)) + [directory_eval]*len(os.listdir(directory_eval))
-    task_files =  sorted(os.listdir(directory_train))+sorted(os.listdir(directory_eval))
+def data_generator(model_name, dataset, directories, delimiter, prompt_template, sys, output_format, pre_test_case, post_test_case, instruction_end, tokenizer, change_representation=False, new_representation=None):
+    task_files = [sorted(os.listdir(os.path.join(dir,d))) for dir in directories for d in os.listdir(dir)]
+    task_files = list(itertools.chain(*task_files))
+    directories = [[os.path.join(dir,d)]*len(os.listdir(os.path.join(dir,d))) for dir in directories for d in os.listdir(dir)]
+    directories = list(itertools.chain(*directories)) 
+    categories = [d.split("/")[-1] for d in directories]
+
     # initialize counter for too long prompts
     promp_oversize_counter = 0
     # iterate over files
-    for directory, task_file in zip(directories, task_files):
+    for directory, task_file, category in zip(directories, task_files, categories):
         with open(os.path.join(directory, task_file)) as fid:
             task_json = json.load(fid)
         
         # if we load LARC data, we need to check if the task has been solved by humans
-        if LARC:
+        if dataset == "LARC":
             descriptions, task_json = get_successful_descriptions(task_json)
             if len(descriptions) == 0:
                 continue
-            
         else:
             descriptions = [""]       
     
         # change numbers to other representation if wanted
         if change_representation:
-            
             task_json = change_color_representation(task_json, new_representation)
 
         # create context
-        if LARC:
+        if dataset == "LARC":
             context = ""
         else:
             context = get_context(task_json, delimiter)
@@ -571,8 +730,7 @@ def data_generator(model_name, directory_train, directory_eval, delimiter, promp
                     description_id = "-"+str(i)
                 else:
                     description_id = ""
-                print(task_file+description_id, "Prompt too long.")
-                
+                print(task_file+description_id, "Prompt too long.")    
                 continue
           
             # yield prompts
@@ -589,6 +747,8 @@ def data_generator(model_name, directory_train, directory_eval, delimiter, promp
                     prompt_gpt = ""      
                 yield {
                     "task_name": task_file,
+                    "task_json": task_json,
+                    "category": category,
                     "descriptions_index": i,
                     "test_case_index": j,
                     "total_test_cases": len(test_cases),
@@ -600,7 +760,8 @@ def data_generator(model_name, directory_train, directory_eval, delimiter, promp
                     "solution": solution,
                     "directory": directory,
                     "prompt_oversize_counter": promp_oversize_counter}
-        
+                
+                       
 def change_color_representation(task_original, new_representation):
     task = deepcopy(task_original)
     for test_train in task:
@@ -618,49 +779,36 @@ def change_color_representation(task_original, new_representation):
 def grid_to_2D_nparray(grid):
     if isinstance(grid, str):
         # array in string
-        array_start = grid.find("[[")
-        array_end = grid.rfind("]]") + 2
-        if array_start == -1 or array_end == 1:
-            error = "No 2D-array found in final output string: " + grid
-            return error
-        grid = grid[array_start:array_end]          
+        for i in range(2):
+            array_start = grid.find("[[")
+            array_end = grid.rfind("]]") + 2
+            if array_start == -1 or array_end == 1:
+                if i == 1:
+                    error = "No 2D-array found in final output string: " + grid
+                    return error
+                print("No 2D-array found, trying to add extra bracket: [..]")
+                grid = "[" + grid.strip() + "]"
+            else:
+                break
+        grid = grid[array_start:array_end] 
+                 
         # Replace single letters with quotes around them
-        pattern = re.compile(r'(?<![\'"])([a-zA-Z])(?![\'"])')
+        pattern = re.compile(r'(?<![\'"])([a-zA-Z\.])(?![\'"])')
         grid = pattern.sub(r"'\1'", grid)  
-
+        
         try:
-            return np.array(eval(grid))
+            grid = ast.literal_eval(grid)
+            return np.array(grid)
         except:
             error = "Array found in string but error while converting string to array: " + str(grid)
             return error
     else:
         try: 
-            return np.array(grid)
-        except:
-            error = f"Error while converting grid of type {type(grid)} to nparray: " + str(grid)
-            return error
-
-def grid_to_1D_nparray(grid):
-    if isinstance(grid, str):
-        # array in string
-        array_start = grid.find("[")
-        array_end = grid.rfind("]") + 1
-        if array_start == -1 or array_end == 1:
-            error = "No 1D-array found in final output string: " + grid
-            return error
-        grid = grid[array_start:array_end]          
-        # Replace single letters with quotes around them
-        pattern = re.compile(r'(?<![\'"])([a-zA-Z])(?![\'"])')
-        grid = pattern.sub(r"'\1'", grid)  
-
-        try:
-            return np.array(eval(grid))
-        except:
-            error = "Array found in string but error while converting string to array: " + str(grid)
-            return error
-    else:
-        try: 
-            return np.array(grid)
+            arr = np.array(grid)
+            # check if 1D, then add extra dimension
+            if len(arr.shape) == 1:
+                arr = np.expand_dims(arr, axis=0)            
+            return arr
         except:
             error = f"Error while converting grid of type {type(grid)} to nparray: " + str(grid)
             return error

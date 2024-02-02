@@ -1,0 +1,76 @@
+Input token: 483
+Output token: 521
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['f', 'a', 'a'], ['d', 'f', 'a'], ['a', 'a', 'f']]
+output: [['f', 'd', 'a'], ['a', 'f', 'a'], ['a', 'a', 'f']]
+
+Example_2:
+input: [['f', 'a', 'a', 'a'], ['a', 'f', 'a', 'a'], ['g', 'a', 'f', 'a'], ['g', 'a', 'e', 'f']]
+output: [['f', 'a', 'g', 'g'], ['a', 'f', 'a', 'a'], ['a', 'a', 'f', 'e'], ['a', 'a', 'a', 'f']]
+
+Example_3:
+input: [['f', 'a', 'a', 'a', 'a'], ['a', 'f', 'a', 'a', 'a'], ['i', 'i', 'f', 'a', 'a'], ['a', 'c', 'a', 'f', 'a'], ['a', 'c', 'a', 'b', 'f']]
+output: [['f', 'a', 'i', 'a', 'a'], ['a', 'f', 'i', 'c', 'c'], ['a', 'a', 'f', 'a', 'a'], ['a', 'a', 'a', 'f', 'b'], ['a', 'a', 'a', 'a', 'f']]
+
+Test case:
+input: [['f', 'a', 'a', 'a', 'a', 'a'], ['a', 'f', 'a', 'a', 'a', 'a'], ['d', 'd', 'f', 'a', 'a', 'a'], ['a', 'a', 'a', 'f', 'a', 'a'], ['c', 'a', 'i', 'i', 'f', 'a'], ['c', 'a', 'g', 'a', 'a', 'f']]
+################################################################
+
+LLM answer:
+
+output: [['f', 'a', 'd', 'a', 'a', 'a'], ['a', 'f', 'd', 'a', 'a', 'a'], ['a', 'a', 'f', 'a', 'a', 'a'], ['a', 'a', 'a', 'f', 'a', 'a'], ['a', 'a', 'a', 'a', 'f', 'a']]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_next(current_state: str) -> Tuple[str, int]:
+    """Return next state and index of current state."""
+    if len(current_state) == 0:
+        return "", -1
+    elif current_state[-1] in "ab":
+        return "".join([x for x in current_state[:-1]]), (len(current_state)-1)
+    else:
+        return "".join([x for x in current_state]), (len(current_state))
+
+
+class Solution:
+    def findOrder(self, words: List[str]) -> None:
+        """
+        Do not edit original data; create a copy instead.
+        :type words: List[str]
+        :rtype: None
+        """
+        # type: ignore
+        n = len(words)
+        dp = [[False]*n for _ in range(n)]
+        for i in range(n):
+            for j in range(i+1, n):
+                if words[j][-1]!= words[i][-1]:
+                    continue
+                if words[j][-1] == 'a':
+                    dp[j][i] = True
+                else:
+                    dp[i][j] = True
+        res = []
+        for i in range(n):
+            while dp[i][i]:
+                res += ["".join(w) for w in words[i].split()]
+                dp[i][i] = False
+        print(" ".join(res))
+
+
+if __name__ == "__main__":
+    solution = Solution()
+    words = ["f", "a", "a"]
+    solution.findOrder(words)
+################################################################
+
+Solution:
+[['f', 'a', 'd', 'a', 'c', 'c'], ['a', 'f', 'd', 'a', 'a', 'a'], ['a', 'a', 'f', 'a', 'i', 'g'], ['a', 'a', 'a', 'f', 'i', 'a'], ['a', 'a', 'a', 'a', 'f', 'a'], ['a', 'a', 'a', 'a', 'a', 'f']]
+

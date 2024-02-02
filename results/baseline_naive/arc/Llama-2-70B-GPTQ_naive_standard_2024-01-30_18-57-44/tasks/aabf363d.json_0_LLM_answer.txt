@@ -1,0 +1,71 @@
+Input token: 677
+Output token: 627
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', '.', '.', '.'], ['.', 'b', 'b', 'b', '.', '.', '.'], ['.', '.', 'b', '.', '.', '.', '.'], ['.', 'b', 'b', 'b', 'b', '.', '.'], ['.', '.', 'b', 'b', 'b', '.', '.'], ['.', '.', '.', 'b', '.', '.', '.'], ['d', '.', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.', '.'], ['.', 'd', 'd', 'd', '.', '.', '.'], ['.', '.', 'd', '.', '.', '.', '.'], ['.', 'd', 'd', 'd', 'd', '.', '.'], ['.', '.', 'd', 'd', 'd', '.', '.'], ['.', '.', '.', 'd', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.']]
+
+Example_2:
+input: [['.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', 'c', '.', '.', '.'], ['.', '.', 'c', 'c', 'c', '.', '.'], ['.', 'c', 'c', 'c', 'c', '.', '.'], ['.', 'c', 'c', '.', '.', '.', '.'], ['.', '.', 'c', 'c', '.', '.', '.'], ['f', '.', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', 'f', '.', '.', '.'], ['.', '.', 'f', 'f', 'f', '.', '.'], ['.', 'f', 'f', 'f', 'f', '.', '.'], ['.', 'f', 'f', '.', '.', '.', '.'], ['.', '.', 'f', 'f', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.']]
+
+Test case:
+input: [['.', '.', '.', '.', '.', '.', '.'], ['.', 'h', 'h', 'h', '.', '.', '.'], ['.', 'h', 'h', 'h', 'h', 'h', '.'], ['.', '.', '.', 'h', 'h', '.', '.'], ['.', '.', 'h', 'h', '.', '.', '.'], ['.', '.', 'h', 'h', 'h', '.', '.'], ['b', '.', '.', '.', '.', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', '.', '.', '.', '.'], ['.', 'g', 'g', 'g', '.', '.', '.'], ['.', 'g', 'g', 'g', 'g', 'g', '.'], ['.', '.', '.', 'g', 'g', '.', '.'], ['.', '.', 'g', 'g', '.', '.', '.'], ['.', '.', 'g', 'g', 'g', '.', '.'], ['.', '.', '.', '.', '.', '.', '.']]
+"""
+
+import collections
+
+
+class Solution(object):
+    def findPaths(self, m, n, start, dest, heightmap):
+        """
+        :type m: int
+        :type n: int
+        :type start: List[str]
+        :type dest: List[str]
+        :type heightmap: List[List[int]]
+        :rtype: bool
+        """
+        if not (0 <= len(start) - 1 < m or 0 <= len(dest) - 1 < n):
+            return False
+        
+        directions = [(i, j) for i in range(-1, 2) for j in range(-1, 2)]
+        directions = filter(lambda x: x!= (0, 0), directions)
+        directions = list(set([tuple(sorted((x, y))) for x, y in directions]))
+        directions = sorted(directions, key=lambda x: (-x[0], -x[1]), reverse=True)
+        directions = [[x[0]*m + y[0], x[1]*n + y[1]] for x, y in directions]
+        directions = {k: v for k, v in zip(directions, range(len(directions)))}
+        directions = {v: k for k, v in directions.items()}
+        
+        queue = collections.deque()
+        visited = set()
+        queue.append((start, 0, 0, []))
+        while queue:
+            path, level, step, steps = queue.popleft()
+            
+            if path == dest:
+                return True
+                
+            for direction in directions:
+                newpath = path[:step+direction[0]+1] + ["."*(level-1)+"#"] + path[step+direction[0]+2:]
+                if newpath not in visited:
+                    visited.add(newpath)
+                    
+                    if heightmap[direction[0]][direction[1]] > 0:
+                        continue
+                    
+                    queue.append((newpath, level, step+direction[0]+1, steps+(direction[1],)))
+
+################################################################
+
+Solution:
+[['.', '.', '.', '.', '.', '.', '.'], ['.', 'b', 'b', 'b', '.', '.', '.'], ['.', 'b', 'b', 'b', 'b', 'b', '.'], ['.', '.', '.', 'b', 'b', '.', '.'], ['.', '.', 'b', 'b', '.', '.', '.'], ['.', '.', 'b', 'b', 'b', '.', '.'], ['.', '.', '.', '.', '.', '.', '.']]
+

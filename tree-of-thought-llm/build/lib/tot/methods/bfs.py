@@ -1,146 +1,37 @@
 import itertools
-import tkinter as tk
 import numpy as np
 from functools import partial
-from tot.models import gpt
+from tot.models import initialize_model
 from tot.methods.tree_nodes import Node
-
-# read multi line user inputs 
-def read_multiline_input(query):
-    lines = []
-    eos = "eee"
-    print(query)
-    print(f'type {eos} after answer.')
-
-    while True:
-        line = input()
-        if line == eos:
-            break
-        lines.append(line)
-
-    text = "\n".join(lines)
-    return text
-
-def get_value(args, task, child, n_evaluate_sample, cache_value=True):
-    value_prompt = task.value_prompt_wrap(child, task.steps)
-    if cache_value and str(value_prompt) in task.value_cache:
-        return task.value_cache[str(value_prompt)], value_prompt
-    if args.use_api:
-        value_outputs = gpt(value_prompt, n=n_evaluate_sample, stop=None)
-    else: 
-        # get values from chat interface
-        value_outputs = []
-        for i in range(n_evaluate_sample):
-            print(value_prompt["system"] + "\n" + value_prompt["user"])
-            value_output = read_multiline_input("Answer of LLM (type '<END>' after answer): ")
-            value_outputs.append(value_output)
-            
-    value = task.value_outputs_unwrap(value_outputs, child.level-1)
-    if cache_value:
-        task.value_cache[str(value_prompt)] = value
-    delimiter = "\n#############################\n"
-    prompt_log = delimiter.join(["Value Prompt:\n" + "\n\n".join(value_prompt.values()), "Value Outputs:\n" + "\n------\n".join(value_outputs)])
-    return value, prompt_log
-
-def get_values(args, task, current_node, n_evaluate_sample, cache_value=True):
-    prompt_log = []
-    local_value_cache = {}
-    
-    # If just one child
-    if len(current_node.children) == 1:
-        current_node.children[0].value = 1
-        return "\n###########################################################\nNo Valuation - Only one candidate\n"
-    
-    # valuation
-    for child in current_node.children:  # each partial output
-        if child.LLM_answer in local_value_cache:  # avoid duplicate candidates
-            value = 0
-        else:    
-            value, value_prompt = get_value(args, task, child, n_evaluate_sample, cache_value=cache_value)
-            child.value = value
-            local_value_cache[child.LLM_answer] = value
-        prompt_log.append(value_prompt)
-   
-    # log
-    delimiter = "\n###########################################################\n"
-    prompt_log = delimiter + delimiter.join([str(s) for s in prompt_log])
-    return prompt_log
-
-def get_votes(task, current_node, n_evaluate_sample):
-    if len(current_node.children) == 1:
-        current_node.children[0].value = 1
-        return "\n###########################################################\nNo Valuation - Only one candidate\n"
- 
-    # voting
-    vote_prompt = task.vote_prompt_wrap(current_node, task.steps) # TODO: add params to all calls
-    vote_outputs = gpt(vote_prompt, n=n_evaluate_sample, stop=None)
-    values = task.vote_outputs_unwrap(current_node, vote_outputs)
-    for value, child in zip(values, current_node.children):
-        child.value = value
-        
-    #log
-    delimiter = "\n###########################################################\n"
-    prompt_log = delimiter + delimiter.join(["Vote Prompt:\n" + "\n\n".join(vote_prompt.values()), "Vote Outputs:\n" + "\n------\n".join(vote_outputs), "Vote Values: "+ str([n.value for n in current_node.children])])
-    
-    return prompt_log
-
-def get_samples(args, task, current_node, n_generate_sample, prompt_sample, stop):
-    # sampling
-    if prompt_sample == 'standard':
-        prompt = task.standard_prompt_wrap(current_node)
-    elif prompt_sample == 'cot':
-        prompt = task.cot_prompt_wrap(current_node, task.steps) # TODO: add params to all calls
-    else:
-        raise ValueError(f'prompt_sample {prompt_sample} not recognized')
-    if args.use_api:
-        samples = gpt(prompt, n=n_generate_sample, stop=stop)
-    else:
-        # get samples from chat interface
-        samples = []
-        for i in range(n_generate_sample):
-            print(prompt["system"] + "\n" + prompt["user"])
-            sample = read_multiline_input("Answer of LLM: ")
-            samples.append(sample)
-            
-    # log
-    delimiter = "\n###########################################################\n"
-    prompt_log = delimiter.join(["Sample Prompt:\n" + "\n\n".join(prompt.values()), "Sample Outputs:\n" + "\n------\n".join(samples)])
-    
-    # turn samples in nodes
-    if current_node.level+1 == task.steps:
-        leaf = True
-    else:
-        leaf = False
-    for sample in samples:
-        new_node = Node(current_node.level+1, current_node.x, LLM_answer=sample, parent=current_node, children=[], leaf=leaf)
-        current_node.children.append(new_node)
-    
-    if task.__class__.__name__ == "ARCTask":
-        return prompt_log
-    #return [y + _ for _ in samples], prompt_log # TODO: apply to old tasks
-
+from tot.methods import search_utils
 
 def solve(args, task, idx, to_print=True):
-    global gpt
-    gpt = partial(gpt, model=args.backend, temperature=args.temperature)
+    #search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature)
+    if search_utils.model is None:
+        search_utils.model = initialize_model(args)
+    if search_utils.model is None:
+        print("Model not found!")
+        exit()
     x = task.get_input(idx)  # input
-    current_best_nodes = [Node(0, x, children=[])]
+    current_best_nodes = [Node(0, x, n_generate_children=args.n_generate_sample, children=[])]
     infos = []
     for step in range(task.steps):
         # generation  # TODO: Rename? Generate children?
         if args.method_generate == 'sample':
-            gen_prompts = [get_samples(args, task, current_node, args.n_generate_sample, prompt_sample=args.prompt_sample, stop=task.stops[step]) for current_node in current_best_nodes]
+            gen_prompts = [search_utils.get_samples(args, task, current_node, prompt_sample=args.prompt_sample, stop=task.stops[step]) for current_node in current_best_nodes]
         # elif args.method_generate == 'propose':
-        #     # Propose potential next steps, define in promptamount of proposals
+        #     # Propose potential next steps, define in prompt the amount of proposals
         #     new_ys, gen_prompts = get_proposals(task, x, y)
+        gen_prompts = "#############################\nFirst node, get samples:\n#############################" + '#############################\nNext node, get samples:\n#############################'.join(gen_prompts)
         new_ys = list(itertools.chain(*[current_node.children for current_node in current_best_nodes]))
         
         # evaluation
         if args.method_evaluate == 'vote':
             # always vote for single best child, n_evalute_sample times
-            eval_prompts = [get_votes(task, current_node, args.n_evaluate_sample) for current_node in current_best_nodes]
+            eval_prompts = [search_utils.get_votes(task, current_node, args.n_evaluate_sample) for current_node in current_best_nodes]
         elif args.method_evaluate == 'value':
-            eval_prompts = [get_values(args, task, current_node, args.n_evaluate_sample) for current_node in current_best_nodes]
+            eval_prompts = [search_utils.get_values(args, task, current_node) for current_node in current_best_nodes]
+        eval_prompts = "#############################\nFirst node, get values:\n#############################" + '#############################\nNext node, get values:\n#############################'.join(eval_prompts)
         values = [node.value for node in new_ys]
         
         # selection / pruning
@@ -150,16 +41,64 @@ def solve(args, task, idx, to_print=True):
         elif args.method_select == 'greedy':
             selected_best_nodes = sorted(new_ys, key=lambda n: n.value, reverse=True)[:args.n_select_sample]
 
+        # if needed, update children nodes: phase & spreading
+        for child in selected_best_nodes:
+            task.update_node(child)
+
+        # revise abstraction
+        rev_log = ""
+        if args.revision and selected_best_nodes[0].phase == "application":
+            for child in selected_best_nodes:
+                revision_log, n_revisions, example_success = search_utils.revise_abstraction(args, task, child)
+                rev_log += revision_log
+                if all(example_success):
+                    # abstraction is successfull on examples -> apply to all test cases! Assumption: Not multiple tries needed.
+                    selected_best_nodes = [child]
+                    break
+                else:  
+                    # at least one example was wrong: value of instruction becomes # of solved examples
+                    child.value = example_success.count(True)
+                    child.example_success = example_success
+                    child.revisions_total = n_revisions
+            if len(selected_best_nodes) != 1:
+                # none of the abstractions was successfull on all examples -> take best abstractions on examples
+                selected_best_nodes = sorted(selected_best_nodes, key=lambda n: n.value, reverse=True)[:args.n_select_sample]
+                revisions_total = [node.revisions_total for node in selected_best_nodes] 
+                example_success = [node.example_success for node in selected_best_nodes]
+                rev_log += f'\n\nReset to best abstraction node:\n'
+                rev_log += task.replace_revised_thoughts(selected_best_nodes[0].best_abstraction_node, selected_best_nodes[0])
         # log
         if to_print: 
             sorted_new_ys, sorted_values = zip(*sorted(zip(new_ys, values), key=lambda x: x[1], reverse=True))
             print(f'-- new_ys --: {sorted_new_ys}\n-- sol values --: {sorted_values}\n-- choices --: {selected_best_nodes}\n')
-        prompt_log = '\n'.join([gen_prompts, eval_prompts])
-        infos.append({'step': step, 'x': x, 'ys': current_best_nodes, 'new_ys': [str(y) for y in new_ys], 'values': values, 'select_new_ys': [str(child) for child in selected_best_nodes], 'prompt_log': prompt_log})
-
-        current_best_nodes = selected_best_nodes
+        log = {'step': step, 'x': x, 'ys': [str(y) for y in current_best_nodes], 'new_ys': [str(y) for y in new_ys], 'values': values, 'select_new_ys': [str(child) for child in selected_best_nodes]}
+        if rev_log == "":
+            prompt_log = '\n'.join([gen_prompts, eval_prompts])
+            log['prompt_log'] = prompt_log
+        else:
+            prompt_log = '\n'.join([gen_prompts, eval_prompts, rev_log])
+            log.update({'prompt_log': prompt_log, 'revision_success':example_success, 'total_revisions': revisions_total})
+        infos.append(log)
         
+        current_best_nodes = selected_best_nodes
+    if args.revision:
+            # get revision results for all end nodes
+            example_success = [node.parent.example_success for node in current_best_nodes]
+            revisions_total = [node.parent.revisions_total for node in current_best_nodes]
+            return current_best_nodes, {'steps': infos, 'revision_success': all(example_success), 'total_revisions': revisions_total}
     return current_best_nodes, {'steps': infos}
     
     
- 
+def naive_solve(args, task, idx, to_print=True):
+    # search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature, response_format={ "type": "text" })
+    # search_utils.model = partial(gpt, model=args.backend, temperature=args.temperature, response_format={ "type": "text" })
+    if search_utils.model is None:
+        search_utils.model = initialize_model(args)
+    if search_utils.model is None:
+        print("Model not found!")
+        exit()
+    x = task.get_input(idx)  # input
+    root = Node(0, x, n_generate_children=args.n_generate_sample, children=[])
+    prompt_log = search_utils.get_samples(args, task, root, args.prompt_sample, stop=None)
+    infos = [{'prompt_log': prompt_log}]
+    return root.children, {'steps': infos} 

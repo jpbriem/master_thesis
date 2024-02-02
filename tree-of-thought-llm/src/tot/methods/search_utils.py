@@ -122,6 +122,7 @@ def get_samples(args, task, current_node, prompt_sample, stop):
                 print(prompt["system"])
             if "user" in prompt:
                 print("\n" + prompt["user"])
+            print("\n\nDo not use code!")
             sample = read_multiline_input("Answer of LLM: ")
             samples.append(sample)
             
@@ -143,7 +144,7 @@ def get_samples(args, task, current_node, prompt_sample, stop):
         new_node = Node(current_node.level+1, current_node.x, LLM_answer=sample, parent=current_node, n_generate_children=args.n_generate_sample, children=[], leaf=leaf)
         current_node.children.append(new_node)
     
-    if task.__class__.__name__ in ["ARCTask", "ARC_1D"]:
+    if task.__class__.__name__ in ["ARCTask", "ARC_1D", "ARC_h_v"]:
         return prompt_log
     #return [y + _ for _ in samples], prompt_log # TODO: apply to old tasks
 

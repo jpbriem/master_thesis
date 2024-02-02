@@ -46,12 +46,12 @@ from tot.models import gpt_usage
 
 ########## ARC ##########
 args = argparse.Namespace(
-    backend='gpt-3.5-turbo-1106',   # TODO: Set model!
-    # backend='gpt-4-1106-preview', 
+    # backend='gpt-3.5-turbo-1106',   # TODO: Set model!
+    backend='gpt-4-1106-preview', 
     # backend='NousResearch/Llama-2-7b-chat-hf',
     # backend='TheBloke/Llama-2-70b-Chat-GPTQ',
     # model_revision='main',
-    use_api=False,                       # TODO: Use API?!
+    use_api=True,                       # TODO: Use API?!
     temperature=0.7, 
     # task='arc',                       # TODO: Set task!
     # task='arc_1D',
@@ -73,7 +73,8 @@ args = argparse.Namespace(
 # get IDs of 50 ARC tasks to be tested # TODO: original ARC???
 # data = pd.read_csv('/work/jbriem/repos/master_thesis/ARC_datasets/1D-ARC/LLM4ARC/output-logs/direct-grid/ARC-subset/direct_grid_few_shot_number_3.5.csv')
 # tasks = list(data["Task_ID"])
-
+# solved_gpt3 = ["25ff71a9.json", "6150a2bd.json", "74dd1130.json", "9dfd6313.json", "b1948b0a.json", "c8f0f002.json", "d037b0a7.json", "dc433765.json"]
+# multi_colour  = ["3c940459.json", "67a3c6ac.json", "88a10436.json", "6150a2bd.json", "74dd1130.json", "b2862040.json"]
 def run(args):
     log, failure_log = [], ""
 
@@ -97,22 +98,24 @@ def run(args):
 
     # solve the task
     indices = list(range(len(task)))
-    random.seed(42)
-    random.shuffle(indices)
-    count = 0 # TODO: delete!!!
+    # random.seed(42)
+    # random.shuffle(indices)
+    # count = 0 # TODO: delete!!!
     for idx in indices:
         print(f"Task {idx} of {len(task)}")
-        if count == 50: # TODO: delete!!!
-            break
+        # if count == 50: # TODO: delete!!!
+        #     break
         Node.reset_tree()
         task_name = task.names[idx].split(".json")[0]
         task_category = task.categories[idx]
-        # if task_name not in tasks: # TODO: original ARC???
+
+        # if 'scale' in task_name or "flip" in task_name or "move_1p" in task_name: # TODO: delete!!! 
+        #     count += 1 # TODO: delete!!!
+        # else:
         #     continue
-        if 'scale' in task_name or "flip" in task_name or "move_1p" in task_name:
-            count += 1 # TODO: delete!!!
-        else:
-            continue
+        # if not task_name+".json" in solved_gpt3+multi_colour: # TODO delete!!!
+        #     continue
+        
         if args.search_algo == "bfs":
             search_algo = bfs
         elif args.search_algo == "dfs":
@@ -133,7 +136,8 @@ def run(args):
         infos.update({'idx': idx, 'task': task_name, 'category': task_category, 'ys': [str(y) for y in ys], 'result': result_infos, 'usage_so_far': gpt_usage(args.backend)})
         log.append(infos)
         failure_log = save_log_files(log, task_name, directory, failure_log)
-                
+        
+        print(f"Solved: {task.full_success} / {idx+1}")    
             
     # save all task log as json file: Add overall information to log
     summary = {'date': current_datetime.strftime("%Y-%m-%d_%H-%M-%S"), 'model': args.backend, 'usage_total': gpt_usage(args.backend), 'dataset': args.task, 'num_tasks': len(task)} 

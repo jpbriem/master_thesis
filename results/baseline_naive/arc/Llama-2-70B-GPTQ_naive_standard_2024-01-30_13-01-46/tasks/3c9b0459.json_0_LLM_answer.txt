@@ -1,0 +1,119 @@
+Input token: 334
+Output token: 658
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['c', 'c', 'b'], ['c', 'b', 'c'], ['c', 'i', 'b']]
+output: [['b', 'i', 'c'], ['c', 'b', 'c'], ['b', 'c', 'c']]
+
+Example_2:
+input: [['j', 'c', 'e'], ['c', 'e', 'e'], ['c', 'j', 'c']]
+output: [['c', 'j', 'c'], ['e', 'e', 'c'], ['e', 'c', 'j']]
+
+Example_3:
+input: [['i', 'i', 'i'], ['f', 'f', 'i'], ['i', 'f', 'f']]
+output: [['f', 'f', 'i'], ['i', 'f', 'f'], ['i', 'i', 'i']]
+
+Example_4:
+input: [['d', 'c', 'j'], ['j', 'j', 'j'], ['c', 'd', 'd']]
+output: [['d', 'd', 'c'], ['j', 'j', 'j'], ['j', 'c', 'd']]
+
+Test case:
+input: [['g', 'e', 'e'], ['g', 'g', 'e'], ['e', 'g', 'h']]
+################################################################
+
+LLM answer:
+
+expected output: [['e', 'g', 'h'], ['g', 'e', 'e'], ['e', 'h', 'g']]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def swapNodes(root, i, j):
+    if root is None or (i < 0) or (j < 0): return root
+    
+    # find node at index i
+    currNode = root
+    while True:
+        if i == 0: break
+        
+        currNode = currNode.left
+        i -= 1
+    
+    # find node at index j
+    currNode = root
+    while True:
+        if j == 0: break
+        
+        currNode = currNode.right
+        j -= 1
+    
+    # swap nodes
+    temp = currNode.left
+    currNode.left = currNode.right
+    currNode.right = temp
+    
+    return root
+
+class Solution(object):
+    def reorderList(self, head):
+        """
+        :type head: ListNode
+        :rtype: void Do not return anything, modify head in-place instead.
+        """
+        if head is None or head.next is None: return head
+        
+        # get length of list
+        count = 0
+        currNode = head
+        while currNode!= None:
+            count += 1
+            currNode = currNode.next
+            
+        # create new list with reversed order
+        newHead = None
+        currNode = head
+        while currNode!= None:
+            newCurrNode = Node(currNode.val)
+            newCurrNode.left = newHead
+            newHead = newCurrNode
+            currNode = currNode.next
+            
+        # reverse new list
+        newTail = newHead
+        while newTail.left!= None:
+            newTail = newTail.left
+        
+        newPrev = newTail
+        while newPrev.right!= None:
+            newNext = newPrev.right
+            newPrev.right = newPrev.right.left
+            newPrev = newNext
+        
+        # merge two lists
+        newPrev = newHead
+        prevCount = 0
+        while newPrev.left!= None:
+            newPrev = newPrev.left
+            prevCount += 1
+        
+        newPrev.left = head
+        newPrev.right = newTail
+        
+        # swap nodes
+        for i in range(count // 2 + 1):
+            swapNodes(newPrev, i, count - i)
+        
+        return newPrev.left
+################################################################
+
+Solution:
+[['h', 'g', 'e'], ['e', 'g', 'g'], ['e', 'e', 'g']]
+

@@ -12,7 +12,7 @@ This list is not exhaustive.'''
 ################## Prompt Templates ##########################
 
 standard_prompt = {
-	"user": '''{context}{test_input}'''
+	"user": '''{context}{test_input}\n\nGive no explanation. '''
 }
 
 # cot_prompt = {
@@ -348,7 +348,7 @@ prompt_modules_naive = {
 		'generation': {
 			"instruct_task": f'\n\nYou are to infer the simplest possible relation beetween input and output. Then, your task is to transform the test input sequence into its test output sequence.',
 			"output_format": {
-				'object_description': {
+				'description': {
 					'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!',
 					'Example_2': '...',
     				},

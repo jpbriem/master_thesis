@@ -1,46 +1,69 @@
 ################## General Task Explanation ##################
-general_explanation = '''You are given a series of example input and output pairs that share the same logical pattern of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from 'a' to 'i' represent different colors and '.' represents the background. For example, [['.','b','.'],['.','.','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+general_explanation = '''You are confronted with a task in which a 2-dimensional input grid of pixels should be transformed into a corresponding output grid. The input and output grids have values from 'a' to 'i' representing different pixel colours, and '.' representing the background colour. The transformation can relate to the entire grid or individual objects in the grid. Objects are usually adjacent pixels of a single colour. 
+Example: [['.','b','b','.','c'], ['.','b','.','.','.']] represents a pixel grid of dimension (2,5) with the following objects: [Object_1: {{colour: 'b', coordinates: [(0,1), (0,2), (1,1)], size: 3}}, Object_2: {{colour: 'b', coordinates: [(0,4)], size: 1}}], with zero-indexing for the coordinates.\n'''
 
-The logical pattern might refer to concepts as follows:
-- Goal-directedness: input is start and output is end state of process 
-- Geometry & topology:
+human_priors = '''\nThe logical pattern might refer to concepts as follows:
+- Geometry and topology:
 	- Lines, rectangular shapes.
-	- Symmetries, mirroring, rotations, translations.
+	- Connecting points, orthogonal projections.
+ 	- Symmetries, mirroring, rotations, translations.
 	- Shape upscaling or downscaling, elastic distortions.
 	- Containing / being contained / being inside or outside of a perimeter.
-	- Drawing lines, connecting points, orthogonal projections.
 	- Copying, repeating.
 	- Patterns or mosaic based on sections.
 - Objects:
 	- Objects are shapes based on similar colors or based on surroundings.
 	- Object transformations based on geometry and topology.
-	- Touching objects have contact with each other.
+	- Touching objects have at least one adjacent pixel.
 	- Noise pixels.
--  Arithmetics based on objects or shapes pixels:
+-  Arithmetics based on objects or shapes:
 	- Counting.
 	- Sorting.
 
 The list is not exhaustive. Transformations can be conditional.'''
 
+# general_explanation_old = '''You are given a series of example input and output pairs that share the same logical pattern of getting the output from its input. Each input and output is a 2-dimensional grid of pixels. The values from 'a' to 'i' represent different colors and '.' represents the background. For example, [['.','b','.'],['.','.','c']] represents a 2 row x 3 column grid with color 'b' at position (1,0) and color 'c' at position (2,1). The coordinates are 2D coordinates (row, column), row representing row number, column representing col number, with zero-indexing.
+
+# The logical pattern might refer to concepts as follows:
+# - Goal-directedness: input is start and output is end state of process 
+# - Geometry & topology:
+# 	- Lines, rectangular shapes.
+# 	- Symmetries, mirroring, rotations, translations.
+# 	- Shape upscaling or downscaling, elastic distortions.
+# 	- Containing / being contained / being inside or outside of a perimeter.
+# 	- Drawing lines, connecting points, orthogonal projections.
+# 	- Copying, repeating.
+# 	- Patterns or mosaic based on sections.
+# - Objects:
+# 	- Objects are shapes based on similar colors or based on surroundings.
+# 	- Object transformations based on geometry and topology.
+# 	- Touching objects have contact with each other.
+# 	- Noise pixels.
+# -  Arithmetics based on objects or shapes pixels:
+# 	- Counting.
+# 	- Sorting.
+
+# The list is not exhaustive. Transformations can be conditional.'''
+
 ################## Prompt Templates ##########################
 
 standard_prompt = {
-	"user": '''{context}{test_input}'''
+	"user": '''{context}{test_input}\n\nGive no explanation. '''
 }
 
 cot_prompt = {
-    "system": general_explanation + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
 
 
 vote_prompt = {
-    "system": general_explanation + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
 
 value_prompt = {
-    "system": general_explanation + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
 
@@ -51,7 +74,7 @@ You are given an input grid and 2 output grids, one is wrong and the other is th
  }
 
 revision_prompt = {
-	"system": general_explanation + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+	"system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
 	"user": '''{context}{previous_thoughts}{test_input}'''
 }
 
@@ -276,6 +299,7 @@ prompt_modules = {
 
 ################## Prompt modules Single CoT ################
 
+# 1st Try
 prompt_modules_naive = {
 	"0": {
 		'generation': {
@@ -283,10 +307,35 @@ prompt_modules_naive = {
 			"output_format": {
           		'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 
 				'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 
-				'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 
+				'object_changes': 'describe the changes between the input and output objects, focusing on colour, size, coordinates and movement, shape, and object number', 
 				'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
 				'instructions': 'describe the transformation actions in detail step by step', 
 				'test_output': 'Use the instructions to transform the test input grid and return only the resulting output grid in numpy array format.'
+            	},
+   		 	},
+		},
+	}
+# 2nd Try -  auf test_output achten: In transformation drin!
+prompt_modules_naive = {
+	"0": {
+		'generation': {
+			"instruct_task": f'\n\nYou are to infer the relation beetween input and output. Then, your task is to transform the test input grid into its test output grid.',
+			"output_format": {
+				'description': {
+					'Example_1': {
+						'grid_changes': 'regarding the first example, analyze if the entire grid has changed and describe how',
+						#'pixel_changes': 'regarding the first example, describe the changes between the input and output pixels, focusing on movement or pattern changes', 
+						'object_changes': 'regarding the first example, describe the changes between the input and output objects, focusing on colour, size, coordinates, shape, and object number', 
+						},
+					'Example_2': {...},
+     				},
+    			'overall_pattern': 'describe the input-output relationship valid for all input-output pairs', 
+				'instructions': 'describe the required transformation actions in detail step by step', 
+				'test_case_grid_view': 'regarding the test input, describe the pixels of the entire grid, focusing on patterns', 
+#				'pixel_view': 'regarding the test input, describe the pixels, focusing on patterns', 
+				'test_case_object_view': 'regarding the test input, describe the objects, focusing on colour, size, coordinates and movement, shape, and object number', 
+				'test_case_transformation': 'describe how the grid or objects should be transformed',
+				'test_case_output': 'create the resulting output grid as numpy array.'	
             	},
    		 	},
 		},

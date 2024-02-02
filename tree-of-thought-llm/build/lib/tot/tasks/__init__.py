@@ -11,8 +11,11 @@ def get_task(name):
     elif name == 'arc':
         from tot.tasks.arc_full_plan import ARCTask
         return ARCTask()
-    elif name == "arc-1D":
+    elif name == "arc_1D":
         from tot.tasks.arc_1D import ARC_1D
         return ARC_1D()
+    elif name == "arc_h_v":
+        from tot.tasks.arc_h_v import ARC_h_v
+        return ARC_h_v()
     else:
         raise NotImplementedError

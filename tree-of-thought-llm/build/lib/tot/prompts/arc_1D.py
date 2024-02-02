@@ -1,9 +1,8 @@
 ################## General Task Explanation ##################
-general_explanation = '''You are given a series of example input and output pairs that share the same logical rules of transforming the input into its output. Each input and output is a 1-dimensional sequence of pixels. The values from 'a' to 'i' represent different colors and '.' represents the background color. Adjacent pixels of the same non-'.' color are designated as objects. For example, ['.','b','b','.','c'] represents a sequence with the following objects: Object_1: {{color: 'b', position: [1, 2], size: 2}}, Object_2: {{color: 'c', position: [4], size: 1}}, with zero-indexing for the position.\n'''
-human_priors = '''\nThe logical rules might refer to concepts as follows:
-- Geometry: Symmetries, mirroring, connecting points.
+general_explanation = '''You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 'a' to 'i' representing different colours, and '.' representing the background colour. Adjacent pixels of the same colour are designated as objects. For example ['.','b','b','.','c'] represents a pixel sequence with the following objects: Object_1: {{colour: 'b', start_index: 1, end_index: 2, size: 2}}, Object_2: {{colour: 'c', start_index: 4, end_index: 4, size: 1}}, with zero-indexing for the position.\n'''
+human_priors = '''\nThe transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
 - Objects: 
-	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- transformations, such as move, hollow, scale, remove, copy, recolour.
 	- relations between objects, such as distance, alignment, overlap, containment.
 - Noise pixels.
 - Arithmetics based on objects: Counting, sorting.
@@ -16,11 +15,14 @@ standard_prompt = {
 	"user": '''{context}{test_input}'''
 }
 
+# cot_prompt = {
+#     "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+# 	"user": '''{context}{previous_thoughts}{test_input}'''
+#  }
 cot_prompt = {
-    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format, fill the values as described: {output}. Do not use quotation marks ' or " within the fields.\n''',
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
-
 
 vote_prompt = {
     "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
@@ -33,9 +35,8 @@ value_prompt = {
  }
 
 failure_analysis_prompt = {
-    "system": '''You are confronted with a task in which a 1-dimensional sequence of pixels should be transformed. The input and output sequences have values from 'a' to 'i' representing different colors, and '.' representing the background color. Adjacent pixels of the same color are designated as objects. For example ['.','b','b','.','c'] represents a pixel sequence with the following objects: Object_1: {color: 'b', position: [1,2], size: 2}, Object_2: {color: 'c', position: [4], size: 1}, with zero-indexing for the position.\n
-You are given an input sequence and 2 output sequences, one is wrong and the other is the ground truth. Your task is to compare the output sequences.\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
-	"user": '''Input: {test_input}\nOutput ground truth: {output_gt}\nOutput wrong: {output_wrong}'''
+    "system": general_explanation + '''\nYou are given an input sequence and 2 output sequences, one is wrong and the other is the ground truth. Your task is to compare the output sequences.\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+	"user": '''Input: {test_input}Output ground truth: {output_gt}Output wrong: {output_wrong}'''
  }
 
 revision_prompt = {
@@ -55,27 +56,27 @@ score_prompt = '''
 # new try - revised prompts!
 prompt_modules = {
  	"0": { # description 
-		'spread': False,
+		'spread': True,
 		'phase': 'abstraction',
   		'generation': {
-			"instruct_task": f'\n\nYour task is to describe objects in the given input and output sequences.',
+			"instruct_task": f'\n\nYour task is to describe the objects in the given input and output sequences.',
 			"output_format": {
 				'objects': {
 					'Example_1': {
-						'input_sequence': 'regarding the first example, identify all objects in the input sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
-						'output_sequence': 'regarding the first example, identify all objects in the output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+						'input': 'regarding the first example, identify all objects in the input sequence by following the format: "Object_ID: {colour: \'object colour\', position: [start index, end index], size: number of pixels}".',
+						'output': 'regarding the first example, identify all objects in the output sequence by following the format: "Object_ID: {colour: \'object colour\', position: [start index, end index], size: number of pixels}".',
 						},
 					'Example_2': {...},
     				}
                 },
    		 	},
 		'evaluation': {
-			"instruct_previous_thoughts": f'\nMoreover, you are given the identified objects of all examples.',
+			"instruct_previous_thoughts": f'\nYou are given example input-output pairs with descriptions about identified objects.',
 			"instruct_task": f'\n\nEvaluate the given object descriptions and analyze if they correctly cover all objects. Be as critical as possible with all details!',
 			"output_format": {
                 'Example_1': {
-                    'input_analysis': 'Regarding the first example, analyze if the given object descriptions cover all objects in the input sequence.',
-                    'output_analysis': 'Regarding the first example, analyze if the given object descriptions cover all objects in the output sequence',
+                    'input_analysis': 'Regarding the first example, analyze if the given object descriptions correctly cover all objects in the input sequence.',
+                    'output_analysis': 'Regarding the first example, analyze if the given object descriptions correctly cover all objects in the output sequence',
                     'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the given object descriptions as integer.'
                     },
                 'Example_2': {...},
@@ -86,18 +87,18 @@ prompt_modules = {
 		'spread': True,
 		'phase': 'abstraction',
   		'generation': {
-        	"instruct_task": f'\n\nYour task is to infer an overall pattern that describes the relation between all input and output pairs.',
+        	"instruct_task": f'\n\nImagine you want to explain how to transform a new input without knowing its output yet. Your task is to infer the overall pattern that describes the relation between all input-output pairs.',
 			"output_format": {
 				'Example_1': {
-					'object_numbers': 'analyze if and how the number of objects changed from input to output',
-					'object_analysis': 'make an in-depth analysis and compare the input and output objects, focus on color, position, size',
+					'object_number': 'analyze if and how the number of objects changed from input to output',
+					'object_analysis': 'make an in-depth analysis and compare the input and output objects, focus on colour, position, size',
 					'object_relations': 'can you identify relationships between objects from the input and objects from the output?',
-					'object_transformation': 'how can we determine the output object\'s color, position, size, focus on conditions explaining the transformation',
+					'object_transformation': 'based on the input, how can we determine the output object\'s colour, position, and size? Focus on conditions explaining the transformation',
 					},
 				'Example_2': {...},
 				'overall_pattern': { 
-					'conditions': 'regarding the object changes, why do they happen? search for conditions based on object colors, positions, and sizes!',
-					'overall_pattern': 'combine your findings and describe general rules to transform inputs into outputs valid for all examples, focusing on WHAT type of object changed and HOW. Be specific!', 
+					'conditions': 'why do objects change? Search for conditions in the input based on object colours, positions, and sizes!',
+					'overall_pattern': 'combine your findings and describe general rules to transform inputs into outputs valid for all examples, focusing on WHAT type of object changed WHY and HOW. Be specific!', 
 					},
                 },
    		 	},
@@ -106,8 +107,9 @@ prompt_modules = {
 			"instruct_task": f'\n\nEvaluate the given pattern and analyze if it correctly describes the relation between the inputs and outputs of all examples. Be as critical as possible with all details!',
 			"output_format": {
                 'Example_1': {
-                    'conditions_analysis': 'Regarding the first example, analyze if the given conditions are relevant to determine the object changes.',
-                    'overall_pattern_analysis': 'Regarding the first example, analyze if the given overall pattern: 1. is it part of the transformation from input to output? 2. is it specific enough?',
+                    'conditions_analysis': 'Regarding the first example, analyze if the given conditions refer only to the input and are relevant to determine the object changes.',
+                    'overall_pattern_analysis': 'Regarding the first example, analyze if the given overall pattern describes the transformation from input to output.',
+                    'precision_analysis': 'Regarding the first example, analyze if the given overall pattern is precise enough to describe the transformation from input to output.',
                     'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the given hints and pattern as integer.'
                     },
                 'Example_2': {...},
@@ -115,12 +117,12 @@ prompt_modules = {
    		 	}
      	}, 
 	"2": { # instructions/algorithm
-		'spread': False,
+		'spread': True,
 		'phase': 'abstraction',
   		'generation': {
 			"instruct_task": f'\n\nYour task is to give a textual step-by-step transformation algorithm that is generally applicable to all examples to transform the input sequence into its output sequence.',
 			"output_format": {
-				'conditions': 'list all relevant conditions that are part of the transformation',
+				'conditions': 'list all relevant conditions regarding the input that determine the transformation',
 				'transformation_algorithm': 'create a textual transformation algorithm that is generally applicable to transform a given input sequence into its output sequence, focus on conditions. Be specific!',
    		 		},
 			},
@@ -129,7 +131,7 @@ prompt_modules = {
 			"instruct_task": f'\n\nEvaluate the given algorithm and analyze if it correctly describes the transformation for all examples. Be as critical as possible with all details!',
 			"output_format": {
                 'Example_1': {
-                    'algorithm_analysis': 'Regarding the first example, apply the given algorithm step-by-step to the input sequence and analyze if it correctly transforms the input sequence into its output sequence.',
+                    'algorithm_analysis': 'Regarding the first example, analyze if the algorithm correctly transforms the input sequence into its output sequence.',
                     'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the algorithm as integer.'
                     },
                 'Example_2': {...},
@@ -137,13 +139,13 @@ prompt_modules = {
    		 	},
      	},
 	"3": { # test case
-		'spread': False,
+		'spread': True,
 		'phase': 'application',
   		'generation': {
         	"instruct_task": f'\n\nMoreover, you are given a new test case with a new input sequence. Your task is to transform the test input sequence into its test output sequence.',
 			"output_format": {
-				'input_description': 'identify all objects in the input sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
-                'algorithm_execution': 'apply the algorithm step-by-step to the test input sequence; focus on potential transformation conditions and respond to every algorithm detail.',
+				'input_description': 'identify all objects in the input sequence by following the format: "Object_ID: {colour: \'object colour\', position: [start index, end index], size: number of pixels}".',
+                'algorithm_execution': 'apply the algorithm step-by-step to the test input sequence; focus on potential transformation conditions and respond to every algorithm step in detail.',
                 'output': 'return only the resulting test output sequence as numpy array' 
                 }
    		 	},
@@ -158,21 +160,21 @@ prompt_modules = {
      	'revision': {
 			'analysis': {
 				'output_format': {
-					'input_objects': 'identify all objects in the input sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
-					'output_wrong_objects': 'identify all objects in the wrong output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
-					'output_gt_objects': 'identify all objects in the ground truth output sequence by following the format: "Object_ID: {color: \'object color\', position: [start index, end index], size: number of pixels}".',
+					'input_objects': 'identify all objects in the input sequence by following the format: "Object_ID: {colour: \'object colour\', position: [start index, end index], size: number of pixels}".',
+					'output_gt_objects': 'identify all objects in the ground truth output sequence by following the format: "Object_ID: {colour: \'object colour\', position: [start index, end index], size: number of pixels}".',
+					'output_wrong_objects': 'identify all objects in the wrong output sequence by following the format: "Object_ID: {colour: \'object colour\', position: [start index, end index], size: number of pixels}".',
 					'comparison': 'compare the wrong output to the ground truth and identify all differences, focusing on sequence length and objects.',
-					'potential_mistakes': 'analyse the identified differences and make 3 hypotheses about potential mistakes in the transformation process from the input to output. Be specific!'
+					'potential_mistakes': 'analyse the identified differences and make 3 hypotheses about potential mistakes in the transformation process from input to output. Be specific!'
 					}
        			},
    			'revision':  {
-				'instruct_task': f'\n\nHowever, the given overall pattern is wrong and your task is to correct and revise the overall pattern.',
+				'instruct_task': f'\nMoreover, you are given potential causes of mistakes in the pattern and instructions.\n\nHowever, the given overall pattern is wrong and your task is to correct and revise the overall pattern.',
 				'output_format': {
 					'pattern_analysis': 'analyse the given wrong overall pattern with respect to the potential mistakes',
 					'potential_modification': 'brainstorm about opportunities to modify the overall pattern to correct the mistakes',
 					'revision': {
-						'overall_pattern': 'write the complete revised overall pattern',
-						'transformation_algorithm': 'write the complete revised algorithm to transform inputs into outputs'
+						'overall_pattern': 'write down in detail the complete revised overall pattern',
+						'transformation_algorithm': 'write down in detail the complete revised algorithm to transform inputs into outputs'
 						}
 					}
        			}
@@ -240,7 +242,7 @@ prompt_modules = {
 # 			"instruct_task": f'\n\nYour task is to give step-by-step instructions that are general applicable to all examples to get from the input sequence to its output sequence.',
 # 			"output_format": {
 #                 'part_of_interest': 'regarding the transformation, describe the parts of interest of the input sequence, e.g. the sequence dimension, pixel pattern, or objects',
-#                 'conditions': 'describe if and how the transformation process is based on conditions, e.g. object characteristics (number, shape, symmetry, color, size, position) or pixel characteristics (color, position)',
+#                 'conditions': 'describe if and how the transformation process is based on conditions, e.g. object characteristics (number, shape, symmetry, colour, size, position) or pixel characteristics (colour, position)',
 #                 'instructions': 'describe all transformation steps with potential conditions and provide step-by-step instructions that are general applicable to transform an input sequence into its output sequence', 
 #                 }
 #    		 	},
@@ -280,20 +282,158 @@ prompt_modules = {
 #    }
 
 ################## Prompt modules Single CoT ################
+# few shot examples
+few_shot_ex = None
+# few_shot_ex = {
+# 	"ex_1": ['''The following input-output pairs are examples and share the same underlying transformation pattern.
+# Example_1:
+# input: ['f', '.', '.', '.', 'b', '.', '.']
+# output: ['f', 'f', 'f', 'f', 'b', '.', '.']
 
-# prompt_modules = {
+# test case:
+# input: ['.', '.', 'f', '.', '.', 'b', '.']
+# ''', '''
+# {
+# "object_description": {
+# "Example_1": "The input sequence has two objects: [{colour: 'f', start_index: 0, end_index: 0, size: 1}, {colour: 'b', start_index: 4, end_index: 4, size: 1}]. The output sequence has two objects: [{colour: 'f', start_index: 0, end_index: 3, size: 4}, {colour: 'b', start_index: 4, end_index: 4, size: 1}].",
+# },
+# "overall_pattern": "The number of objects is the same in all input-output pairs. The transformation pattern involves scaling the first input object until it touches the second input object.",
+# "instructions": "To transform a new input sequence, follow these steps:
+# 1. Identify the objects in the input sequence, and determine their colour, position and size.
+# 2. Scale the first input object: Extend its end_index until it is one less than the second objects's start_index.",
+# "transformation": {
+# "input": "['.', '.', 'f', '.', '.', 'b', '.']",
+# "object_description": "The input sequence has two objects: [{colour: 'f', start_index: 2, end_index: 2, size: 1}, {colour: 'b', start_index: 5, end_index: 5, size: 1}].",
+# "transformed_objects": "After the transformation, the output sequence has two objects object: [{colour: 'f', start_index: 2, end_index: 4, size: 3}, {colour: 'b', start_index: 5, end_index: 5, size: 1}].",
+# "output": "['.', '.', 'f', 'f', 'f', 'b', '.']"
+# },
+# "test_output": "['.', '.', 'f', 'f', 'f', 'b', '.']"
+# }'''],
+# 	"ex_2": ['''The following input-output pairs are examples and share the same underlying transformation pattern.
+# Example_1:
+# input: ['.', 'a', 'a', 'a', '.', '.', '.', '.', '.']
+# output: ['.', '.', 'b', 'b', 'b', '.', '.', '.', '.']
+
+# Example_2:
+# input: ['a', 'a', 'a', 'a', 'a', '.', '.', '.', '.']
+# output: ['.', 'b', 'b', 'b', 'b', 'b', '.', '.', '.']
+
+# test case:
+# input: ['.', '.', '.', 'a', 'a', 'a', 'a', 'a', '.']
+# ''', '''
+# {
+# "object_description": {
+# "Example_1": "The input sequence has one object: [{colour: 'a', start_index: 1, end_index: 3, size: 3}]. The output sequence has one object: [{colour: 'b', start_index: 2, end_index: 4, size: 3}].",
+# "Example_2": "The input sequence has one object: [{colour: 'a', start_index: 0, end_index: 4, size: 4}]. The output sequence has one object: [{colour: 'b', start_index: 1, end_index: 5, size: 4}].",
+# },
+# "overall_pattern": "The number of objects is the same in all input-output pairs. The transformation pattern involves moving the input object 1 pixel right and recoloring it to colour 'b'.",
+# "instructions": "To transform a new input sequence, follow these steps:
+# 1. Identify the object in the input sequence, and determine its colour, position and size.
+# 2. Shift the object 1 pixel right and keep the same size.
+# 3. Recolor the object to colour 'b'.",
+# "transformation": {
+# "input": "['.', '.', '.', 'a', 'a', 'a', 'a', 'a', '.']",
+# "object_description": "The input sequence has one object: [{colour: 'a', start_index: 3, end_index: 7, size: 5}].",
+# "transformed_objects": "After the transformation, the output sequence has one object: [{colour: 'b', start_index: 4, end_index: 8, size: 5}].",
+# "output": "['.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b']"
+# },
+# "test_output": "['.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b']"
+# }''']
+# }
+
+
+# NOTE: Derzeit bestes mit 4/10 in shuffle move_1p, flip, scale tasks
+prompt_modules_naive = {
+	"0": {
+		'generation': {
+			"instruct_task": f'\n\nYou are to infer the simplest possible relation beetween input and output. Then, your task is to transform the test input sequence into its test output sequence.',
+			"output_format": {
+				'object_description': {
+					'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!',
+					'Example_2': '...',
+    				},
+    			'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
+				'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 
+				'transformation': {
+        			'input': 'copy the test case input sequence from the task. Mind the sequence length!',
+					'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, colour',
+					'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, colour',
+            		'output': 'create the resulting test output sequence. Mind the sequence length!'
+                 	},
+            	'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'
+             	},
+   		 	},
+		},
+	} 
+
+# NOTE: bisschen was ausprobiert
+# prompt_modules_naive = {
 # 	"0": {
 # 		'generation': {
 # 			"instruct_task": f'\n\nYou are to infer the simplest possible relation beetween input and output. Then, your task is to transform the test input sequence into its test output sequence.',
 # 			"output_format": {
-#        			'reflection': 'reflect on the answer', 
-#           		'sequence_changes': 'describe if the dimension of the input sequence is different to its output sequence', 
-# 				'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 
-# 				'object_changes': 'describe the changes between the input and output objects, focusing on movement, object number, size, shape, position, value, cell count', 
+# 				# 'objects': {
+# 				# 	'Example_1': {
+# 				# 		'input': 'regarding the first example, identify all objects in the input sequence by following the format: "Object_ID: {colour: \'object colour\', position: [start index, end index], size: number of pixels}".',
+# 				# 		'output': 'regarding the first example, identify all objects in the output sequence by following the format: "Object_ID: {colour: \'object colour\', position: [start index, end index], size: number of pixels}".',
+# 				# 		'changes': 'regarding first the example, describe the changes between the input and output objects, focusing on movement, size, position, colour'	
+#       			# 	},
+# 				# 	'Example_2': {...},
+#     			# 	},
+# 				#'object_description': 'regarding the examples, describe the objects in the input and output sequences, focusing on size, position, colour',
+#     			#'object_changes': 'regarding the examples, describe the changes between the input and output objects, focusing on movement, object number, size, position, value', 
+# 				# 'objects': {
+# 				# 	'Example_1': {
+# 				# 		'description': 'regarding the first example, describe the non-background objects focusing on their colour, size and position.',
+# 				# 		'changes': 'regarding the first example, describe which objects changed from input to output, be precise in HOW the size, position and colour changed compared to the input!'	
+#       			# 	},
+# 				# 	'Example_2': {...},
+#     			# 	},
+# 				# 'object_description': {
+# 				# 	'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!',
+# 				# 	'Example_2': '...',
+#     			# 	},
+# 				'objects': {
+# 					'Example_1': {
+# 						'input': 'regarding the first example, copy the input sequence from the task. Mind the sequence length!',
+# 						'input_description': 'regarding the first example input, describe the non-background objects focusing on their colour, size and position.',
+#       					'output': 'regarding the first example, copy the output sequence from the task. Mind the sequence length!',
+# 						'output_description': 'regarding the first example output, describe the non-background objects focusing on their colour, size and position.',
+#            				'changes': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!'	
+#       				},
+# 					'Example_2': {...},
+#     				},
+#     			'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
+# 				'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 
+# 				'transformation': {
+#         			'input': 'copy the test case input sequence from the task. Mind the sequence length!',
+# 					# 'input_description': 'regarding the test case input, describe the non-background objects focusing on their colour, size and position.',
+# 					# 'output_description': 'based on the identified transformation instructions, describe how the objects should look like in the test output sequence, focusing on size, position, colour',
+
+#            			#'objects': 'regarding the test input sequence, identify all objects by following the format: "Object_ID: {colour: \'object colour\', position: [start index, end index], size: number of pixels}".',
+# 					'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, colour',
+# 					'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, colour',
+#             		'output': 'create the resulting test output sequence. Mind the sequence length!'
+#                  	},
+#     			# 'test_output': 'apply the transformation and return only the resulting test case output sequence in numpy array format. Mind the sequence length!'
+#             	'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'
+#              	},
+#    		 	},
+# 		},
+# 	} 
+
+# prompt_modules_naive = {
+# 	"0": {
+# 		'generation': {
+# 			"instruct_task": f'\n\nYou are to infer the simplest possible relation beetween input and output. Then, your task is to transform the test input sequence into its test output sequence.',
+# 			"output_format": {
+#     			'object_changes': 'regarding the examples, describe the changes between the input and output objects, focusing on object number, size, position, colour', 
 # 				'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
-# 				'instructions': 'describe the transformation actions in detail step by step', 
-# 				'test_output': 'Use the instructions to transform the test input sequence and return only the resulting output sequence in numpy array format.'
+# 				'instructions': 'describe the needed transformation actions to transform input objects into output objects, think step by step', 
+# 				'test_output_objects': 'Use the instructions to transform the test input objects and return the resulting output objects.',
+# 				'test_output': 'create the respective output sequence with length {len}, add the objects and fill remaining values with the background colour'
 #             	},
 #    		 	},
 # 		},
 # 	}
+ 
