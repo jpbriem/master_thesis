@@ -204,9 +204,9 @@ def load_llama(model_name, revision, max_token, model_config):
         model_name, trust_remote_code=True, device_map="auto", torch_dtype=torch.float16, revision=revision
     )
 
-    # # fix bug for certain models - fixed in new Optimum version
-    # if model_name in ["TheBloke/Camel-Platypus2-70B-GPTQ", "TheBloke/Platypus2-70B-GPTQ", "TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ", "TheBloke/Llama-2-70B-GPTQ"]:
-    #     model = exllama_set_max_input_length(model, 4096)
+    # fix bug for certain models - fixed in new Optimum version
+    if model_name in ["TheBloke/Camel-Platypus2-70B-GPTQ", "TheBloke/Platypus2-70B-GPTQ", "TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ", "TheBloke/Llama-2-70B-GPTQ"]:
+        model = exllama_set_max_input_length(model, 4096)
 
     # make pipeline
     # Docs for config: https://huggingface.co/docs/transformers/v4.33.3/en/main_classes/configuration#transformers.PretrainedConfig
@@ -243,8 +243,8 @@ def load_falcon(model_name, revision):
             use_triton=False,
             quantize_config=None)
     # fix bug for certain models - fixed in new Optimum version
-    # if model_name in ["TheBloke/Falcon-40B-Instruct-GPTQ"]:
-    #     model = exllama_set_max_input_length(model, 4096)
+    if model_name in ["TheBloke/Falcon-40B-Instruct-GPTQ"]:
+        model = exllama_set_max_input_length(model, 4096)
     return model, tokenizer
 
 def run_falcon(tokenizer, model, prompt, max_new_tokens, temperature):

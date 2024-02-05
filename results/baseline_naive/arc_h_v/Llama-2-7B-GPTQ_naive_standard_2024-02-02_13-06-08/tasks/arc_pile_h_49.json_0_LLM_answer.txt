@@ -1,0 +1,90 @@
+Input token: 465
+Output token: 639
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['h', 'a', 'a', 'h'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'j', 'j', 'j']]
+output: [['h', 'h', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['j', 'j', 'j', 'a']]
+
+Example_2:
+input: [['a', 'f', 'f', 'f', 'a'], ['c', 'a', 'a', 'c', 'c'], ['a', 'a', 'a', 'a', 'g'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a']]
+output: [['f', 'f', 'f', 'a', 'a'], ['c', 'c', 'c', 'a', 'a'], ['g', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a']]
+
+Example_3:
+input: [['j', 'j', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['h', 'a', 'h', 'h']]
+output: [['j', 'j', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['h', 'h', 'h', 'a']]
+
+Test case:
+input: [['a', 'b', 'a', 'a'], ['a', 'a', 'a', 'j'], ['a', 'a', 'h', 'h'], ['a', 'a', 'g', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'b', 'a', 'a'], ['a', 'a', 'a', 'j'], ['a', 'a', 'h', 'h'], ['a', 'a', 'g', 'a']]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_next(current_state: str) -> Tuple[str, int]:
+    """Return next state and index of current state."""
+    if len(current_state) == 0:
+        return "", -1
+    elif current_state[-1] in "ab":
+        return current_state[:-1], -1
+    else:
+        return current_state + "a", 0
+
+
+class Solution:
+    def findTheDifference(self, words: List[str]) -> None:
+        """
+        Do not change code below this line
+        :param words: The first word is always the start string, the second word is always the end string.
+                      For example, given s = ["leetcode"], d = ["love","academic"] return true.
+        :type words: List[str]
+        :rtype: bool
+        """
+        # write your code here
+        if len(words) < 2 or len(words[0])!= len(words[1]):
+            return False
+        stack = []
+        for i in range(len(words)):
+            if words[i][0] == words[i+1][0]:
+                stack.append((words[i], i))
+        while stack:
+            (word, idx), (new_idx, new_word) = stack.popleft()
+            if word == new_word:
+                continue
+            if idx >= len(words)-1:
+                break
+            if words[idx][0] == new_word[0]:
+                stack.insert(-1, (words[idx], idx))
+                stack.insert(0, (new_word, idx+1))
+        return True
+
+
+if __name__ == "__main__":
+    solution = Solution()
+    print("Example 1:")
+    words = ["haha", "aaa", "aaaa", "haah"]
+    result = solution.findTheDifference(words)
+    assert result
+
+    print("\nExample 2:")
+    words = ["af", "ca", "aa", "cc", "ga", "ja", "aa", "aa", "aa", "aa"]
+    result = solution.findTheDifference(words)
+    assert result
+
+    print("\nExample 3:")
+    words = ["jj", "aa", "aa", "hh"]
+    result = solution.findTheDifference(words)
+    assert result
+################################################################
+
+Solution:
+[['b', 'a', 'a', 'a'], ['j', 'a', 'a', 'a'], ['h', 'h', 'a', 'a'], ['g', 'a', 'a', 'a']]
+

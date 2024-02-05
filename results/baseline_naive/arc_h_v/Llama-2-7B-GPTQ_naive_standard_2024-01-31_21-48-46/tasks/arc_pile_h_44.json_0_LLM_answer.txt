@@ -1,0 +1,112 @@
+Input token: 480
+Output token: 821
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', 'a', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', 'e', '.', '.', '.'], ['.', 'b', 'b', '.', 'b', '.'], ['g', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['a', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['e', '.', '.', '.', '.', '.'], ['b', 'b', 'b', '.', '.', '.'], ['g', '.', '.', '.', '.', '.']]
+
+Example_2:
+input: [['.', 'a', '.', '.'], ['.', '.', 'b', '.'], ['.', '.', '.', 'c'], ['.', '.', '.', '.']]
+output: [['a', '.', '.', '.'], ['b', '.', '.', '.'], ['c', '.', '.', '.'], ['.', '.', '.', '.']]
+
+Example_3:
+input: [['c', '.', 'c', '.'], ['.', '.', '.', '.'], ['.', '.', '.', '.'], ['e', '.', 'e', 'e']]
+output: [['c', 'c', '.', '.'], ['.', '.', '.', '.'], ['.', '.', '.', '.'], ['e', 'e', 'e', '.']]
+
+Test case:
+input: [['i', '.', 'i', 'i', '.'], ['.', 'a', 'a', 'a', '.'], ['.', 'e', '.', 'e', '.'], ['g', '.', 'g', '.', 'g'], ['.', '.', 'd', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['i', '.', 'i', 'i', '.'], ['a', 'a', 'a', '.'], ['e', '.', 'e', 'e', '.'], ['g', 'g', 'g', '.'], ['d', '.', '.', '.', '.']]
+"""
+
+import sys
+from collections import deque, defaultdict
+from typing import List, Optional, Tuple
+
+
+def get_next(current_state: str) -> Tuple[str, int]:
+    """Return next state and index of current state."""
+    if len(current_state) == 0:
+        return "", -1
+    elif current_state[-1] in "ae":
+        return current_state[:-1], -1
+    else:
+        return current_state + "a", 0
+
+
+class StateMachine:
+    def __init__(self):
+        self._states = []
+        self._transitions = {}
+        self._starting_state = None
+        self._current_state = ""
+        self._index = 0
+
+    @property
+    def states(self) -> List[Tuple[int, str]]:
+        return list(self._transitions.keys())
+
+    @property
+    def starting_state(self) -> Optional[Tuple[int, str]]:
+        return self._starting_state
+
+    @starting_state.setter
+    def starting_state(self, value: Optional[Tuple[int, str]]) -> None:
+        self._starting_state = value
+
+    @property
+    def current_state(self) -> Optional[Tuple[int, str]]:
+        return self._current_state
+
+    @current_state.setter
+    def current_state(self, value: Optional[Tuple[int, str]]) -> None:
+        self._current_state = value
+
+    def add_transition(self, from_state: int, to_state: int, action: str) -> None:
+        self._transitions[(from_state, to_state)] = (action, 0)
+
+    def set_initial_state(self, initial_state: str) -> None:
+        self._transitions[(initial_state, )] = ("", 0)
+
+    def run(self, input: List[str]) -> None:
+        for i, char in enumerate(input):
+            if char not in "ae":
+                continue
+            new_char, idx = get_next((self._current_state,))
+            self._current_state = new_char
+            self._index += 1
+            if idx!= -1:
+                self._transitions[(self._current_state, )][1] -= 1
+                if self._transitions[(self._current_state, )][1] <= 0:
+                    self._current_state = self._transitions[(self._current_state, )][0]
+                    self._index = 0
+
+    def is_valid(self, input: List[str]) -> bool:
+        return True
+
+
+if __name__ == "__main__":
+    sm = StateMachine()
+    sm.add_transition("i", "a", "")
+    sm.add_transition("a", "e", "")
+    sm.add_transition("e", "g", "")
+    sm.add_transition("g", "d", "")
+    sm.run([
+        ".",
+        "a",
+        "e",
+        "g",
+        "d",
+    ])
+
+################################################################
+
+Solution:
+[['i', 'i', 'i', '.', '.'], ['a', 'a', 'a', '.', '.'], ['e', 'e', '.', '.', '.'], ['g', 'g', 'g', '.', '.'], ['d', '.', '.', '.', '.']]
+

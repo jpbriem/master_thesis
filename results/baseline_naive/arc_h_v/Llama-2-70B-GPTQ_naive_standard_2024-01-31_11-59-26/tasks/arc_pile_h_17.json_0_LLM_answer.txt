@@ -1,0 +1,71 @@
+Input token: 599
+Output token: 809
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', 'f', '.', '.', '.'], ['.', '.', '.', 'h', 'h', '.'], ['b', '.', '.', '.', '.', '.'], ['e', '.', 'e', 'e', '.', '.'], ['.', 'i', '.', 'i', '.', 'i'], ['.', '.', 'a', '.', '.', '.']]
+output: [['f', '.', '.', '.', '.', '.'], ['h', 'h', '.', '.', '.', '.'], ['b', '.', '.', '.', '.', '.'], ['e', 'e', 'e', '.', '.', '.'], ['i', 'i', 'i', '.', '.', '.'], ['a', '.', '.', '.', '.', '.']]
+
+Example_2:
+input: [['.', '.', '.', '.', '.', '.'], ['a', '.', 'a', '.', '.', 'a'], ['.', 'f', '.', 'f', 'f', '.'], ['.', '.', '.', 'b', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['e', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['a', 'a', 'a', '.', '.', '.'], ['f', 'f', 'f', '.', '.', '.'], ['b', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['e', '.', '.', '.', '.', '.']]
+
+Example_3:
+input: [['.', '.', '.', '.', '.'], ['.', 'b', '.', '.', '.'], ['.', '.', '.', 'h', '.'], ['i', 'i', 'i', '.', '.'], ['.', '.', '.', 'e', 'e']]
+output: [['.', '.', '.', '.', '.'], ['b', '.', '.', '.', '.'], ['h', '.', '.', '.', '.'], ['i', 'i', 'i', '.', '.'], ['e', 'e', '.', '.', '.']]
+
+Test case:
+input: [['.', '.', '.', 'g'], ['.', 'a', 'a', 'a'], ['e', '.', 'e', 'e'], ['.', '.', '.', 'b']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', 'g'], ['a', 'a', 'a', '.'], ['e', 'e', 'e', '.'], ['.', '.', '.', 'b']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def findWords(self, board: List[List[str]]) -> List[Optional[str]]:
+        """
+        思路：扫描每个字母，如果是空格则跳过，否则进行判断。
+            1） 如果当前字符在左右上下四周有相同的字符，那么就将其转换为该字符；
+            2） 如果当前字符不在左右上下四周有相同的字符，但是在左右上下四周有空格，那么就将其转换为空格；
+            3） 如果当前字符不在左右上下四周有相同的字符或者空格，那么就保持原样。
+                    注意：这里需要特别处理一种情况，即当前字符只能与自身相邻时，也就是说当前字符只能出现一次，那么我们就应该将其转换为空格。
+        """
+        if not board or len(board) == 0: return []
+        m = len(board)
+        n = len(board[0])
+        for i in range(m):
+            for j in range(n):
+                if board[i][j]!= '.':
+                    # 获取当前字符所在位置的左边、右边、上面和下面的字符
+                    left = right = up = down = None
+                    if i > 0:
+                        left = board[i - 1][j]
+                    if i < m - 1:
+                        right = board[i + 1][j]
+                    if j > 0:
+                        up = board[i][j - 1]
+                    if j < n - 1:
+                        down = board[i][j + 1]
+                    # 根据当前字符所在位置的左边、右边、上面和下面的字符来判断当前字符是否可以被转化
+                    if (left == board[i][j] and right == board[i][j] and up == board[i][j] and down == board[i][j]) \
+                            or (left == board[i][j] and right == board[i][j] and up == board[i][j]) \
+                            or (right == board[i][j] and up == board[i][j] and down == board[i][j]) \
+                            or (up == board[i][j] and right == board[i][j] and down == board[i][j])):
+                        board[i][j] = board[i][j].upper()
+                    elif ((left == '.' or right == '.') and (up == '.' or down == '.')) \
+                            or ((left == '.' or right == '.') and (up == '.' or down == '.')):
+                        board[i][j] = '.'
+                    else:
+                        pass
+        return board
+
+################################################################
+
+Solution:
+[['g', '.', '.', '.'], ['a', 'a', 'a', '.'], ['e', 'e', 'e', '.'], ['b', '.', '.', '.']]
+

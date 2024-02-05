@@ -1,0 +1,73 @@
+Input token: 477
+Output token: 609
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', 'd', '.', '.'], ['b', '.', '.', 'b', 'b'], ['.', '.', 'f', '.', '.'], ['a', 'a', 'a', '.', '.'], ['.', '.', 'e', 'e', '.']]
+output: [['d', '.', '.', '.', '.'], ['b', 'b', 'b', '.', '.'], ['f', '.', '.', '.', '.'], ['a', 'a', 'a', '.', '.'], ['e', 'e', '.', '.', '.']]
+
+Example_2:
+input: [['.', 'b', '.', 'b'], ['.', 'a', '.', '.'], ['f', '.', '.', '.'], ['g', 'g', '.', '.']]
+output: [['b', 'b', '.', '.'], ['a', '.', '.', '.'], ['f', '.', '.', '.'], ['g', 'g', '.', '.']]
+
+Example_3:
+input: [['.', '.', '.', 'b', '.'], ['.', '.', '.', 'i', '.'], ['.', 'a', '.', '.', '.'], ['.', '.', 'd', 'd', 'd'], ['.', '.', '.', 'f', 'f']]
+output: [['b', '.', '.', '.', '.'], ['i', '.', '.', '.', '.'], ['a', '.', '.', '.', '.'], ['d', 'd', 'd', '.', '.'], ['f', 'f', '.', '.', '.']]
+
+Test case:
+input: [['.', '.', '.', 'h', 'h'], ['.', 'b', '.', '.', '.'], ['.', '.', 'i', 'i', '.'], ['a', '.', 'a', '.', 'a'], ['.', '.', '.', '.', 'd']]
+################################################################
+
+LLM answer:
+
+output: [['h', 'h', '.', '.', '.'], ['b', '.', '.', '.', '.'], ['i', 'i', '.', '.', '.'], ['a', '.', 'a', '.', 'a'], ['d', '.', '.', '.', '.']]
+'''
+class Solution(object):
+    def updateBoard(self, board, click):
+        """
+        :type board: List[List[str]]
+        :type click: List[int]
+        :rtype: List[List[str]]
+        """
+        if not board or len(board) == 0 or len(click)!= 2: return []
+        m = len(board)
+        n = len(board[0])
+        self.visited = set()
+        self.neighbour = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]
+        self.update(board, click[0], click[1])
+        for i in range(m):
+            for j in range(n):
+                if board[i][j] == "M": continue
+                if (i,j) in self.visited:
+                    board[i][j] = str(len(self.getNeighbour(i,j)))
+        return board
+
+    def getNeighbour(self, x, y):
+        res = set()
+        for dx, dy in self.neighbour:
+            newX = x + dx
+            newY = y + dy
+            if newX < 0 or newX >= len(self.visited) or newY < 0 or newY >= len(self.visited[newX]): continue
+            res.add((newX, newY))
+        return res
+
+    def update(self, board, x, y):
+        if (x,y) in self.visited: return
+        self.visited.add((x,y))
+        if board[x][y] == "M": return
+        count = len(self.getNeighbour(x,y))
+        if count > 0:
+            board[x][y] = str(count)
+        else:
+            for dx,dy in self.neighbour:
+                newX = x+dx
+                newY = y+dy
+                if newX < 0 or newX >= len(board) or newY < 0 or newY >= len(board[newX]): continue
+                self.update(board, newX, newY)
+################################################################
+
+Solution:
+[['h', 'h', '.', '.', '.'], ['b', '.', '.', '.', '.'], ['i', 'i', '.', '.', '.'], ['a', 'a', 'a', '.', '.'], ['d', '.', '.', '.', '.']]
+

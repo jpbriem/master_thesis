@@ -1,0 +1,84 @@
+Input token: 678
+Output token: 543
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['i', 'i', 'i', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'g', 'a'], ['a', 'j', 'a', 'a', 'a', 'j'], ['a', 'd', 'd', 'a', 'a', 'd'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'h', 'a', 'a', 'a', 'a']]
+output: [['i', 'i', 'i', 'a', 'a', 'a'], ['g', 'a', 'a', 'a', 'a', 'a'], ['j', 'j', 'a', 'a', 'a', 'a'], ['d', 'd', 'd', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['h', 'a', 'a', 'a', 'a', 'a']]
+
+Example_2:
+input: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['f', 'a', 'a', 'a'], ['g', 'g', 'a', 'g']]
+output: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['f', 'a', 'a', 'a'], ['g', 'g', 'g', 'a']]
+
+Example_3:
+input: [['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'd', 'a', 'a', 'd'], ['a', 'a', 'i', 'i', 'a', 'i'], ['a', 'a', 'a', 'j', 'a', 'j'], ['a', 'h', 'a', 'h', 'a', 'a'], ['e', 'a', 'e', 'e', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a', 'a'], ['d', 'd', 'a', 'a', 'a', 'a'], ['i', 'i', 'i', 'a', 'a', 'a'], ['j', 'j', 'a', 'a', 'a', 'a'], ['h', 'h', 'a', 'a', 'a', 'a'], ['e', 'e', 'e', 'a', 'a', 'a']]
+
+Test case:
+input: [['c', 'a', 'a', 'c', 'c'], ['e', 'a', 'a', 'a', 'a'], ['b', 'a', 'a', 'b', 'b'], ['j', 'a', 'j', 'j', 'a'], ['f', 'a', 'f', 'a', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['c', 'a', 'a', 'c', 'c'], ['e', 'a', 'a', 'a', 'a'], ['b', 'a', 'a', 'b', 'b'], ['j', 'j', 'a', 'a', 'a'], ['f', 'a', 'f', 'a', 'a']]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_next(current_state: str) -> Tuple[str, int]:
+    """Return next state and index of current state."""
+    if len(current_state) == 0:
+        return "", -1
+    elif current_state[-1] in "ae":
+        return current_state[:-1], -1
+    else:
+        return current_state + "e", -1
+
+
+class Solution:
+    def myAtoi(self, s: str) -> int:
+        """
+        :type s: str
+        :rtype: int
+        """
+        stack = []
+        result = 0
+        for c in s:
+            if c not in "0123456789":
+                continue
+            while True:
+                top = stack.pop()
+                if top!= "-":
+                    break
+                if c == "+":
+                    result += int(stack[-1]) * (int(top) ** 2)
+                elif c == "*":
+                    result -= int(stack[-1]) * (int(top) ** 2)
+                elif c == "/":
+                    result /= int(stack[-1]) * (int(top) ** 2)
+                elif c == "%":
+                    result %= int(stack[-1]) * (int(top) ** 2)
+                elif c == "^":
+                    result **= int(stack[-1]) * (int(top) ** 2)
+                elif c == "=":
+                    result = int(stack[-1])
+                else:
+                    raise ValueError("Invalid operator")
+                if c == " ":
+                    break
+            stack.append(result)
+        return result
+
+
+if __name__ == "__main__":
+    # test case
+    print(Solution().myAtoi(sys.stdin.readline()))
+################################################################
+
+Solution:
+[['c', 'c', 'c', 'a', 'a'], ['e', 'a', 'a', 'a', 'a'], ['b', 'b', 'b', 'a', 'a'], ['j', 'j', 'j', 'a', 'a'], ['f', 'f', 'a', 'a', 'a']]
+

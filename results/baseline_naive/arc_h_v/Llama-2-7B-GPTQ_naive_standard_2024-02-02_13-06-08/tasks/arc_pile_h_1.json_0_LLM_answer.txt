@@ -1,0 +1,150 @@
+Input token: 591
+Output token: 2050
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'd', 'd', 'a', 'a', 'd'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'b', 'a', 'b', 'a'], ['a', 'i', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'e', 'a', 'e'], ['a', 'a', 'a', 'a', 'a', 'a']]
+output: [['d', 'd', 'd', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['b', 'b', 'a', 'a', 'a', 'a'], ['i', 'a', 'a', 'a', 'a', 'a'], ['e', 'e', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a']]
+
+Example_2:
+input: [['a', 'a', 'a', 'a'], ['e', 'a', 'e', 'e'], ['d', 'a', 'a', 'a'], ['a', 'h', 'h', 'h']]
+output: [['a', 'a', 'a', 'a'], ['e', 'e', 'e', 'a'], ['d', 'a', 'a', 'a'], ['h', 'h', 'h', 'a']]
+
+Example_3:
+input: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'c', 'a', 'c'], ['f', 'a', 'f', 'f']]
+output: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['c', 'c', 'a', 'a'], ['f', 'f', 'f', 'a']]
+
+Test case:
+input: [['a', 'a', 'a', 'a', 'i', 'a'], ['h', 'h', 'a', 'a', 'a', 'a'], ['a', 'g', 'a', 'a', 'a', 'a'], ['c', 'a', 'c', 'a', 'c', 'a'], ['a', 'd', 'a', 'd', 'a', 'a'], ['a', 'a', 'b', 'a', 'a', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a', 'i', 'a'], ['h', 'h', 'a', 'a', 'a', 'a'], ['a', 'g', 'a', 'a', 'a', 'a'], ['c', 'c', 'a', 'a', 'a', 'a'], ['d', 'a', 'd', 'a', 'a', 'a'], ['b', 'a', 'a', 'a', 'a', 'a']]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_input(filename):
+    with open(filename) as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def get_output(filename):
+    with open(filename) + '.out' as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def main():
+    filename = sys.argv[1] if len(sys.argv) > 1 else "input.txt"
+    input_list = get_input(filename)
+    output_list = get_output(filename)
+
+    # 0. 입력과 출력의 길이를 비교하여 확인한다.
+    assert len(input_list) == len(output_list)
+
+    # 1. 첫 번째 요소가 아니라면 무조건 True로 리턴한다.
+    def is_first(l: List[Tuple], i: int) -> bool:
+        return l[i][0]!= l[0][0]
+
+    # 2. 최대 수는 4개이고, 실제 수는 5개이기에 False를 리턴한다.
+    def check_max_len(l: List[Tuple]) -> bool:
+        max_len = 4
+        for i in range(len(l)):
+            if (is_first(l, i)) or (not is_first(l, i - 1)):
+                continue
+            elif len(l[i]) >= max_len:
+                return False
+        return True
+
+    # 3. 올바르지 않은 경우 없어서 True를 리턴한다.
+    def check_correctness(l: List[Tuple]) -> bool:
+        correct_count = 0
+        for i in range(len(l)):
+            if not is_first(l, i):
+                continue
+            if len(l[i]) < 6:
+                continue
+            if l[i][0]!= l[i - 1][0]:
+                continue
+            if l[i][0]!= l[i - 2][0]:
+                continue
+            if l[i][0]!= l[i - 3][0]:
+                continue
+            if l[i][0]!= l[i - 4][0]:
+                continue
+            if l[i][0]!= l[i - 5][0]:
+                continue
+            correct_count += 1
+        return correct_count == 5
+
+    # 4. 정상 코드가 아니면 False를 리턴한다.
+    def check_normality(l: List[Tuple]) -> bool:
+        for i in range(len(l)):
+            if not is_first(l, i):
+                continue
+            if len(l[i]) < 6:
+                continue
+            if l[i][0]!= l[i - 1][0]:
+                continue
+            if l[i][0]!= l[i - 2][0]:
+                continue
+            if l[i][0]!= l[i - 3][0]:
+                continue
+            if l[i][0]!= l[i - 4][0]:
+                continue
+            if l[i][0]!= l[i - 5][0]:
+                continue
+        return True
+
+    # 5. 생성자 호출을 위해 배열을 만들어주는 역할을 하는 데이터 구조를 선언한다.
+    class Solution:
+        def __init__(self, input_list: List[List[str]], output_list: List[List[str]]):
+            self._input_list = input_list
+            self._output_list = output_list
+
+        def solution(self) -> None:
+            # 6. 카운트 변수를 사용하여 문제를 풀 수 있도록 컨테이너를 삼킨다.
+            count = 0
+            while count <= len(self._input_list):
+                # 7. 현재 카운터 값이 원하는 값보다 크면 종료한다.
+                if count >= len(self._input_list):
+                    break
+                # 8. 현재 카운터 값이 원하는 값보다 작으면 종료한다.
+                if count >= len(self._input_list) - 1:
+                    break
+                # 9. 현재 카운터 값이 원하는 값보다 중간 값보다 크면 종료한다.
+                if count >= len(self._input_list) - 2:
+                    break
+                # 10. 현재 카운터 값이 원하는 값보다 중간 값보다 작으면 종료한다.
+                if count >= len(self._input_list) - 3:
+                    break
+                # 11. 현재 카운터 값이 원하는 값보다 중간 값보다 작으면 종료한다.
+                if count >= len(self._input_list) - 4:
+                    break
+                # 12. 현재 카운터 값이 원하는 값보다 중간 값보다 작으면 종료한다.
+                if count >= len(self._input_list) - 5:
+                    break
+                # 13. 현재 카운터 값이 원하는 값보다 중간 값보다 작으면 종료한다.
+                if count >= len(self._input_list) - 6:
+                    break
+                # 14. 현재 카운터 값이 원하는 값보다 중간 값보다 작으면 종료한다.
+                if count >= len(self._input_list) - 7:
+                    break
+                # 15. 현재 카운터 값이 원하는 값보다 중간 값보다 작으면 종료한다.
+                if count >= len(self._input_list) - 8:
+                    break
+                # 16. 현재 카운터 값이 원하는 값보다 중간 값보다 작으면 종료한다.
+                if count >= len(self._input_list) - 9:
+                    break
+                # 17. 현재 카운터 값이 원하는 값보다 중간 값보다 작으면 종료한다.
+                if count >= len(self._input_
+################################################################
+
+Solution:
+[['i', 'a', 'a', 'a', 'a', 'a'], ['h', 'h', 'a', 'a', 'a', 'a'], ['g', 'a', 'a', 'a', 'a', 'a'], ['c', 'c', 'c', 'a', 'a', 'a'], ['d', 'd', 'a', 'a', 'a', 'a'], ['b', 'a', 'a', 'a', 'a', 'a']]
+

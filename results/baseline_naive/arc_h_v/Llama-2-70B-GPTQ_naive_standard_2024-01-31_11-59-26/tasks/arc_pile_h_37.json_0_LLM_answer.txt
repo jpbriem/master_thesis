@@ -1,0 +1,75 @@
+Input token: 698
+Output token: 586
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['e', '.', '.', 'e', '.', '.'], ['.', 'i', '.', 'i', '.', 'i'], ['.', '.', '.', '.', '.', '.'], ['g', 'g', '.', '.', '.', '.'], ['d', '.', '.', '.', 'd', 'd'], ['.', 'a', '.', 'a', 'a', '.']]
+output: [['e', 'e', '.', '.', '.', '.'], ['i', 'i', 'i', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['g', 'g', '.', '.', '.', '.'], ['d', 'd', 'd', '.', '.', '.'], ['a', 'a', 'a', '.', '.', '.']]
+
+Example_2:
+input: [['.', 'd', '.', '.', '.', 'd'], ['.', 'e', '.', '.', 'e', '.'], ['.', '.', '.', 'f', 'f', '.'], ['.', '.', '.', '.', 'g', '.'], ['.', '.', '.', 'b', '.', '.'], ['.', 'a', 'a', 'a', '.', '.']]
+output: [['d', 'd', '.', '.', '.', '.'], ['e', 'e', '.', '.', '.', '.'], ['f', 'f', '.', '.', '.', '.'], ['g', '.', '.', '.', '.', '.'], ['b', '.', '.', '.', '.', '.'], ['a', 'a', 'a', '.', '.', '.']]
+
+Example_3:
+input: [['f', 'f', '.', '.', '.', 'f'], ['.', '.', '.', 'h', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'a'], ['g', '.', '.', '.', '.', '.']]
+output: [['f', 'f', 'f', '.', '.', '.'], ['h', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['a', '.', '.', '.', '.', '.'], ['g', '.', '.', '.', '.', '.']]
+
+Test case:
+input: [['.', '.', 'f', '.', '.', 'f'], ['.', 'g', '.', '.', 'g', '.'], ['.', '.', '.', '.', '.', 'e'], ['.', '.', '.', '.', 'd', '.'], ['h', '.', '.', 'h', '.', 'h'], ['.', '.', 'c', '.', 'c', '.']]
+################################################################
+
+LLM answer:
+
+output: [['f', 'f', 'f', '.', '.', '.'], ['g', 'g', 'g', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['h', 'h', 'h', '.', '.', '.'], ['.', '.', 'c', 'c', 'c', '.']]
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution:
+    def findWords(self, board: List[List[str]]) -> List[Tuple[int, int]]:
+        words = []  # type: List[Tuple[int, int]]
+        for i in range(len(board)):
+            for j in range(len(board[0])):
+                if board[i][j] == ".":
+                    continue
+                word = self._findWord(board, i, j)
+                if word is not None:
+                    words.append((word[0], word[1]))
+        return words
+
+    @staticmethod
+    def _isValid(board: List[List[str]], i: int, j: int):
+        if (not -1 <= i < len(board)) or (not -1 <= j < len(board[0])):
+            return False
+        return True
+
+    def _findWord(self, board: List[List[str]], i: int, j: int) -> Tuple[int, int]:
+        if not self._isValid(board, i, j):
+            return None
+        if board[i][j]!= "." and board[i][j].lower()!= board[i][j]:
+            return None
+        queue = collections.deque([])
+        visited = set()
+        queue.append((i, j))
+        while queue:
+            x, y = queue.popleft()
+            if not self._isValid(board, x, y):
+                continue
+            if board[x][y] == ".":
+                continue
+            if board[x][y].lower()!= board[x][y]:
+                continue
+            visited.add((x, y))
+            board[x][y] = "."
+            queue.extend([(x + dx, y + dy) for dx, dy in ((0, 1), (-1, 0), (0, -1), (1, 0))] if (x + dx, y + dy) not in visited else [])
+        return (i, j)
+
+################################################################
+
+Solution:
+[['f', 'f', '.', '.', '.', '.'], ['g', 'g', '.', '.', '.', '.'], ['e', '.', '.', '.', '.', '.'], ['d', '.', '.', '.', '.', '.'], ['h', 'h', 'h', '.', '.', '.'], ['c', 'c', '.', '.', '.', '.']]
+

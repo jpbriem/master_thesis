@@ -1,0 +1,91 @@
+Input token: 511
+Output token: 639
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['c', '.', '.', '.'], ['c', '.', '.', '.'], ['c', 'i', 'b', '.'], ['.', 'i', '.', '.']]
+output: [['.', '.', '.', '.'], ['c', '.', '.', '.'], ['c', 'i', '.', '.'], ['c', 'i', 'b', '.']]
+
+Example_2:
+input: [['.', 'b', '.', 'i', '.', 'a'], ['.', '.', '.', 'i', 'e', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['h', '.', '.', '.', 'e', '.'], ['.', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', 'i', 'e', '.'], ['h', 'b', '.', 'i', 'e', 'a']]
+
+Example_3:
+input: [['.', '.', '.', 'h'], ['f', 'a', '.', '.'], ['.', 'a', '.', '.'], ['f', '.', '.', '.']]
+output: [['.', '.', '.', '.'], ['.', '.', '.', '.'], ['f', 'a', '.', '.'], ['f', 'a', '.', 'h']]
+
+Test case:
+input: [['.', '.', '.', '.', '.', 'c'], ['h', '.', '.', '.', '.', '.'], ['.', 'a', 'f', '.', 'b', '.'], ['h', '.', 'f', 'g', '.', 'c'], ['.', '.', 'f', '.', 'b', '.'], ['.', 'a', '.', 'g', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', '.', '.', 'c'], ['h', '.', '.', '.', '.', '.'], ['.', 'a', 'f', '.', 'b', '.'], ['h', '.', 'f', 'g', '.', 'c'], ['.', '.', 'f', '.', 'b', '.'], ['.', 'a', '.', 'g', '.', '.']]
+'''
+
+
+class Solution(object):
+    def transform(self, s):
+        """
+        :type s: List[List[str]]
+        :rtype: List[List[str]]
+        """
+        if not s or len(s) == 0: return []
+        
+        # find all possible patterns in the first row
+        patterns = set()
+        for i in range(len(s)):
+            patterns |= self._find_patterns(s, i)
+            
+        # apply each pattern to the rest of rows
+        result = []
+        for p in patterns:
+            result += self._apply_pattern(p, s, 1)
+        return result
+    
+    def _find_patterns(self, s, start):
+        '''
+        Find all possible patterns in the first row
+        :param s: list of lists
+        :param start: index of the first row
+        :return: a set containing all possible patterns
+        '''
+        if len(s) <= start + 1: return set([])
+        
+        # base cases
+        if start == 0: return {[]}
+        elif start == len(s) - 1: return {[s[-1]]}
+        
+        # recursive cases
+        else:
+            left_patterns = self._find_patterns(s, start - 1)
+            right_patterns = self._find_patterns(s, start + 1)
+            return left_patterns | right_patterns
+        
+    def _apply_pattern(self, pattern, s, start):
+        '''
+        Apply a given pattern to the rest of rows
+        :param pattern: a pattern found from the first row
+        :param s: list of lists
+        :param start: index of the first row
+        :return: a new list with transformed rows
+        '''
+        if len(s) <= start + len(pattern): return []
+        
+        # base cases
+        if start == 0: return [pattern]
+        elif start == len(s) - len(pattern): return [pattern]
+        
+        # recursive cases
+        else:
+            left_rows = self._apply_pattern(pattern, s, start - 1)
+            right_rows = self._apply_pattern(pattern, s, start + 1)
+            return left_rows + right_rows
+
+################################################################
+
+Solution:
+[['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', 'f', '.', '.', '.'], ['h', 'a', 'f', 'g', 'b', 'c'], ['h', 'a', 'f', 'g', 'b', 'c']]
+

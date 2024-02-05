@@ -1,0 +1,241 @@
+Input token: 535
+Output token: 2049
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', 'f', '.', '.', '.'], ['.', 'f', 'e', 'g', '.'], ['.', '.', '.', '.', '.'], ['.', 'f', '.', 'g', '.'], ['.', '.', '.', 'g', '.']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', 'f', '.', 'g', '.'], ['.', 'f', '.', 'g', '.'], ['.', 'f', 'e', 'g', '.']]
+
+Example_2:
+input: [['d', '.', '.', 'e'], ['d', '.', '.', '.'], ['d', 'c', '.', 'e'], ['.', 'c', 'b', 'e']]
+output: [['.', '.', '.', '.'], ['d', '.', '.', 'e'], ['d', 'c', '.', 'e'], ['d', 'c', 'b', 'e']]
+
+Example_3:
+input: [['.', '.', '.', '.', '.', '.'], ['.', 'f', '.', '.', '.', 'e'], ['i', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['i', 'f', '.', '.', 'b', '.'], ['i', '.', '.', '.', '.', 'e']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['i', '.', '.', '.', '.', '.'], ['i', 'f', '.', '.', '.', 'e'], ['i', 'f', '.', '.', 'b', 'e']]
+
+Test case:
+input: [['i', '.', '.', '.', '.'], ['i', '.', '.', 'g', 'b'], ['i', 'f', '.', 'g', '.'], ['.', 'f', 'd', '.', '.'], ['.', 'f', 'd', 'g', 'b']]
+################################################################
+
+LLM answer:
+
+output: [['i', '.', '.', '.', '.'], ['i', '.', '.', 'g', 'b'], ['i', 'f', '.', 'g', '.'], ['.', 'f', 'd', '.', '.'], ['.', 'f', 'd', 'g', 'b']]
+'''
+
+# Definition for a 2D array.
+class Array2D(object):
+    def __init__(self, rows, columns):
+        self.rows = rows
+        self.columns = columns
+        
+    def __getitem__(self, index):
+        return self.data[index[0]]
+    
+    def __setitem__(self, index, value):
+        self.data[index[0]] = value
+        
+    def __len__(self):
+        return len(self.data)
+    
+    def __repr__(self):
+        return str(self.data)
+    
+    @property
+    def data(self):
+        if not hasattr(self, '_data'):
+            self._data = []
+        return self._data
+    
+    @data.setter
+    def data(self, value):
+        self._data = value
+        
+    def append(self, item):
+        self.data.append(item)
+        
+    def insert(self, index, item):
+        self.data.insert(index, item)
+        
+    def remove(self, index):
+        del self.data[index]
+        
+    def clear(self):
+        self.data = []
+        
+    def copy(self):
+        return Array2D(self.rows, self.columns)
+        
+    def toString(self):
+        return str(self.data)
+        
+    def toList(self):
+        return list(self.data)
+        
+    def toSet(self):
+        return set(self.data)
+        
+    def toDict(self):
+        return dict(zip(range(self.rows), self.data))
+        
+    def toTuple(self):
+        return tuple(self.data)
+        
+    def toArray(self):
+        return np.array(self.data)
+        
+    def toMatrix(self):
+        return np.matrix(self.data)
+        
+    def toNumpy(self):
+        return np.asarray(self.data)
+        
+    def toCSV(self):
+        return ','.join([str(x) for x in self.data])
+        
+    def toJSON(self):
+        return json.dumps({'rows': self.rows, 'columns': self.columns, 'data': self.data})
+        
+    def toXML(self):
+        return etree.tostring(etree.Element('root'), encoding='utf8')
+        
+    def toYAML(self):
+        return yaml.dump({'rows': self.rows, 'columns': self.columns, 'data': self.data}, default_flow_style=False)
+        
+    def toPickle(self):
+        import pickle
+        return pickle.dumps((self.rows, self.columns, self.data), protocol=-1)
+        
+    def toBSON(self):
+        import bson
+        return bson.json_util.dumps({'rows': self.rows, 'columns': self.columns, 'data': self.data})
+        
+    def toHDF5(self):
+        from h5py import File
+        f = File('/tmp/test.hdf5', 'w')
+        dset = f.create_dataset('data', (self.rows, self.columns), dtype='S4')
+        dset[:] = self.data
+        f.close()
+        return '/tmp/test.hdf5'
+        
+    def toSQLite(self):
+        import sqlite3
+        conn = sqlite3.connect('/tmp/test.sqlite3')
+        c = conn.cursor()
+        c.execute("CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT)")
+        c.executemany('INSERT INTO test VALUES(?,?)', [(row, row) for row in self.data])
+        conn.commit()
+        conn.close()
+        return '/tmp/test.sqlite3'
+        
+    def toTSV(self):
+        return '\n'.join(['%s\t%s' % (x, y) for x, y in zip(range(self.rows), self.data)]).replace('\r\n', '\n').replace('\r', '\n')
+        
+    def toXLS(self):
+        import xlwt
+        wb = xlwt.Workbook()
+        ws = wb.add_sheet('Sheet1')
+        for i in range(self.rows):
+            for j in range(self.columns):
+                ws.write(i, j, self.data[j])
+        wb.save('/tmp/test.xls')
+        return '/tmp/test.xls'
+        
+    def toHTML(self):
+        import html
+        return '<table><tr>' + ('<td>%s</td>' * self.columns) + '</tr>' + ('<tr>' + ('<td>%s</td>' * self.rows) + '</tr></table>' % tuple(self.data)).encode('utf8')
+        
+    def toMarkdown(self):
+        import markdown
+        return markdown.markdown('|' + ('|%s' % x) * self.columns + '|' * self.rows + '|').encode('utf8')
+        
+    def toRTF(self):
+        import rtflib
+        return rtflib.rtf(self.toString())
+        
+    def toTeX(self):
+        import tex
+        return tex.tex(self.toString(), 'latex')
+        
+    def toLaTeX(self):
+        import latex
+        return latex.latex(self.toString(), 'latex')
+        
+    def toMathML(self):
+        import mathml
+        return mathml.mathml(self.toString(), 'xml')
+        
+    def toSVG(self):
+        import svg
+        return svg.svg(self.toString(),'svg')
+        
+    def toPDF(self):
+        import pdf
+        return pdf.pdf(self.toString(), 'pdf')
+        
+    def toJPEG(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.jpg'))
+        
+    def toPNG(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.png'))
+        
+    def toTIFF(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.tiff'))
+        
+    def toPSD(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.psd'))
+        
+    def toGIF(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.gif'))
+        
+    def toWebM(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.webm'))
+        
+    def toMPEG(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.mp4'))
+        
+    def toOGG(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.ogg'))
+        
+    def toWAV(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.wav'))
+        
+    def toFLAC(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.flac'))
+        
+    def toWEBP(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.webp'))
+        
+    def toJPG(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.jpg'))
+        
+    def toPPM(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.ppm'))
+        
+    def toPNM(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp/test.pnm'))
+        
+    def toPCX(self):
+        import imageio
+        return imageio.imread(imageio.vread('/tmp
+################################################################
+
+Solution:
+[['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['i', 'f', '.', 'g', '.'], ['i', 'f', 'd', 'g', 'b'], ['i', 'f', 'd', 'g', 'b']]
+

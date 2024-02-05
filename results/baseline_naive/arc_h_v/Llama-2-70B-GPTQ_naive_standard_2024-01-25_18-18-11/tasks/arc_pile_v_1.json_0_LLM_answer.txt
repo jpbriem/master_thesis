@@ -1,0 +1,58 @@
+Input token: 577
+Output token: 460
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[3, 0, 0, 0, 4, 0], [0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 4, 0], [3, 0, 1, 0, 0, 0], [3, 0, 0, 8, 0, 0], [0, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [3, 0, 0, 0, 0, 0], [3, 0, 1, 0, 4, 0], [3, 0, 1, 8, 4, 0]]
+
+Example_2:
+input: [[0, 4, 0, 7], [0, 4, 0, 7], [0, 0, 0, 7], [0, 4, 3, 0]]
+output: [[0, 0, 0, 0], [0, 4, 0, 7], [0, 4, 0, 7], [0, 4, 3, 7]]
+
+Example_3:
+input: [[0, 0, 2, 5], [0, 0, 0, 5], [0, 0, 2, 0], [0, 0, 0, 5]]
+output: [[0, 0, 0, 0], [0, 0, 0, 5], [0, 0, 2, 5], [0, 0, 2, 5]]
+
+Test case:
+input: [[0, 0, 0, 0, 0, 0], [8, 0, 0, 2, 0, 0], [0, 0, 0, 0, 3, 0], [0, 0, 0, 2, 0, 1], [0, 7, 6, 0, 3, 0], [0, 7, 0, 2, 0, 0]]
+################################################################
+
+LLM answer:
+
+output: [[0, 0, 0, 0, 0, 0], [8, 0, 0, 2, 0, 0], [0, 0, 0, 0, 3, 0], [0, 0, 0, 2, 0, 1], [0, 7, 6, 0, 3, 0], [0, 7, 0, 2, 3, 0]]
+"""
+from typing import List
+class Solution:
+    def updateMatrix(self, matrix: List[List[int]]) -> List[List[int]]:
+        if not matrix or not matrix[0]: return []
+        
+        m = len(matrix)
+        n = len(matrix[0])
+        dp = [[float('inf') for _ in range(n)] for __ in range(m)]
+        for i in range(m):
+            for j in range(n):
+                if matrix[i][j] == 0: continue
+                
+                dp[i][j] = float('inf')
+                for k in [-1, 0, 1]:
+                    for l in [-1, 0, 1]:
+                        if (k!= 0 or l!= 0) and \
+                           (0 <= i + k < m and 0 <= j + l < n) and \
+                           matrix[i+k][j+l] > 0:
+                             dp[i][j] = min(dp[i][j], dp[i+k][j+l]+1)
+        ans = [[0]*n for _ in range(m)]
+        for i in range(m):
+            for j in range(n):
+                if dp[i][j] == float('inf'):
+                    ans[i][j] = 0
+                else:
+                    ans[i][j] = dp[i][j] - 1
+        return ans
+################################################################
+
+Solution:
+[[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 2, 0, 0], [0, 7, 0, 2, 3, 0], [8, 7, 6, 2, 3, 1]]
+

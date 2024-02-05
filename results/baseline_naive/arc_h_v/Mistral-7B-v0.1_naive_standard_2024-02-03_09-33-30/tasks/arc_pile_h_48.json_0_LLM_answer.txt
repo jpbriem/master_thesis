@@ -1,0 +1,72 @@
+Input token: 478
+Output token: 675
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[0, 3, 0, 3, 3], [0, 0, 0, 0, 0], [0, 0, 0, 4, 4], [6, 0, 0, 0, 0], [0, 2, 0, 2, 0]]
+output: [[3, 3, 3, 0, 0], [0, 0, 0, 0, 0], [4, 4, 0, 0, 0], [6, 0, 0, 0, 0], [2, 2, 0, 0, 0]]
+
+Example_2:
+input: [[0, 1, 1, 1], [9, 0, 0, 9], [0, 4, 0, 0], [0, 2, 0, 0]]
+output: [[1, 1, 1, 0], [9, 9, 0, 0], [4, 0, 0, 0], [2, 0, 0, 0]]
+
+Example_3:
+input: [[3, 0, 3, 3], [6, 6, 0, 0], [8, 8, 0, 8], [0, 0, 4, 0]]
+output: [[3, 3, 3, 0], [6, 6, 0, 0], [8, 8, 8, 0], [4, 0, 0, 0]]
+
+Test case:
+input: [[0, 0, 0, 7, 7], [0, 0, 9, 0, 9], [0, 1, 0, 0, 0], [0, 5, 5, 0, 0], [0, 0, 8, 0, 8]]
+################################################################
+
+LLM answer:
+
+output: [[7, 7, 7, 0, 0], [9, 9, 0, 0, 0], [0, 0, 0, 0, 0], [5, 5, 5, 0, 0], [8, 8, 8, 0, 0]]
+
+Constraints:
+1 <= matrix.length == matrix[i].length <= 100
+matrix[i][j] is either 0 or an integer in range [1, 9].
+ */
+public class _1008 {
+    public int[][] updateMatrix(int[][] mat) {
+        if (mat == null || mat.length == 0 || mat[0].length == 0) return mat;
+        int m = mat.length, n = mat[0].length;
+        Queue<Integer> q = new LinkedList<>();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (mat[i][j] == 0) q.offer(i * n + j);
+                else mat[i][j] = Integer.MAX_VALUE;
+            }
+        }
+        while (!q.isEmpty()) {
+            int size = q.size();
+            for (int i = 0; i < size; ++i) {
+                int cur = q.poll();
+                int x = cur / n, y = cur % n;
+                if (x > 0 && mat[x - 1][y] > mat[x][y] + 1) {
+                    mat[x - 1][y] = mat[x][y] + 1;
+                    q.offer((x - 1) * n + y);
+                }
+                if (y > 0 && mat[x][y - 1] > mat[x][y] + 1) {
+                    mat[x][y - 1] = mat[x][y] + 1;
+                    q.offer(x * n + y - 1);
+                }
+                if (x < m - 1 && mat[x + 1][y] > mat[x][y] + 1) {
+                    mat[x + 1][y] = mat[x][y] + 1;
+                    q.offer((x + 1) * n + y);
+                }
+                if (y < n - 1 && mat[x][y + 1] > mat[x][y] + 1) {
+                    mat[x][y + 1] = mat[x][y] + 1;
+                    q.offer(x * n + y + 1);
+                }
+            }
+        }
+        return mat;
+    }
+}
+################################################################
+
+Solution:
+[[7, 7, 0, 0, 0], [9, 9, 0, 0, 0], [1, 0, 0, 0, 0], [5, 5, 0, 0, 0], [8, 8, 0, 0, 0]]
+

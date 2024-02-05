@@ -1,0 +1,73 @@
+Input token: 449
+Output token: 518
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'f'], ['c', 'c', '.', 'c', '.'], ['i', 'i', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['f', '.', '.', '.', '.'], ['c', 'c', 'c', '.', '.'], ['i', 'i', '.', '.', '.']]
+
+Example_2:
+input: [['g', '.', 'g', 'g'], ['e', 'e', '.', '.'], ['.', 'h', '.', '.'], ['.', '.', 'd', '.']]
+output: [['g', 'g', 'g', '.'], ['e', 'e', '.', '.'], ['h', '.', '.', '.'], ['d', '.', '.', '.']]
+
+Example_3:
+input: [['.', '.', '.', '.', '.'], ['.', 'b', '.', '.', '.'], ['.', 'd', '.', '.', '.'], ['h', 'h', '.', '.', 'h'], ['.', 'c', 'c', '.', 'c']]
+output: [['.', '.', '.', '.', '.'], ['b', '.', '.', '.', '.'], ['d', '.', '.', '.', '.'], ['h', 'h', 'h', '.', '.'], ['c', 'c', 'c', '.', '.']]
+
+Test case:
+input: [['.', '.', '.', 'a'], ['.', 'g', '.', '.'], ['d', 'd', '.', 'd'], ['.', 'f', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', 'a'], ['.', 'g', '.', '.'], ['d', 'd', '.', 'd'], ['.', 'f', '.', '.']]
+
+Constraints:
+1 <= board.length, board[i].length <= 50
+board[i][j] is either a lowercase English letter or '.'.
+'''
+class Solution(object):
+    def updateBoard(self, board, click):
+        """
+        :type board: List[List[str]]
+        :type click: List[int]
+        :rtype: List[List[str]]
+        """
+        if not board: return []
+        m = len(board)
+        n = len(board[0])
+        x, y = click
+        if board[x][y] == 'M':
+            board[x][y] = 'X'
+            return board
+        else:
+            count = self.count_neighbour(board, x, y)
+            if count > 0:
+                board[x][y] = str(count)
+            else:
+                board[x][y] = 'B'
+                for i in range(-1, 2):
+                    for j in range(-1, 2):
+                        if (i!= 0 or j!= 0) and 0 <= x + i < m and 0 <= y + j < n:
+                            if board[x+i][y+j] == 'E':
+                                board[x+i][y+j] = 'B'
+                                self.updateBoard(board, [x+i, y+j])
+        return board
+
+    def count_neighbour(self, board, x, y):
+        m = len(board)
+        n = len(board[0])
+        count = 0
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                if (i!= 0 or j!= 0) and 0 <= x + i < m and 0 <= y + j < n:
+                    if board[x+i][y+j] == 'M':
+                        count += 1
+        return count
+################################################################
+
+Solution:
+[['a', '.', '.', '.'], ['g', '.', '.', '.'], ['d', 'd', 'd', '.'], ['f', '.', '.', '.']]
+

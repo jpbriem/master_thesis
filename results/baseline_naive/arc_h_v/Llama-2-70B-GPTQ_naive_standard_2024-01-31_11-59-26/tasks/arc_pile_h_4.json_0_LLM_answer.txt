@@ -1,0 +1,96 @@
+Input token: 534
+Output token: 2051
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'b'], ['i', 'i', 'i', '.', '.', '.'], ['d', '.', '.', '.', 'd', 'd'], ['h', '.', '.', 'h', 'h', '.'], ['.', 'f', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['b', '.', '.', '.', '.', '.'], ['i', 'i', 'i', '.', '.', '.'], ['d', 'd', 'd', '.', '.', '.'], ['h', 'h', 'h', '.', '.', '.'], ['f', '.', '.', '.', '.', '.']]
+
+Example_2:
+input: [['.', 'c', '.', '.'], ['.', '.', '.', '.'], ['g', 'g', 'g', '.'], ['.', 'f', 'f', 'f']]
+output: [['c', '.', '.', '.'], ['.', '.', '.', '.'], ['g', 'g', 'g', '.'], ['f', 'f', 'f', '.']]
+
+Example_3:
+input: [['a', '.', '.', '.', 'a'], ['.', '.', '.', '.', 'i'], ['e', '.', 'e', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', 'c', 'c', 'c']]
+output: [['a', 'a', '.', '.', '.'], ['i', '.', '.', '.', '.'], ['e', 'e', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['c', 'c', 'c', '.', '.']]
+
+Test case:
+input: [['d', 'd', '.', 'd', '.'], ['.', 'h', 'h', '.', '.'], ['.', 'c', '.', '.', '.'], ['b', '.', 'b', 'b', '.'], ['.', '.', '.', '.', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['d', 'd', '.', 'd', '.'], ['.', 'h', 'h', '.', '.'], ['.', 'c', '.', '.', '.'], ['b', 'b', 'b', '.', '.'], ['.', '.', '.', '.', 'a']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def findPath(self, grid: List[List[str]]) -> str:
+        """
+        思路：找到一个可以走的方向，然后遍历所有可能的位置。
+            - 如果发现了一条新的路径，就返回这条路径；否则返回空字符串。
+                - 注意：每次都要重置当前的位置和方向。
+                    因为我们不知道是从左上角开始还是右下角开始，也不知道是向左还是向右。
+            
+        复杂度分析：
+            - Time complexity: O(n)，其中 n 是矩阵的行数或者列数。
+            - Space complexity: O(1).
+        """
+        # check if there is a path from left top corner to right bottom corner
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == "." or grid[i][j] == ".":
+                    return self._findPathHelper(grid, i, j, (i, j), True, False)
+        # check if there is a path from right bottom corner to left top corner
+        for i in reversed(range(len(grid))):
+            for j in reversed(range(len(grid[0]))):
+                if grid[i][j] == "." or grid[i][j] == ".":
+                    return self._findPathHelper(grid, i, j, (i, j), False, True)
+        return ""
+
+    def _findPathHelper(self, grid: List[List[str]], i: int, j: int, currentPosition: tuple, isLeftTopToRightBottom: bool, isRightBottomToLeftTop: bool) -> str:
+        direction = None
+        if isLeftTopToRightBottom:
+            direction = [(0, 1), (-1, 0)]
+        elif isRightBottomToLeftTop:
+            direction = [(0, -1), (1, 0)]
+        else:
+            raise Exception("Unexpected error!")
+        # print(currentPosition, direction)
+        while True:
+            newCurrentPosition = currentPosition + direction[0]
+            if not (0 <= newCurrentPosition[0] < len(grid) and 0 <= newCurrentPosition[1] < len(grid[0]) and grid[newCurrentPosition[0]][newCurrentPosition[1]]!= "#"):
+                break
+            currentPosition = newCurrentPosition
+            direction = direction[::-1]
+        # print(currentPosition)
+        if grid[currentPosition[0]][currentPosition[1]] == "#":
+            return ""
+        else:
+            return self._findPathHelper(grid, currentPosition[0], currentPosition[1], currentPosition, isLeftTopToRightBottom, isRightBottomToLeftTop)
+
+# test function
+def main():
+    solution = Solution()
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhccbbaa"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba"
+    assert solution.findPath([["d", "d", ".", "d", "."], [".", "h", "h", ".", "."], [".", "c", ".", ".", "."], ["b", ".", "b", "b", "."], [".", ".", ".", ".", "a"]]) == "ddhhcccba
+################################################################
+
+Solution:
+[['d', 'd', 'd', '.', '.'], ['h', 'h', '.', '.', '.'], ['c', '.', '.', '.', '.'], ['b', 'b', 'b', '.', '.'], ['a', '.', '.', '.', '.']]
+

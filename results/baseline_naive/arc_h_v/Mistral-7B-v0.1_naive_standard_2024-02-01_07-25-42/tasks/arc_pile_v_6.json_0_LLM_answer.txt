@@ -1,0 +1,79 @@
+Input token: 432
+Output token: 648
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.'], ['.', '.', '.', 'g'], ['f', '.', 'h', '.'], ['.', '.', '.', 'g']]
+output: [['.', '.', '.', '.'], ['.', '.', '.', '.'], ['.', '.', '.', 'g'], ['f', '.', 'h', 'g']]
+
+Example_2:
+input: [['.', '.', '.', '.', 'd'], ['.', 'h', 'i', '.', 'd'], ['.', 'h', 'i', '.', '.'], ['.', 'h', '.', '.', 'd'], ['.', '.', '.', 'f', '.']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', 'h', '.', '.', 'd'], ['.', 'h', 'i', '.', 'd'], ['.', 'h', 'i', 'f', 'd']]
+
+Example_3:
+input: [['.', '.', 'f', '.'], ['d', '.', '.', 'e'], ['d', '.', 'f', 'e'], ['.', '.', 'f', '.']]
+output: [['.', '.', '.', '.'], ['.', '.', 'f', '.'], ['d', '.', 'f', 'e'], ['d', '.', 'f', 'e']]
+
+Test case:
+input: [['d', '.', 'g', 'i', '.'], ['d', '.', '.', '.', 'h'], ['d', 'f', 'g', '.', '.'], ['.', '.', '.', 'i', 'h'], ['.', '.', '.', 'i', '.']]
+################################################################
+
+LLM answer:
+
+output: [['d', '.', 'g', 'i', '.'], ['d', '.', '.', '.', 'h'], ['d', 'f', 'g', '.', '.'], ['.', '.', '.', 'i', 'h'], ['.', '.', '.', 'i', '.']]
+'''
+class Solution(object):
+    def updateBoard(self, board, click):
+        """
+        :type board: List[List[str]]
+        :type click: List[int]
+        :rtype: List[List[str]]
+        """
+        if not board or len(board) == 0 or len(click)!= 2: return []
+        m = len(board)
+        n = len(board[0])
+        # print "m:", m, ",n:", n
+        self.updateBoardHelper(board, click[0], click[1], m, n)
+        return board
+
+    def updateBoardHelper(self, board, x, y, m, n):
+        if board[x][y] == 'M':
+            board[x][y] = 'X'
+            return
+        elif board[x][y] == 'E':
+            board[x][y] = 'B'
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    if (i == 0 and j == 0) or (abs(i) + abs(j)) > 1: continue
+                    try:
+                        if board[x+i][y+j] == 'M':
+                            board[x+i][y+j] = 'X'
+                    except IndexError: pass
+            return
+        else:
+            count = 0
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    if (i == 0 and j == 0) or (abs(i) + abs(j)) > 1: continue
+                    try:
+                        if board[x+i][y+j] == 'M':
+                            count += 1
+                    except IndexError: pass
+            if count == 0:
+                board[x][y] = 'B'
+                for i in range(-1, 2):
+                    for j in range(-1, 2):
+                        if (i == 0 and j == 0) or (abs(i) + abs(j)) > 1: continue
+                        try:
+                            if board[x+i][y+j] == 'E':
+                                self.updateBoardHelper(board, x+i, y+j, m, n)
+                        except IndexError: pass
+            else:
+                board[x][y] = str(count)
+################################################################
+
+Solution:
+[['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['d', '.', '.', 'i', '.'], ['d', '.', 'g', 'i', 'h'], ['d', 'f', 'g', 'i', 'h']]
+

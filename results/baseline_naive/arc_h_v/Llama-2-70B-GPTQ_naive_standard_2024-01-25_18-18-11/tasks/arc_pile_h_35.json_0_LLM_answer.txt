@@ -1,0 +1,100 @@
+Input token: 637
+Output token: 1026
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[0, 4, 4, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 6, 0, 0, 0, 0], [8, 0, 8, 0, 0, 0], [0, 0, 5, 5, 0, 5], [0, 0, 0, 0, 0, 0]]
+output: [[4, 4, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [6, 0, 0, 0, 0, 0], [8, 8, 0, 0, 0, 0], [5, 5, 5, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+
+Example_2:
+input: [[0, 0, 0, 0], [2, 2, 2, 0], [0, 7, 0, 0], [0, 0, 0, 1]]
+output: [[0, 0, 0, 0], [2, 2, 2, 0], [7, 0, 0, 0], [1, 0, 0, 0]]
+
+Example_3:
+input: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1], [9, 0, 9, 0, 9, 0], [0, 0, 0, 7, 0, 0], [0, 0, 0, 0, 0, 0], [0, 2, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0], [9, 9, 9, 0, 0, 0], [7, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [2, 0, 0, 0, 0, 0]]
+
+Test case:
+input: [[0, 8, 8, 8], [3, 3, 3, 0], [4, 4, 4, 0], [0, 0, 6, 6]]
+################################################################
+
+LLM answer:
+
+output: [[0, 8, 8, 8], [3, 3, 3, 0], [4, 4, 4, 0], [6, 0, 0, 0]]
+"""
+# Definition for a point.
+class Point(object):
+    def __init__(self, x=None, y=None):
+        self.x = x
+        self.y = y
+
+def get_neighbors(matrix, i, j):
+    neighbors = []
+    if (i - 1) >= 0:
+        neighbors.append((Point(i - 1, j), matrix[i - 1][j]))
+    if (i + 1) < len(matrix):
+        neighbors.append((Point(i + 1, j), matrix[i + 1][j]))
+    if (j - 1) >= 0:
+        neighbors.append((Point(i, j - 1), matrix[i][j - 1]))
+    if (j + 1) < len(matrix[0]):
+        neighbors.append((Point(i, j + 1), matrix[i][j + 1]))
+    return neighbors
+
+def find_max_point(matrix, i, j):
+    max_value = matrix[i][j]
+    max_point = None
+    for neighbor in get_neighbors(matrix, i, j):
+        if neighbor[1] > max_value:
+            max_value = neighbor[1]
+            max_point = neighbor[0]
+    return max_point
+
+def floodFill(matrix, i, j):
+    if not isinstance(matrix[i][j], int):
+        return False
+    max_point = find_max_point(matrix, i, j)
+    if max_point == None or \
+       max_point.x!= i or max_point.y!= j:
+        return False
+    matrix[i][j] = Point()
+    queue = [(i, j)]
+    while queue:
+        current_position = queue.pop(0)
+        row, col = current_position
+        for neighbor in get_neighbors(matrix, row, col):
+            if neighbor[1].x == None:
+                continue
+            if neighbor[1].x == row and neighbor[1].y == col:
+                continue
+            if matrix[row][col] <= neighbor[1]:
+                matrix[current_position[0]][current_position[1]] = Point()
+                queue.append(get_neighbors(matrix, row, col)[0])
+    return True
+
+def main():
+    # Test Case 1
+    matrix = [[0, 4, 4, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 6, 0, 0, 0, 0], [8, 0, 8, 0, 0, 0], [0, 0, 5, 5, 0, 5], [0, 0, 0, 0, 0, 0]]
+    print("Input:", matrix)
+    result = floodFill(matrix, 0, 0)
+    print("Output:", matrix)
+    assert result == True
+
+    # Test Case 2
+    matrix = [[0, 0, 0, 0], [2, 2, 2, 0], [0, 7, 0, 0], [0, 0, 0, 1]]
+    print("Input:", matrix)
+    result = floodFill(matrix, 0, 0)
+    print("Output:", matrix)
+    assert result == True
+
+    # Test Case 3
+    matrix = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1], [9, 0, 9, 0, 9, 0], [0, 0, 0, 7, 0, 0], [0, 0, 0, 0, 0, 0], [0, 2, 0, 0, 0, 0]]
+    print("Input:", matrix)
+    result = floodFill(matrix, 0, 0)
+    print
+################################################################
+
+Solution:
+[[8, 8, 8, 0], [3, 3, 3, 0], [4, 4, 4, 0], [6, 6, 0, 0]]
+

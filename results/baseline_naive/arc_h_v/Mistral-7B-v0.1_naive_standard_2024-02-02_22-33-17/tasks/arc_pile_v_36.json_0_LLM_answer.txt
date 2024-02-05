@@ -1,0 +1,94 @@
+Input token: 519
+Output token: 656
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'g', 'a', 'a'], ['a', 'a', 'a', 'd', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'd', 'j'], ['a', 'a', 'a', 'd', 'j']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'd', 'a'], ['a', 'a', 'a', 'd', 'j'], ['a', 'a', 'g', 'd', 'j']]
+
+Example_2:
+input: [['h', 'a', 'a', 'a'], ['h', 'a', 'a', 'e'], ['a', 'f', 'i', 'a'], ['h', 'f', 'a', 'a']]
+output: [['a', 'a', 'a', 'a'], ['h', 'a', 'a', 'a'], ['h', 'f', 'a', 'a'], ['h', 'f', 'i', 'e']]
+
+Example_3:
+input: [['a', 'a', 'a', 'i', 'd'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'd'], ['a', 'c', 'e', 'i', 'd'], ['a', 'a', 'a', 'i', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'i', 'd'], ['a', 'a', 'a', 'i', 'd'], ['a', 'c', 'e', 'i', 'd']]
+
+Test case:
+input: [['b', 'a', 'e', 'a'], ['a', 'a', 'a', 'a'], ['a', 'h', 'e', 'g'], ['a', 'a', 'e', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'e', 'a'], ['a', 'a', 'e', 'g']]
+
+Constraints:
+1 <= matrix.length, matrix[0].length <= 500
+matrix[i][j] is a lowercase English letter.
+ */
+public class RemoveInvalidParentheses {
+    public List<String> removeInvalidParentheses(String[] s) {
+        int left = 0;
+        int right = 0;
+        for (int i = 0; i < s.length; i++) {
+            String str = s[i];
+            for (char c : str.toCharArray()) {
+                if (c == '(') {
+                    left++;
+                } else if (c == ')') {
+                    right++;
+                }
+            }
+        }
+        return dfs(s, new ArrayList<>(), left, right);
+    }
+
+    private List<String> dfs(String[] s, List<String> res, int left, int right) {
+        if (left == 0 && right == 0) {
+            StringBuilder sb = new StringBuilder();
+            for (String str : s) {
+                sb.append(str);
+            }
+            res.add(sb.toString());
+            return res;
+        }
+        for (int i = 0; i < s.length; i++) {
+            char[] chars = s[i].toCharArray();
+            if (chars[0]!= ')' || chars[chars.length - 1]!= '(') {
+                continue;
+            }
+            if (chars[0] == '(' && chars[chars.length - 1] == ')') {
+                // 删除左右括号
+                s[i] = "";
+                left--;
+                right--;
+                dfs(s, res, left, right);
+                s[i] = chars.clone();
+                left++;
+                right++;
+            } else if (chars[0] == '(') {
+                // 只删除左括号
+                s[i] = "";
+                left--;
+                dfs(s, res, left, right);
+                s[i] = chars.clone();
+                left++;
+            } else if (chars[chars.length - 1] == ')') {
+                // 只删除右括号
+                s[i] = "";
+                right--;
+                dfs(s, res, left, right);
+                s[i] = chars.clone();
+                right++;
+            }
+        }
+        return res;
+    }
+}
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a'], ['a', 'a', 'e', 'a'], ['a', 'a', 'e', 'a'], ['b', 'h', 'e', 'g']]
+

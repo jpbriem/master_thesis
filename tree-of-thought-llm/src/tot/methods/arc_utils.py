@@ -131,28 +131,39 @@ def replace_quotes_in_text(res, json_format):
     # preprocess json format
     output_format = {}
     for key, value in json_format.items():
-        if "Example_1" in json_format:
+        if "example_1" in json_format:
             for i in range(2, 11): # do for 10 examples
-                k = "Example_" + str(i)
+                k = "example_" + str(i)
+        if "example_1_description" in json_format:
+            for i in range(2, 11): # do for 10 examples
+                k = "example_" + str(i) + "_description"
                 output_format.update({k: ""})
         output_format.update({key: ""})
         if isinstance(value, dict):
-            if "Example_1" in value:
+            if "example_1" in value:
                 for i in range(2, 11): # do for 10 examples
-                    k = "Example_" + str(i)
+                    k = "example_" + str(i)
+                    output_format.update({k: ""})
+            if "example_1_description" in value:
+                for i in range(2, 11): # do for 10 examples
+                    k = "example_" + str(i) + "_description"
                     output_format.update({k: ""})
             for key2, value2 in value.items():
                 output_format.update({key2: ""})
                 if isinstance(value2, dict):
-                    if "Example_1" in value2:
+                    if "example_1" in value2:
                         for i in range(2, 11): # do for 10 examples
-                            k = "Example_" + str(i)
+                            k = "example_" + str(i)
+                            output_format.update({k: ""})
+                    if "example_1_description" in value2:
+                        for i in range(2, 11): # do for 10 examples
+                            k = "example_" + str(i) + "_description"
                             output_format.update({k: ""})
                     for key3, value3 in value2.items():
                         output_format.update({key3: ""})   
         keys = list(output_format.keys())
     # add some potential artificially created keys from the model
-    keys += ["Choice", "test_case", "Test_case", "Test case", "test case", "test_output", "Test_output", "test output", "Test output", "output", "Test input", "Test_input", "test input", "test_input"]
+    keys += ["choice", "test_case", "test case", "test_output", "test output", "test input", "test_input"]
 
     # do some regex to remove unwanted line breakes
     res = res.replace("\n", " ")

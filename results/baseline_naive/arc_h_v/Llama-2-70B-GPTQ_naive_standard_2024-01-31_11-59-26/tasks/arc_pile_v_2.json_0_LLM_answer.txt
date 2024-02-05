@@ -1,0 +1,78 @@
+Input token: 511
+Output token: 667
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['c', '.', '.', '.'], ['c', '.', '.', '.'], ['c', 'i', 'b', '.'], ['.', 'i', '.', '.']]
+output: [['.', '.', '.', '.'], ['c', '.', '.', '.'], ['c', 'i', '.', '.'], ['c', 'i', 'b', '.']]
+
+Example_2:
+input: [['.', 'b', '.', 'i', '.', 'a'], ['.', '.', '.', 'i', 'e', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['h', '.', '.', '.', 'e', '.'], ['.', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', 'i', 'e', '.'], ['h', 'b', '.', 'i', 'e', 'a']]
+
+Example_3:
+input: [['.', '.', '.', 'h'], ['f', 'a', '.', '.'], ['.', 'a', '.', '.'], ['f', '.', '.', '.']]
+output: [['.', '.', '.', '.'], ['.', '.', '.', '.'], ['f', 'a', '.', '.'], ['f', 'a', '.', 'h']]
+
+Test case:
+input: [['.', '.', '.', '.', '.', 'c'], ['h', '.', '.', '.', '.', '.'], ['.', 'a', 'f', '.', 'b', '.'], ['h', '.', 'f', 'g', '.', 'c'], ['.', '.', 'f', '.', 'b', '.'], ['.', 'a', '.', 'g', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', 'a', 'f', '.', 'b', '.'], ['h', '.', 'f', 'g', '.', 'c'], ['.', '.', 'f', '.', 'b', '.'], ['.', 'a', '.', 'g', '.', '.']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def reconstructQueue(self, people: List[List[str]]) -> List[List[str]]:
+        """
+        思路：
+            1、找到所有的人，并且按照顺序排列起来。
+            2、对于每一个人，如果他在前面的人中出现过，那么就将这两个人交换位置。
+                因为我们知道了这两个人之间的关系，即后者在前者的后面。
+            3、最后返回结果。
+        """
+        # 记录每个人的位置信息
+        position = {}
+        for i in range(len(people)):
+            person = "".join(people[i])
+            if not person in position:
+                position[person] = []
+            position[person].append((i, len(position[person])) - 1)
+
+        # 根据人名从小到大进行排序
+        sorted_names = list(sorted(position))
+        result = [[None for _ in range(6)] for _ in range(len(people))]
+        for name in sorted_names:
+            for index in reversed(range(len(result))):
+                if name == "".join(result[index]):
+                    break
+            else:
+                continue
+            # 获取当前人的位置信息
+            positions = position[name]
+            # 获取当前人的位置信息
+            current_positions = positions[:]
+            while True:
+                # 获取下一个人的位置信息
+                next_positions = positions[::-1][:]
+                # 判断是否已经处理完成
+                if len(current_positions)!= len(next_positions):
+                    break
+                # 交换位置
+                for (cur_idx, cur_order), (next_idx, next_order) in zip(current_positions, next_positions):
+                    tmp = result[cur_idx]
+                    result[cur_idx] = result[next_idx]
+                    result[next_idx] = tmp
+                # 更新当前人的位置信息
+                current_positions = next_positions
+        return result
+
+################################################################
+
+Solution:
+[['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', 'f', '.', '.', '.'], ['h', 'a', 'f', 'g', 'b', 'c'], ['h', 'a', 'f', 'g', 'b', 'c']]
+

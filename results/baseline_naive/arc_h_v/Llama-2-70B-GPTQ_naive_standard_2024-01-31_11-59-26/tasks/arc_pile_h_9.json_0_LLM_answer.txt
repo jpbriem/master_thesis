@@ -1,0 +1,110 @@
+Input token: 528
+Output token: 1249
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', 'g', 'g'], ['.', '.', 'b', '.'], ['.', '.', '.', 'c'], ['.', '.', 'h', '.']]
+output: [['g', 'g', '.', '.'], ['b', '.', '.', '.'], ['c', '.', '.', '.'], ['h', '.', '.', '.']]
+
+Example_2:
+input: [['.', '.', '.', 'a', 'a', '.'], ['.', '.', '.', '.', '.', 'b'], ['.', '.', '.', '.', 'c', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', 'f', 'f', 'f', '.', '.']]
+output: [['a', 'a', '.', '.', '.', '.'], ['b', '.', '.', '.', '.', '.'], ['c', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['f', 'f', 'f', '.', '.', '.']]
+
+Example_3:
+input: [['.', 'b', 'b', '.', 'b'], ['.', '.', '.', '.', '.'], ['.', 'f', 'f', '.', '.'], ['.', '.', 'i', '.', '.'], ['e', 'e', 'e', '.', '.']]
+output: [['b', 'b', 'b', '.', '.'], ['.', '.', '.', '.', '.'], ['f', 'f', '.', '.', '.'], ['i', '.', '.', '.', '.'], ['e', 'e', 'e', '.', '.']]
+
+Test case:
+input: [['.', 'g', '.', 'g', '.'], ['.', '.', 'b', '.', '.'], ['.', '.', '.', 'i', '.'], ['h', 'h', '.', '.', '.'], ['.', 'd', '.', 'd', '.']]
+################################################################
+
+LLM answer:
+
+output: [['g', 'g', '.', '.'], ['.', '.', 'b', '.', '.'], ['.', '.', 'i', '.', '.'], ['h', 'h', '.', '.'], ['.', 'd', '.', '.']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def transform(self, grid: List[List[str]]) -> None:
+        """
+        Do not return anything, modify grid in-place instead.
+        
+        >>> solution = Solution()
+        >>> grid = [[".", ".", "g", "g"], [".",".", "b", "."], [".",".", ".", "c"], [".",".", "h", "."]]
+        >>> solution.transform(grid)
+        >>> print(grid)
+        [["g","g"," "," "],["b"," "," "," "],["c"," "," "," "],["h"," "," "," "]]
+        >>> grid = [[".", ".", ".", "a", "a", "."], [".", ".", ".", ".", ".", "b"], [".", ".", ".", ".", "c", "."], [".", ".", ".", ".", ".", "."], [".", ".", ".", ".", ".", "."], [".", "f", "f", "f", ".", "."]]
+        >>> solution.transform(grid)
+        >>> print(grid)
+        [["a","a"," "," "," "],["b"," "," "," "," "],["c"," "," "," "," "],[" "," "," "," "," "],[" "," "," "," "," "],["f","f","f"," "," "]]
+        >>> grid = [[".","b", "b", ".", "b"], [".", ".", ".", ".", "."], [".", "f", "f", ".", "."], [".", ".", "i", ".", "."], ["e", "e", "e", ".", "."]]
+        >>> solution.transform(grid)
+        >>> print(grid)
+        [["b","b","b"," "," "],[" "," "," "," "," "],["f","f"," "," "," "],["i"," "," "," "," "],["e","e","e"," "," "]]
+        >>> grid = [[".","g", ".", "g", "."], [".", ".", "b", ".", "."], [".", ".", ".", "i", "."], ["h", "h", ".", ".", "."], [".", "d", ".", "d", "."]]
+        >>> solution.transform(grid)
+        >>> print(grid)
+        [["g","g"," "," "],[" "," "," b"," "," "],[" "," "," i"," "," "],["h","h"," "," "," "],[" "," d"," "," "]]
+        """
+        if len(grid) == 0 or len(grid[0]) == 0:
+            return
+    
+        for row in range(len(grid)):
+            for col in range(len(grid[row])):
+                if grid[row][col]!= '.':
+                    continue
+                else:
+                    # find all non-dot elements on this row
+                    nonDotElementsOnRow = []
+                    for j in range(len(grid[row])):
+                        if grid[row][j]!= '.':
+                            nonDotElementsOnRow.append(grid[row][j])
+                            
+                    # find all non-dot elements on this column
+                    nonDotElementsOnCol = []
+                    for i in range(len(grid)):
+                        if grid[i][col]!= '.':
+                            nonDotElementsOnCol.append(grid[i][col])
+                            
+                    # update the current element with the most frequent character from both rows and columns
+                    if len(nonDotElementsOnRow) > 0 and len(nonDotElementsOnCol) > 0:
+                        maxFreqCharInRow = self._getMaxFrequencyCharacterFromString(nonDotElementsOnRow)
+                        maxFreqCharInCol = self._getMaxFrequencyCharacterFromString(nonDotElementsOnCol)
+                        if maxFreqCharInRow == maxFreqCharInCol:
+                            grid[row][col] = maxFreqCharInRow
+                        elif maxFreqCharInRow is not None and maxFreqCharInCol is not None:
+                            if maxFreqCharInRow > maxFreqCharInCol:
+                                grid[row][col] = maxFreqCharInRow
+                            else:
+                                grid[row][col] = maxFreqCharInCol
+                        else:
+                            pass
+                    else:
+                        pass
+
+    @staticmethod
+    def _getMaxFrequencyCharacterFromString(string):
+        """
+        Returns a tuple of (character, frequency). If there's no such character, returns None.
+        """
+        charDict = {}
+        for char in string:
+            if char in charDict:
+                charDict[char] += 1
+            else:
+                charDict[char] = 1
+        maxFreq = -1
+        maxFreqChar = ''
+        for key, value in charDict.items():
+            if value > maxFreq:
+                maxFreq = value
+                maxFreqChar = key
+        return maxFreqChar
+################################################################
+
+Solution:
+[['g', 'g', '.', '.', '.'], ['b', '.', '.', '.', '.'], ['i', '.', '.', '.', '.'], ['h', 'h', '.', '.', '.'], ['d', 'd', '.', '.', '.']]
+

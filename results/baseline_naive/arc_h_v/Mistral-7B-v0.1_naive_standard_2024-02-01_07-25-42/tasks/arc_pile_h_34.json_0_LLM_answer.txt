@@ -1,0 +1,72 @@
+Input token: 608
+Output token: 711
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', '.'], ['e', 'e', 'e', '.', '.'], ['.', '.', 'd', '.', '.'], ['g', '.', '.', '.', 'g'], ['.', '.', 'a', '.', '.']]
+output: [['.', '.', '.', '.', '.'], ['e', 'e', 'e', '.', '.'], ['d', '.', '.', '.', '.'], ['g', 'g', '.', '.', '.'], ['a', '.', '.', '.', '.']]
+
+Example_2:
+input: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'c', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'd', '.'], ['h', 'h', '.', 'h', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['c', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['d', '.', '.', '.', '.', '.'], ['h', 'h', 'h', '.', '.', '.']]
+
+Example_3:
+input: [['.', '.', 'f', '.', '.', 'f'], ['d', '.', '.', 'd', 'd', '.'], ['e', 'e', '.', '.', '.', 'e'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['c', 'c', '.', '.', '.', '.']]
+output: [['f', 'f', '.', '.', '.', '.'], ['d', 'd', 'd', '.', '.', '.'], ['e', 'e', 'e', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['c', 'c', '.', '.', '.', '.']]
+
+Test case:
+input: [['.', '.', '.', 'g', '.'], ['.', 'b', '.', 'b', 'b'], ['.', '.', 'i', '.', '.'], ['.', 'c', '.', '.', '.'], ['.', '.', '.', 'f', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', 'g', '.'], ['.', 'b', '.', 'b', 'b'], ['.', '.', 'i', '.', '.'], ['.', 'c', '.', '.', '.'], ['.', '.', '.', 'f', '.']]
+
+Explanation:
+The only difference between the two arrays is that in the second array, the first character of the third row has changed from 'i' to 'I'.
+*/
+class Solution {
+    public char[][] updateBoard(char[][] board, int[] click) {
+        if (board == null || board.length == 0 || board[0].length == 0) return board;
+        int m = board.length, n = board[0].length;
+        Queue<int[]> q = new LinkedList<>();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (board[i][j] == 'M') continue;
+                else if (board[i][j] == 'E') {
+                    q.offer(new int[]{i, j});
+                    board[i][j] = 'X';
+                }
+            }
+        }
+        while (!q.isEmpty()) {
+            int[] cur = q.poll();
+            int x = cur[0], y = cur[1];
+            int count = getCount(x - 1, y - 1, board) + getCount(x - 1, y, board) + getCount(x - 1, y + 1, board);
+            count += getCount(x, y - 1, board) + getCount(x, y + 1, board);
+            count += getCount(x + 1, y - 1, board) + getCount(x + 1, y, board) + getCount(x + 1, y + 1, board);
+            if (count > 0) board[cur[0]][cur[1]] = (char)(count + '0');
+            else {
+                board[cur[0]][cur[1]] = 'B';
+                for (int i = Math.max(0, x - 1); i <= Math.min(m - 1, x + 1); ++i) {
+                    for (int j = Math.max(0, y - 1); j <= Math.min(n - 1, y + 1); ++j) {
+                        if (board[i][j]!= 'M') q.offer(new int[]{i, j});
+                    }
+                }
+            }
+        }
+        return board;
+    }
+
+    private int getCount(int x, int y, char[][] board) {
+        if (x >= 0 && x < board.length && y >= 0 && y < board[0].length && board[x][y] == 'M') return 1;
+        return 0;
+    }
+}
+################################################################
+
+Solution:
+[['g', '.', '.', '.', '.'], ['b', 'b', 'b', '.', '.'], ['i', '.', '.', '.', '.'], ['c', '.', '.', '.', '.'], ['f', '.', '.', '.', '.']]
+

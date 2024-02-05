@@ -1,0 +1,67 @@
+Input token: 660
+Output token: 575
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', '.', 'e'], ['.', 'g', '.', '.', '.', '.'], ['.', 'g', '.', '.', '.', '.'], ['.', '.', '.', 'c', 'h', 'e'], ['.', '.', '.', 'c', 'h', 'e'], ['d', 'g', '.', 'c', 'h', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', 'g', '.', 'c', 'h', 'e'], ['.', 'g', '.', 'c', 'h', 'e'], ['d', 'g', '.', 'c', 'h', 'e']]
+
+Example_2:
+input: [['i', 'h', 'b', '.', '.', '.'], ['.', '.', '.', 'c', '.', 'g'], ['.', '.', '.', 'c', '.', 'g'], ['.', '.', '.', '.', '.', '.'], ['i', 'h', 'b', 'c', '.', '.'], ['.', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', 'c', '.', '.'], ['i', 'h', 'b', 'c', '.', 'g'], ['i', 'h', 'b', 'c', '.', 'g']]
+
+Example_3:
+input: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'd', '.'], ['.', '.', 'i', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', 'i', '.', '.', 'g']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', 'i', '.', '.', '.'], ['.', '.', 'i', '.', 'd', 'g']]
+
+Test case:
+input: [['.', '.', '.', '.'], ['.', 'a', 'e', '.'], ['.', 'a', 'e', '.'], ['h', '.', 'e', 'i']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', '.'], ['.', 'a', 'e', '.'], ['.', 'a', 'e', '.'], ['h', '.', 'e', 'i']]
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution:
+    def reorganizeString(self, s: str) -> str:
+        """
+        思路：找到最长的连续字符串，然后将其中间的字母移动到两侧。
+            - 先排序，再遍历每个字符，如果当前字符不等于上一个字符，则判断是否为连续字符串开头或结尾，如果是，记录下标和长度；
+                - 如果是开头，则向左边追加空格，直到遇到非空格字符；
+                    - 如果是结尾，则向右边追加空格，直到遇到非空格字符。
+            - 最后对所有字符进行重新排序。
+            时间复杂度：O(nlogn + n^2) = O(n^2), n 为输入字符串长度。
+            空间复杂度：O(n).
+        """
+        # sort string
+        sorted_s = list(sorted(list(set(s))))
+        # find longest consecutive substring
+        max_len = 0
+        start = None
+        for i in range(len(sorted_s)):
+            if not (start is None or sorted_s[i] == sorted_s[start]) \
+               and len(sorted_s[start : i+1]) > max_len:
+                max_len = len(sorted_s[start : i+1])
+                start = i
+        # add space to left side of longest substring
+        for j in range(max_len):
+            while sorted_s[j]!= sorted_s[start]:
+                sorted_s.insert(j, '')
+        # add space to right side of longest substring
+        for k in reversed(range(max_len)):
+            while sorted_s[-k-1]!= sorted_s[-start-1]:
+                sorted_s.append('')
+        return ''.join(sorted_s)
+
+################################################################
+
+Solution:
+[['.', '.', '.', '.'], ['.', '.', 'e', '.'], ['.', 'a', 'e', '.'], ['h', 'a', 'e', 'i']]
+

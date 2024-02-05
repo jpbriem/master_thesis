@@ -1,0 +1,79 @@
+Input token: 578
+Output token: 622
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', 'b', '.'], ['.', '.', 'd', '.', '.'], ['.', '.', 'd', 'b', '.'], ['.', '.', '.', 'b', '.'], ['.', 'h', '.', '.', 'g']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', 'b', '.'], ['.', '.', 'd', 'b', '.'], ['.', 'h', 'd', 'b', 'g']]
+
+Example_2:
+input: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'd'], ['.', '.', 'e', '.', 'd'], ['g', '.', '.', '.', 'd']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'd'], ['.', '.', '.', '.', 'd'], ['g', '.', 'e', '.', 'd']]
+
+Example_3:
+input: [['c', '.', 'g', '.', 'i', '.'], ['c', '.', '.', '.', 'i', '.'], ['.', 'h', '.', '.', '.', '.'], ['.', '.', 'g', '.', '.', '.'], ['c', '.', 'g', 'e', 'i', '.'], ['.', 'h', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['c', '.', 'g', '.', 'i', '.'], ['c', 'h', 'g', '.', 'i', '.'], ['c', 'h', 'g', 'e', 'i', '.']]
+
+Test case:
+input: [['.', '.', 'i', '.', 'e'], ['.', 'g', '.', 'a', '.'], ['.', '.', '.', '.', '.'], ['.', 'g', '.', 'a', 'e'], ['h', '.', '.', '.', 'e']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', 'i', '.', 'e'], ['.', 'g', '.', 'a', '.'], ['.', '.', '.', '.', '.'], ['.', 'g', '.', 'a', 'e'], ['h', '.', 'i', '.', 'e']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def findPath(self, maze: List[List[str]], start: str, destination: str) -> bool:
+        if not maze or len(maze) == 0 or len(maze[0]) == 0:
+            return False
+        
+        self.start = start
+        self.destination = destination
+        self.visited = set()
+        self.queue = []
+        self.queue.append((start, []))
+        while self.queue:
+            current, path = self.queue.pop(0)
+            
+            # check if we've reached our destination
+            if current == destination:
+                return True
+                
+            for direction in ["up", "down", "left", "right"]:
+                new_current = self._getNeighbor(direction, current)
+                if new_current is None:
+                    continue
+                    
+                if new_current not in self.visited:
+                    self.visited.add(new_current)
+                    self.queue.append((new_current, path + [(direction, current)]))
+        return False
+    
+    def _getNeighbor(self, direction: str, current: str):
+        x, y = self._parseCoordinate(current)
+        dx, dy = {"up": (0, -1), "down": (0, 1), "left": (-1, 0), "right": (1, 0)}[direction]
+        neighbor_x, neighbor_y = x+dx, y+dy
+        if 0 <= neighbor_x < len(maze) and 0 <= neighbor_y < len(maze[0]):
+            return f"{neighbor_x},{neighbor_y}"
+        else:
+            return None
+    
+    @staticmethod
+    def _parseCoordinate(coordinate: str) -> tuple:
+        x, y = coordinate.split(",")
+        return int(x), int(y)
+
+if __name__ == "__main__":
+    solution = Solution()
+    print("testcase 1: ", solution.findPath([["."], ["#"], ["#"]], ".", "#"))
+    print("testcase 2: ", solution.findPath([["#","#"], ["#","#"], ["#","#"]], "#", "#"))
+
+################################################################
+
+Solution:
+[['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'e'], ['.', 'g', '.', 'a', 'e'], ['h', 'g', 'i', 'a', 'e']]
+

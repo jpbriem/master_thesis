@@ -1,0 +1,86 @@
+Input token: 573
+Output token: 646
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'b', 'a'], ['f', 'd', 'a', 'b', 'a'], ['a', 'd', 'a', 'a', 'e'], ['a', 'd', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'd', 'a', 'a', 'a'], ['a', 'd', 'a', 'b', 'a'], ['f', 'd', 'a', 'b', 'e']]
+
+Example_2:
+input: [['j', 'a', 'd', 'a', 'a'], ['a', 'f', 'd', 'b', 'a'], ['j', 'a', 'a', 'a', 'a'], ['a', 'f', 'a', 'a', 'i'], ['a', 'f', 'd', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'f', 'd', 'a', 'a'], ['j', 'f', 'd', 'a', 'a'], ['j', 'f', 'd', 'b', 'i']]
+
+Example_3:
+input: [['a', 'a', 'c', 'g', 'a'], ['a', 'a', 'a', 'g', 'a'], ['a', 'a', 'c', 'a', 'a'], ['a', 'a', 'a', 'g', 'a'], ['a', 'a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'g', 'a'], ['a', 'a', 'c', 'g', 'a'], ['a', 'a', 'c', 'g', 'a']]
+
+Test case:
+input: [['a', 'g', 'f', 'a'], ['i', 'a', 'f', 'a'], ['a', 'g', 'a', 'd'], ['a', 'g', 'f', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'g', 'f', 'a'], ['i', 'a', 'f', 'a'], ['a', 'g', 'a', 'd'], ['a', 'g', 'f', 'a']]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_next(current_state: str) -> Tuple[str, int]:
+    """Return next state and index of current state."""
+    if len(current_state) == 0:
+        return "", -1
+    elif current_state[-1] in "ab":
+        return current_state[:-1], -1
+    else:
+        return current_state + "a", 0
+
+
+class Solution:
+    def findTheDifference(self, words: List[str]) -> None:
+        """
+        Do not change code. Read explanation from description!
+        Find the difference between two strings.
+        :param words: A list of string
+        :return: An integer representing the difference between the two strings
+        """
+        # Your solution here
+        dp = defaultdict(list)
+        for word in words:
+            dp[word].append((len(word), 0))
+        for i in range(len(words)):
+            for j in range(i+1):
+                if words[i][-1]!= words[j][-1]:
+                    dp[words[i]].sort()
+                    dp[words[j]].sort()
+                    diff = 0
+                    while True:
+                        if dp[words[i]][diff][1] < dp[words[j]][diff][1]:
+                            break
+                        diff += 1
+                    print("diff", diff)
+                    if dp[words[i]][diff][1] > dp[words[j]][diff][1]:
+                        dp[words[i]][diff][1] -= 1
+                        dp[words[j]][diff][1] += 1
+                    else:
+                        dp[words[i]][diff][1] = 0
+                        dp[words[j]][diff][1] = 0
+                    if dp[words[i]][diff][1] <= 0 or dp[words[j]][diff][1] >= 0:
+                        break
+        print("diff", dp[words[i]][diff][1])
+        return dp[words[i]][diff][1]
+
+
+if __name__ == "__main__":
+    s = Solution()
+    words = ["a","g","f","a"]
+    result = s.findTheDifference(words)
+    print(result)
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a'], ['a', 'g', 'f', 'a'], ['a', 'g', 'f', 'a'], ['i', 'g', 'f', 'd']]
+

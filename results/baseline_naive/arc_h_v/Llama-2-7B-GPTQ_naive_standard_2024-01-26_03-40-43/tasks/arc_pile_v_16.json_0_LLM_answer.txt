@@ -1,0 +1,95 @@
+Input token: 571
+Output token: 784
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[0, 8, 0, 0, 5], [6, 8, 0, 9, 5], [0, 0, 0, 9, 0], [6, 0, 0, 0, 0], [0, 0, 0, 9, 0]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 9, 0], [6, 8, 0, 9, 5], [6, 8, 0, 9, 5]]
+
+Example_2:
+input: [[1, 0, 0, 0], [0, 8, 0, 0], [0, 8, 0, 0], [0, 0, 2, 6]]
+output: [[0, 0, 0, 0], [0, 0, 0, 0], [0, 8, 0, 0], [1, 8, 2, 6]]
+
+Example_3:
+input: [[0, 4, 0, 0, 6, 0], [0, 4, 8, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 4, 0, 5, 0, 0], [0, 0, 8, 5, 0, 7], [0, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 4, 0, 0, 0, 0], [0, 4, 8, 5, 0, 0], [0, 4, 8, 5, 6, 7]]
+
+Test case:
+input: [[7, 0, 0, 0], [0, 0, 3, 0], [7, 0, 3, 5], [7, 2, 0, 5]]
+################################################################
+
+LLM answer:
+
+output: [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [7, 0, 0, 0], [7, 0, 3, 5], [7, 2, 0, 5]]
+"""
+import sys
+from typing import List
+
+class Solution(object):
+    def permuteUnique(self, nums: List[int]) -> List[List[int]]:
+        """
+        :type nums: List[int]
+        :rtype: List[List[int]]
+        """
+        
+        if len(nums) == 0: return []
+        
+        # 排序，保证所有元素都是唯一的
+        nums = sorted(nums)
+        
+        # 记录每个数字出现的次数
+        countDict = {}
+        for i in range(len(nums)):
+            countDict[nums[i]] += 1
+            
+        # 逆转后的结果
+        res = []
+        while True:
+            # 如果当前数组中没有剩余元素，则返回
+            if not any([countDict[x] > 1 for x in nums]): break
+                    
+            # 将最大值加入到新数组里
+            maxNum = max(nums)[0]
+            newRes = list(res[:]) + [maxNum]
+            for i in range(len(newRes)-1):
+                if countDict[newRes[-1][i]] <= 1: continue
+                else:
+                    newRes.pop()
+                    del countDict[newRes[-1][i]]
+                    countDict[newRes[-1][i+1]] -= 1
+                    if countDict[newRes[-1][i+1]] < 1:
+                        newRes.append(newRes[-1][i+1])
+                        countDict[newRes[-1][i+1]] += 1
+                        break
+                    
+            # 判断当前数组是否为空
+            if not any([countDict[x] > 1 for x in nums]): break
+                    
+            # 重复过程
+            for i in range(len(newRes)-1):
+                if countDict[newRes[-1][i]] <= 1: continue
+                else:
+                    newRes.remove(newRes[-1][i])
+                    del countDict[newRes[-1][i]]
+                    countDict[newRes[-1][i+1]] -= 1
+                    if countDict[newRes[-1][i+1]] < 1:
+                        newRes.insert(i, newRes[-1][i+1])
+                        countDict[newRes[-1][i+1]] += 1
+                        break
+                    
+            # 添加最小值
+            minNum = min(nums)[0]
+            newRes.append(minNum)
+            countDict[minNum] += 1
+            
+            # 判断当前数组是否为空
+            if not any([countDict[x] > 1 for x in nums]): break
+                    
+        return res
+################################################################
+
+Solution:
+[[0, 0, 0, 0], [7, 0, 0, 0], [7, 0, 3, 5], [7, 2, 3, 5]]
+

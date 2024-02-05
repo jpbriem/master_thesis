@@ -1,0 +1,82 @@
+Input token: 571
+Output token: 791
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[0, 8, 0, 0, 5], [6, 8, 0, 9, 5], [0, 0, 0, 9, 0], [6, 0, 0, 0, 0], [0, 0, 0, 9, 0]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 9, 0], [6, 8, 0, 9, 5], [6, 8, 0, 9, 5]]
+
+Example_2:
+input: [[1, 0, 0, 0], [0, 8, 0, 0], [0, 8, 0, 0], [0, 0, 2, 6]]
+output: [[0, 0, 0, 0], [0, 0, 0, 0], [0, 8, 0, 0], [1, 8, 2, 6]]
+
+Example_3:
+input: [[0, 4, 0, 0, 6, 0], [0, 4, 8, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 4, 0, 5, 0, 0], [0, 0, 8, 5, 0, 7], [0, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 4, 0, 0, 0, 0], [0, 4, 8, 5, 0, 0], [0, 4, 8, 5, 6, 7]]
+
+Test case:
+input: [[7, 0, 0, 0], [0, 0, 3, 0], [7, 0, 3, 5], [7, 2, 0, 5]]
+################################################################
+
+LLM answer:
+
+output: [[0, 0, 0, 0], [0, 0, 0, 0], [7, 0, 3, 5], [7, 2, 0, 5]]
+"""
+from typing import List
+import re
+
+class Solution:
+    def findMaxForm(self, nums: List[List[int]]) -> None:
+        """
+        Time complexity: O(n)
+        Space complexity: O(n)
+        """
+        if not nums or len(nums) == 1: return
+        
+        # Find all possible patterns of each number in the list
+        # For example, for a number 'x', we can have x = 0 + y + z, where y and z are numbers in the list
+        # We will use a set to store all such patterns
+        patterns = {}
+        for i in range(len(nums)):
+            for j in range(i+1, len(nums)):
+                if nums[i]!= nums[j]: continue
+                
+                # Get the current pattern
+                pattern = str(nums[i])
+                pattern = "".join([str(p) for p in pattern])
+                pattern = re.sub(" ", "", pattern)
+                
+                # Add this pattern into the set
+                patterns[pattern].add(nums[i])
+        
+        # Now, we need to check whether there is any number that cannot be represented by these patterns
+        # If yes, then it means that there is no max form
+        # Otherwise, we can get the max form by finding the largest element in the set
+        result = True
+        for num in nums:
+            if num not in patterns[""]:
+                result = False
+                break
+            
+        if result:
+            print(max(patterns.values(), key=lambda s: len(s)))
+
+# Test cases
+testcase_1 = [[0, 8, 0, 0, 5], [6, 8, 0, 9, 5], [0, 0, 0, 9, 0], [6, 0, 0, 0, 0], [0, 0, 0, 9, 0]]
+Solution().findMaxForm(testcase_1)
+
+testcase_2 = [[1, 0, 0, 0], [0, 8, 0, 0], [0, 8, 0, 0], [0, 0, 2, 6]]
+Solution().findMaxForm(testcase_2)
+
+testcase_3 = [[0, 4, 0, 0, 6, 0], [0, 4, 8, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 4, 0, 5, 0, 0], [0, 0, 8, 5, 0, 7], [0, 0, 0, 0, 0, 0]]
+Solution().findMaxForm(testcase_3)
+
+testcase_4 = [[7, 0, 0, 0], [0, 0, 3, 0], [7, 0, 3, 5], [7, 2, 0, 5]]
+Solution().findMaxForm(testcase_4)
+################################################################
+
+Solution:
+[[0, 0, 0, 0], [7, 0, 0, 0], [7, 0, 3, 5], [7, 2, 3, 5]]
+

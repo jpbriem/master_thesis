@@ -1,0 +1,86 @@
+Input token: 666
+Output token: 838
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'a', 'a'], ['i', 'a', 'a', 'a', 'a'], ['a', 'a', 'e', 'e', 'a'], ['a', 'c', 'c', 'a', 'c'], ['h', 'a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['i', 'a', 'a', 'a', 'a'], ['e', 'e', 'a', 'a', 'a'], ['c', 'c', 'c', 'a', 'a'], ['h', 'a', 'a', 'a', 'a']]
+
+Example_2:
+input: [['h', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'f', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['e', 'e', 'e', 'a', 'a']]
+output: [['h', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['f', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['e', 'e', 'e', 'a', 'a']]
+
+Example_3:
+input: [['a', 'd', 'a', 'a', 'd', 'd'], ['i', 'a', 'a', 'i', 'a', 'a'], ['a', 'h', 'h', 'a', 'a', 'h'], ['a', 'f', 'a', 'a', 'a', 'a'], ['a', 'j', 'a', 'a', 'j', 'j'], ['a', 'a', 'a', 'a', 'a', 'a']]
+output: [['d', 'd', 'd', 'a', 'a', 'a'], ['i', 'i', 'a', 'a', 'a', 'a'], ['h', 'h', 'h', 'a', 'a', 'a'], ['f', 'a', 'a', 'a', 'a', 'a'], ['j', 'j', 'j', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a']]
+
+Test case:
+input: [['i', 'a', 'a', 'a', 'a'], ['a', 'h', 'a', 'h', 'a'], ['a', 'a', 'a', 'a', 'j'], ['a', 'b', 'a', 'b', 'a'], ['f', 'f', 'a', 'a', 'f']]
+################################################################
+
+LLM answer:
+
+output: [['i', 'a', 'a', 'a', 'a'], ['h', 'a', 'a', 'h', 'a'], ['a', 'a', 'a', 'a', 'j'], ['b', 'a', 'a', 'b', 'a'], ['f', 'a', 'a', 'f', 'a']]
+"""
+
+import collections
+from typing import List, Tuple
+
+
+class Solution:
+    def transform(self, arr: List[List[str]]) -> List[List[str]]:
+        """
+        1. 对于每一个字符串，如果不是第一行的话，就把它与前面的比较。
+            如果前面的和后面的相等，那么就将这两个字符串中间的所有元素都变成后面的字符串的最后一个元素。
+            否则，就保持原样。
+        2. 然后再去处理第一行。
+            a) 如果第一行的第一个元素和最后一个元素相同，那么就将第一行的所有元素都变为第一行的第一个元素。
+            b) 否则，就保持原样。
+        :param arr:
+        :return:
+        """
+        if not arr or len(arr) == 0:
+            return []
+
+        # 记录每一列的最大长度
+        max_len = collections.Counter([len(row) for row in arr])
+        max_len = max(max_len.values())
+
+        # 遍历每一行
+        for i in range(len(arr)):
+            # 获取当前行的所有元素
+            cur_row = list(map(lambda x: x[-1], arr[i]))
+
+            # 判断当前行是否是第一行
+            is_first_line = (i == 0)
+
+            # 如果不是第一行
+            if not is_first_line:
+                # 获取上一行的所有元素
+                pre_row = list(map(lambda x: x[-1], arr[i - 1]))
+
+                # 判断当前行的所有元素是否全部等于上一行的所有元素
+                if all(x == y for x, y in zip(cur_row, pre_row)) \
+                        and len(pre_row) > 1:
+                    # 如果全部相等，并且上一行的长度大于1，那么就将当前行的所有元素都变成上一行的最后一个元素
+                    arr[i][:-1] = [pre_row[-1]] * (len(arr[i]) - 1)
+                else:
+                    pass
+            elif is_first_line:
+                # 如果是第一行，那么就判断第一行的第一个元素和最后一个元素是否相等
+                if cur_row[0] == cur_row[-1]:
+                    # 如果相等，那么就将第一行的所有元素都变成第一行的第一个元素
+                    arr[i] = [cur_row[0]] * len(arr[i])
+                else:
+                    pass
+
+        # 返回结果
+        return arr[:max_len]
+
+################################################################
+
+Solution:
+[['i', 'a', 'a', 'a', 'a'], ['h', 'h', 'a', 'a', 'a'], ['j', 'a', 'a', 'a', 'a'], ['b', 'b', 'a', 'a', 'a'], ['f', 'f', 'f', 'a', 'a']]
+

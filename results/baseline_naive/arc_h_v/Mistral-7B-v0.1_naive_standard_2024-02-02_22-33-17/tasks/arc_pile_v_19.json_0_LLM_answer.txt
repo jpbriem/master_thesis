@@ -1,0 +1,101 @@
+Input token: 465
+Output token: 849
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'b', 'a', 'a'], ['a', 'b', 'c', 'a'], ['a', 'a', 'a', 'a'], ['a', 'b', 'a', 'a']]
+output: [['a', 'a', 'a', 'a'], ['a', 'b', 'a', 'a'], ['a', 'b', 'a', 'a'], ['a', 'b', 'c', 'a']]
+
+Example_2:
+input: [['b', 'a', 'a', 'a'], ['b', 'a', 'c', 'f'], ['b', 'a', 'a', 'f'], ['a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a'], ['b', 'a', 'a', 'a'], ['b', 'a', 'a', 'f'], ['b', 'a', 'c', 'f']]
+
+Example_3:
+input: [['i', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'j', 'a'], ['a', 'a', 'a', 'a', 'e'], ['a', 'a', 'a', 'j', 'a'], ['a', 'a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'j', 'a'], ['i', 'a', 'a', 'j', 'e']]
+
+Test case:
+input: [['a', 'd', 'a', 'g'], ['a', 'd', 'a', 'a'], ['f', 'd', 'a', 'a'], ['a', 'a', 'h', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'h', 'a']]
+
+Constraints:
+1 <= arr.length, arr[i].length <= 50
+arr[i][j] is a lowercase English letter.
+ */
+public class Solution {
+    public List<List<String>> findLadders(String beginWord, String endWord, Set<String> wordList) {
+        if (beginWord == null || endWord == null ||!wordList.contains(endWord)) return new ArrayList<>();
+        Map<String, Integer> map = new HashMap<>();
+        for (String s : wordList) {
+            map.put(s, map.getOrDefault(s, 0) + 1);
+        }
+        Queue<Pair> queue = new LinkedList<>();
+        queue.offer(new Pair(beginWord, 1));
+        Set<String> visited = new HashSet<>();
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            for (int i = 0; i < size; ++i) {
+                Pair p = queue.poll();
+                String cur = p.first;
+                int level = p.second;
+                if (cur.equals(endWord)) {
+                    List<List<String>> res = new ArrayList<>();
+                    dfs(res, cur, level, map, visited);
+                    return res;
+                }
+                char[] chars = cur.toCharArray();
+                for (int j = 0; j < chars.length; ++j) {
+                    char c = chars[j];
+                    for (char k = 'a'; k <= 'z'; ++k) {
+                        if (k!= c) {
+                            chars[j] = k;
+                            String next = new String(chars);
+                            if (!visited.contains(next) && map.containsKey(next)) {
+                                queue.offer(new Pair(next, level + 1));
+                                visited.add(next);
+                            }
+                        }
+                    }
+                    chars[j] = c;
+                }
+            }
+        }
+        return new ArrayList<>();
+    }
+
+    private void dfs(List<List<String>> res, String cur, int level, Map<String, Integer> map, Set<String> visited) {
+        if (level > map.get(cur)) return;
+        if (map.get(cur) - level >= 2) return;
+        if (cur.equals(map.keySet().iterator().next())) {
+            res.add(new ArrayList<>(Arrays.asList(cur)));
+            return;
+        }
+        char[] chars = cur.toCharArray();
+        for (int j = 0; j < chars.length; ++j) {
+            char c = chars[j];
+            for (char k = 'a'; k <= 'z'; ++k) {
+                if (k!= c) {
+                    chars[j] = k;
+                    String next = new String(chars);
+                    if (!visited.contains(next) && map.containsKey(next)) {
+                        visited.add(next);
+                        dfs(res, next, level + 1, map, visited);
+                        visited.remove(next);
+                    }
+                }
+            }
+            chars[j] = c;
+        }
+    }
+}
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a'], ['a', 'd', 'a', 'a'], ['a', 'd', 'a', 'a'], ['f', 'd', 'h', 'g']]
+

@@ -1,0 +1,68 @@
+Input token: 463
+Output token: 842
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', 'a', '.', '.', '.'], ['.', '.', 'f', '.', '.'], ['.', '.', '.', '.', 'c'], ['.', '.', '.', '.', '.'], ['b', 'b', '.', '.', '.']]
+output: [['a', '.', '.', '.', '.'], ['f', '.', '.', '.', '.'], ['c', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['b', 'b', '.', '.', '.']]
+
+Example_2:
+input: [['b', '.', '.', 'b'], ['.', '.', '.', '.'], ['.', '.', '.', '.'], ['.', '.', '.', '.']]
+output: [['b', 'b', '.', '.'], ['.', '.', '.', '.'], ['.', '.', '.', '.'], ['.', '.', '.', '.']]
+
+Example_3:
+input: [['.', '.', '.', '.', '.'], ['e', '.', '.', '.', 'e'], ['f', '.', '.', '.', '.'], ['.', '.', '.', 'i', '.'], ['c', '.', '.', '.', 'c']]
+output: [['.', '.', '.', '.', '.'], ['e', 'e', '.', '.', '.'], ['f', '.', '.', '.', '.'], ['i', '.', '.', '.', '.'], ['c', 'c', '.', '.', '.']]
+
+Test case:
+input: [['h', '.', 'h', '.', 'h'], ['.', 'b', '.', 'b', '.'], ['.', '.', 'g', 'g', '.'], ['.', '.', '.', '.', 'a'], ['.', '.', 'i', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['h', 'h', 'h', '.'], ['.', 'b', 'b', '.'], ['.', '.', 'g', 'g' ], ['.', '.', '.', 'a'], ['.', '.', 'i', '.']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def findWords(self, board: List[List[str]]) -> List[Optional[str]]:
+        """
+        思路：扫描每个字母，如果是空格则跳过。否则判断该字符在哪一行和哪一列的首位置，然后遍历这两条边界进行查找。
+            - 注意：由于可能存在多个相同字符串，因此需要记录已经处理的字符串，以及当前正在处理的字符串。
+                - 对于已经处理的字符串，只有在其他字符串中没有出现时才会被输出；而对于当前正在处理的字符串，则不管其他字符串是否出现都会被输出。
+                    例如：board = [["a", "b"], ["c", "d"]]，那么最终结果为 ["abcd","acbd"]
+            
+            优化：由于字符串之间无法重复使用，因此可以将字符串转换成数组，并通过数组索引来表示字符串的长度。
+        """
+        words = [] # 保存所有单词
+        for i in range(len(board)):
+            for j in range(len(board[0])):
+                if not board[i][j]: continue
+                word = self._findWord(board, i, j)
+                if word is None: continue
+                words.append(word)
+        return words
+
+    def _findWord(self, board: List[List[str]], row: int, col: int):
+        """
+        思路：从指定位置开始向左右上下四个方向进行查找，直到发现非空格或者超出边界。
+            - 注意：由于可能存在多个相同字符串，因此需要记录已经处理的字符串，以及当前正在处理的字符串。
+                - 对于已经处理的字符串，只有在其他字符串中没有出现时才会被输出；而对于当前正在处理的字符串，则不管其他字符串是否出现都会被输出。
+                    例如：board = [["a", "b"], ["c", "d"]]，那么最终结果为 ["abcd","acbd"]
+        """
+        word = ""
+        directions = [(row+1,col), (row-1,col), (row,col+1), (row,col-1)]
+        for direction in directions:
+            if direction[0] < 0 or direction[0] >= len(board) \
+               or direction[1] < 0 or direction[1] >= len(board[0]) \
+               or not board[direction[0]][direction[1]]: break
+            word += board[direction[0]][direction[1]]
+            yield from self._findWord(board, *direction)
+        return word
+################################################################
+
+Solution:
+[['h', 'h', 'h', '.', '.'], ['b', 'b', '.', '.', '.'], ['g', 'g', '.', '.', '.'], ['a', '.', '.', '.', '.'], ['i', '.', '.', '.', '.']]
+

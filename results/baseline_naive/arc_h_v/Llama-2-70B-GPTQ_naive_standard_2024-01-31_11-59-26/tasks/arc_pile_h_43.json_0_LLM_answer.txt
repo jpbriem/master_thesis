@@ -1,0 +1,93 @@
+Input token: 370
+Output token: 583
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['h', '.', '.', '.'], ['c', 'c', 'c', '.'], ['.', '.', 'b', '.'], ['.', 'a', 'a', '.']]
+output: [['h', '.', '.', '.'], ['c', 'c', 'c', '.'], ['b', '.', '.', '.'], ['a', 'a', '.', '.']]
+
+Example_2:
+input: [['b', '.', '.', '.'], ['g', '.', 'g', 'g'], ['.', '.', '.', '.'], ['.', '.', '.', '.']]
+output: [['b', '.', '.', '.'], ['g', 'g', 'g', '.'], ['.', '.', '.', '.'], ['.', '.', '.', '.']]
+
+Example_3:
+input: [['.', 'd', 'd', 'd'], ['a', '.', '.', '.'], ['.', 'e', 'e', '.'], ['.', '.', '.', '.']]
+output: [['d', 'd', 'd', '.'], ['a', '.', '.', '.'], ['e', 'e', '.', '.'], ['.', '.', '.', '.']]
+
+Test case:
+input: [['i', '.', '.', '.'], ['.', 'f', 'f', 'f'], ['.', '.', 'e', '.'], ['.', 'c', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['i', '.', '.', '.'], ['.', 'f', 'f', 'f'], ['.', '.', 'e', '.'], ['.', 'c', '.', '.']]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, isWall=False):
+        self.val = val
+        self.isWall = isWall
+        self.left = None
+        self.right = None
+
+
+class Solution(object):
+    def wallPaths(self, paths):
+        """
+        :type paths: List[List[str]]
+        :rtype: List[List[str]]
+        """
+        # 0. check inputs
+        if not paths or len(paths) == 0: return []
+        
+        # 1. build tree
+        root = Node('')
+        for i in range(len(paths)):
+            row = list()
+            for j in range(len(paths[i])):
+                node = Node(paths[i][j])
+                if j > 0:
+                    row[-1].right = node
+                else:
+                    row.append(node)
+                if i > 0:
+                    row[0].left = paths[i - 1][j]
+            
+            root.left = row
+            root.right = Node('')
+            root = root.right
+        
+        # 2. dfs
+        result = []
+        self._dfs(root, '', [], result)
+        return result
+    
+    def _dfs(self, curNode, path, result, res):
+        if curNode.isWall:
+            return
+        
+        if curNode.val!= '.':
+            path += curNode.val
+            if curNode.left and curNode.right:
+                self._dfs(curNode.left, path, result, res)
+                self._dfs(curNode.right, path, result, res)
+            elif curNode.left:
+                self._dfs(curNode.left, path, result, res)
+            elif curNode.right:
+                self._dfs(curNode.right, path, result, res)
+            else:
+                result.append(path)
+        else:
+            if curNode.left:
+                self._dfs(curNode.left, path + 'l', result, res)
+            if curNode.right:
+                self._dfs(curNode.right, path + 'r', result, res)
+
+################################################################
+
+Solution:
+[['i', '.', '.', '.'], ['f', 'f', 'f', '.'], ['e', '.', '.', '.'], ['c', '.', '.', '.']]
+

@@ -1,0 +1,74 @@
+Input token: 639
+Output token: 486
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'e', 'a', 'a', 'a'], ['a', 'a', 'j', 'a', 'a', 'a'], ['a', 'a', 'c', 'a', 'a', 'c'], ['i', 'a', 'a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['e', 'a', 'a', 'a', 'a', 'a'], ['j', 'a', 'a', 'a', 'a', 'a'], ['c', 'c', 'a', 'a', 'a', 'a'], ['i', 'a', 'a', 'a', 'a', 'a']]
+
+Example_2:
+input: [['a', 'a', 'i', 'i', 'i'], ['a', 'e', 'a', 'e', 'a'], ['c', 'c', 'c', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'g', 'a', 'a', 'a']]
+output: [['i', 'i', 'i', 'a', 'a'], ['e', 'e', 'a', 'a', 'a'], ['c', 'c', 'c', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['g', 'a', 'a', 'a', 'a']]
+
+Example_3:
+input: [['b', 'b', 'a', 'b', 'a'], ['d', 'a', 'a', 'a', 'a'], ['a', 'a', 'e', 'a', 'a'], ['i', 'a', 'i', 'a', 'a'], ['a', 'g', 'g', 'a', 'a']]
+output: [['b', 'b', 'b', 'a', 'a'], ['d', 'a', 'a', 'a', 'a'], ['e', 'a', 'a', 'a', 'a'], ['i', 'i', 'a', 'a', 'a'], ['g', 'g', 'a', 'a', 'a']]
+
+Test case:
+input: [['a', 'a', 'a', 'f'], ['a', 'a', 'h', 'a'], ['g', 'a', 'g', 'a'], ['b', 'b', 'a', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['g', 'a', 'g', 'a'], ['b', 'b', 'a', 'a']]
+
+Constraints:
+1 <= N, M <= 50
+1 <= K <= 10^9
+1 <= A[i][j], B[i][j] <= 26
+A[i][j]!= B[i][j]
+*/
+
+class Solution {
+public:
+    vector<vector<char>> updateBoard(vector<vector<char>>& board, vector<int>& click) {
+        int m = board.size(), n = board[0].size();
+        queue<pair<int, int>> q;
+        for (auto &v : board) {
+            for (auto c : v) {
+                if (c == 'M') {
+                    --m;
+                } else if (c == 'E' &&!q.empty()) {
+                    q.push({click[0], click[1]});
+                }
+            }
+        }
+        while (!q.empty() && m > 0) {
+            auto p = q.front();
+            q.pop();
+            ++m;
+            char c = board[p.first][p.second];
+            if (c == 'E') {
+                board[p.first][p.second] = 'B';
+                for (int i = -1; i < 2; ++i) {
+                    for (int j = -1; j < 2; ++j) {
+                        if (i || j) {
+                            int x = p.first + i, y = p.second + j;
+                            if (x >= 0 && x < m && y >= 0 && y < n && board[x][y] == 'E') {
+                                q.push({x, y});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return board;
+    }
+};
+################################################################
+
+Solution:
+[['f', 'a', 'a', 'a'], ['h', 'a', 'a', 'a'], ['g', 'g', 'a', 'a'], ['b', 'b', 'a', 'a']]
+

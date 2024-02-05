@@ -1,0 +1,74 @@
+Input token: 408
+Output token: 378
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', 'a', '.', '.'], ['.', 'a', 'b', '.'], ['.', '.', '.', '.'], ['.', 'a', '.', '.']]
+output: [['.', '.', '.', '.'], ['.', 'a', '.', '.'], ['.', 'a', '.', '.'], ['.', 'a', 'b', '.']]
+
+Example_2:
+input: [['a', '.', '.', '.'], ['a', '.', 'b', 'e'], ['a', '.', '.', 'e'], ['.', '.', '.', '.']]
+output: [['.', '.', '.', '.'], ['a', '.', '.', '.'], ['a', '.', '.', 'e'], ['a', '.', 'b', 'e']]
+
+Example_3:
+input: [['h', '.', '.', '.', '.'], ['.', '.', '.', 'i', '.'], ['.', '.', '.', '.', 'd'], ['.', '.', '.', 'i', '.'], ['.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', 'i', '.'], ['h', '.', '.', 'i', 'd']]
+
+Test case:
+input: [['.', 'c', '.', 'f'], ['.', 'c', '.', '.'], ['e', 'c', '.', '.'], ['.', '.', 'g', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', '.'], ['.', 'c', '.', '.'], ['e', 'c', '.', '.'], ['.', '.', 'g', '.']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def reorderList(self, head: Optional[ListNode]) -> Optional[ListNode]:
+        if not head or not head.next: return head
+        
+        slow = fast = head
+        while fast and fast.next:
+            slow = slow.next
+            fast = fast.next.next
+            
+        # reverse second half of list
+        newHead = self._reverseList(slow)
+        newTail = self._reverseList(head)
+        
+        # merge two lists in order
+        merged = self._mergeTwoSortedLists(newHead, newTail)
+        return merged
+    
+    def _reverseList(self, node):
+        prev = None
+        curr = node
+        while curr:
+            temp = curr.next
+            curr.next = prev
+            prev = curr
+            curr = temp
+        return prev
+    
+    def _mergeTwoSortedLists(self, l1, l2):
+        dummy = ListNode(-1)
+        cur = dummy
+        while l1 and l2:
+            if l1.val < l2.val:
+                cur.next = l1
+                l1 = l1.next
+            else:
+                cur.next = l2
+                l2 = l2.next
+            cur = cur.next
+        cur.next = l1 or l2
+        return dummy.next
+
+################################################################
+
+Solution:
+[['.', '.', '.', '.'], ['.', 'c', '.', '.'], ['.', 'c', '.', '.'], ['e', 'c', 'g', 'f']]
+

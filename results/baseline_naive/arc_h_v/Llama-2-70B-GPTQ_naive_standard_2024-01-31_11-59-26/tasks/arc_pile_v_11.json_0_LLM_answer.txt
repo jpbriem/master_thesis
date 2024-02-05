@@ -1,0 +1,71 @@
+Input token: 589
+Output token: 441
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', 'i', 'c', '.', '.'], ['.', 'f', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['h', '.', '.', 'c', '.', '.'], ['h', '.', 'i', 'c', '.', 'g'], ['h', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['h', '.', '.', 'c', '.', '.'], ['h', '.', 'i', 'c', '.', '.'], ['h', 'f', 'i', 'c', '.', 'g']]
+
+Example_2:
+input: [['.', '.', '.', 'f'], ['.', '.', '.', '.'], ['.', '.', '.', 'f'], ['.', '.', 'e', 'f']]
+output: [['.', '.', '.', '.'], ['.', '.', '.', 'f'], ['.', '.', '.', 'f'], ['.', '.', 'e', 'f']]
+
+Example_3:
+input: [['.', 'c', 'h', 'i', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', 'h', 'i', 'g', 'd'], ['.', 'c', 'h', '.', '.', 'd'], ['.', '.', '.', '.', 'g', '.'], ['.', '.', '.', '.', '.', 'd']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', 'h', '.', '.', 'd'], ['.', 'c', 'h', 'i', 'g', 'd'], ['.', 'c', 'h', 'i', 'g', 'd']]
+
+Test case:
+input: [['b', '.', 'a', '.', '.'], ['b', '.', 'a', 'i', '.'], ['.', '.', '.', 'i', 'e'], ['.', '.', '.', '.', '.'], ['b', 'd', 'a', 'i', 'e']]
+################################################################
+
+LLM answer:
+
+output: [['b', '.', 'a', '.', '.'], ['b', '.', 'a', 'i', '.'], ['.', '.', '.', 'i', 'e'], ['.', '.', '.', '.', '.'], ['b', 'd', 'a', 'i', 'e']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def findWords(self, board: List[List[str]], words: List[str]) -> List[str]:
+        if not board or not words: return []
+        
+        m = len(board)
+        n = len(board[0])
+        wordDict = {}
+        for w in words:
+            wordDict[w] = 0
+            
+        for i in range(m):
+            for j in range(n):
+                if board[i][j] == '.': continue
+                
+                for k in range(len(words)):
+                    if board[i][j]!= words[k][0]: break
+                    
+                    # check if all characters of a word is found on the board
+                    flag = True
+                    for l in range(1, len(words[k])):
+                        x = i + (l - 1) // (n+1) * n
+                        y = j + (l - 1) % (n+1)
+                        if x < 0 or x >= m or y < 0 or y >= n:
+                            flag = False
+                            break
+                        elif board[x][y]!= words[k][l]:
+                            flag = False
+                            break
+                        
+                    if flag:
+                        wordDict[words[k]] += 1
+                        break
+                
+        res = []
+        for w in wordDict:
+            if wordDict[w] > 0:
+                res.append(w)
+        return res
+################################################################
+
+Solution:
+[['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['b', '.', 'a', 'i', '.'], ['b', '.', 'a', 'i', 'e'], ['b', 'd', 'a', 'i', 'e']]
+

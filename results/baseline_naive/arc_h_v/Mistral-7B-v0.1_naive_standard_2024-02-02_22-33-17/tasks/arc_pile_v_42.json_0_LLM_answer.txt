@@ -1,0 +1,96 @@
+Input token: 705
+Output token: 753
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'a', 'f', 'a'], ['a', 'd', 'a', 'a', 'a', 'a'], ['b', 'a', 'a', 'a', 'a', 'c'], ['a', 'd', 'a', 'a', 'a', 'c'], ['a', 'a', 'a', 'h', 'a', 'c'], ['a', 'a', 'i', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'c'], ['a', 'd', 'a', 'a', 'a', 'c'], ['b', 'd', 'i', 'h', 'f', 'c']]
+
+Example_2:
+input: [['a', 'a', 'a', 'e', 'f', 'a'], ['a', 'a', 'a', 'e', 'a', 'a'], ['a', 'a', 'h', 'a', 'f', 'a'], ['a', 'c', 'h', 'e', 'a', 'a'], ['a', 'c', 'h', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'h', 'e', 'a', 'a'], ['a', 'c', 'h', 'e', 'f', 'a'], ['a', 'c', 'h', 'e', 'f', 'a']]
+
+Example_3:
+input: [['a', 'a', 'a', 'j', 'a'], ['a', 'e', 'a', 'a', 'a'], ['a', 'a', 'c', 'a', 'a'], ['a', 'e', 'a', 'a', 'a'], ['a', 'e', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'e', 'a', 'a', 'a'], ['a', 'e', 'a', 'a', 'a'], ['a', 'e', 'c', 'j', 'a']]
+
+Test case:
+input: [['a', 'j', 'd', 'h'], ['b', 'j', 'a', 'a'], ['a', 'a', 'a', 'a'], ['b', 'a', 'a', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a']]
+
+Constraints:
+0 <= len(arr) <= 5 * 10^4
+0 <= arr[i][j].length <= 10
+arr[i][j] consists of lowercase English letters only.
+ */
+public class Solution {
+    public List<List<String>> findLadders(String beginWord, String endWord, Set<String> wordList) {
+        if (beginWord == null || endWord == null ||!wordList.contains(endWord)) return new ArrayList<>();
+        Map<String, Integer> map = new HashMap<>();
+        for (String s : wordList) {
+            map.put(s, map.getOrDefault(s, 0) + 1);
+        }
+        Queue<Pair> queue = new LinkedList<>();
+        queue.offer(new Pair(beginWord, 1));
+        int level = 1;
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            for (int i = 0; i < size; ++i) {
+                Pair p = queue.poll();
+                String cur = p.first;
+                int dist = p.second;
+                if (cur.equals(endWord)) return getPath(map, queue, cur, dist);
+                char[] chars = cur.toCharArray();
+                for (int j = 0; j < chars.length; ++j) {
+                    char c = chars[j];
+                    for (char nc = 'a'; nc <= 'z'; ++nc) {
+                        if (nc!= c) {
+                            chars[j] = nc;
+                            String next = new String(chars);
+                            if (map.containsKey(next)) {
+                                queue.offer(new Pair(next, dist + 1));
+                                map.remove(next);
+                            }
+                        }
+                    }
+                    chars[j] = c;
+                }
+            }
+            ++level;
+        }
+        return new ArrayList<>();
+    }
+
+    private List<List<String>> getPath(Map<String, Integer> map, Queue<Pair> queue, String cur, int dist) {
+        List<List<String>> res = new ArrayList<>();
+        if (dist > map.get(cur)) return res;
+        if (dist == map.get(cur)) {
+            List<String> path = new ArrayList<>();
+            path.add(cur);
+            res.add(path);
+        } else {
+            List<String> path = new ArrayList<>();
+            path.add(cur);
+            while (!queue.isEmpty() && queue.peek().second >= dist) {
+                Pair p = queue.poll();
+                if (p.second == dist) {
+                    path.add(p.first);
+                    res.add(path);
+                    break;
+                }
+            }
+        }
+        return res;
+    }
+}
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['b', 'j', 'a', 'a'], ['b', 'j', 'd', 'h']]
+

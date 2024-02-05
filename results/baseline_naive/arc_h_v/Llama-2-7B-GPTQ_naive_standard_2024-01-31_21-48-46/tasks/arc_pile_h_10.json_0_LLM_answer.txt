@@ -1,0 +1,82 @@
+Input token: 559
+Output token: 592
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', 'h', '.', '.'], ['.', 'd', 'd', 'd', '.', '.'], ['.', '.', '.', 'a', '.', '.'], ['.', 'c', '.', '.', '.', '.'], ['.', '.', 'b', '.', '.', '.'], ['.', 'g', '.', '.', 'g', '.']]
+output: [['h', '.', '.', '.', '.', '.'], ['d', 'd', 'd', '.', '.', '.'], ['a', '.', '.', '.', '.', '.'], ['c', '.', '.', '.', '.', '.'], ['b', '.', '.', '.', '.', '.'], ['g', 'g', '.', '.', '.', '.']]
+
+Example_2:
+input: [['.', '.', '.', '.'], ['i', 'i', 'i', '.'], ['.', '.', '.', '.'], ['d', 'd', '.', 'd']]
+output: [['.', '.', '.', '.'], ['i', 'i', 'i', '.'], ['.', '.', '.', '.'], ['d', 'd', 'd', '.']]
+
+Example_3:
+input: [['.', '.', '.', '.', '.'], ['.', 'f', '.', '.', 'f'], ['h', '.', 'h', 'h', '.'], ['.', 'g', '.', '.', 'g'], ['.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.'], ['f', 'f', '.', '.', '.'], ['h', 'h', 'h', '.', '.'], ['g', 'g', '.', '.', '.'], ['.', '.', '.', '.', '.']]
+
+Test case:
+input: [['.', 'g', '.', '.', 'g', 'g'], ['.', 'c', '.', 'c', 'c', '.'], ['.', 'b', 'b', '.', '.', 'b'], ['.', '.', '.', 'i', 'i', '.'], ['.', '.', '.', 'h', '.', '.'], ['d', '.', '.', 'd', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['g', 'g', '.', '.', 'g', 'g'], ['c', 'c', '.', 'c', 'c', '.'], ['b', 'b', '.', '.', 'b', 'b'], ['i', 'i', 'i', '.', '.', 'i'], ['h', 'h', 'h', '.', '.', 'h'], ['d', 'd', '.', '.', 'd', '.']]
+"""
+
+import sys
+from collections import deque, defaultdict
+from typing import List, Optional, Tuple
+
+
+def get_next(current_state: str) -> Tuple[str, int]:
+    """Return next state and index of current state."""
+    if len(current_state) == 0:
+        return "", -1
+    elif current_state[-1] in "bcdfgh":
+        return current_state[:-1], -1
+    else:
+        return current_state + "e", -1
+
+
+class StateMachine:
+    def __init__(self):
+        self._states = [""] * 64
+        self._transitions = {}
+        for i in range(len(self._states)):
+            self._transitions[(self._states[i])] = []
+
+    def add_transition(self, from_state: str, to_state: str, action: str) -> None:
+        """Add transition between two states."""
+        self._transitions[to_state].append((from_state, action))
+
+    def run(self, input: str) -> str:
+        """Run the machine on given input string."""
+        current_state = ""
+        while True:
+            (new_state, new_index) = get_next(current_state)
+            if new_index < 0:
+                break
+            current_state = new_state
+            self._transitions[new_state][new_index] += 1
+
+        return current_state
+
+
+if __name__ == "__main__":
+    sm = StateMachine()
+    sm.add_transition(".", ".", "e")
+    sm.add_transition(".", "i", "e")
+    sm.add_transition(".", "d", "e")
+    sm.add_transition(".", "c", "e")
+    sm.add_transition(".", "b", "e")
+    sm.add_transition(".", "g", "e")
+
+    input = sys.stdin.readline().strip("\n\r")
+    print(sm.run(input))
+################################################################
+
+Solution:
+[['g', 'g', 'g', '.', '.', '.'], ['c', 'c', 'c', '.', '.', '.'], ['b', 'b', 'b', '.', '.', '.'], ['i', 'i', '.', '.', '.', '.'], ['h', '.', '.', '.', '.', '.'], ['d', 'd', '.', '.', '.', '.']]
+

@@ -1,0 +1,75 @@
+Input token: 411
+Output token: 529
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'a'], ['a', 'f', 'a', 'f'], ['b', 'a', 'b', 'a'], ['i', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a'], ['f', 'f', 'a', 'a'], ['b', 'b', 'a', 'a'], ['i', 'a', 'a', 'a']]
+
+Example_2:
+input: [['a', 'a', 'j', 'a'], ['a', 'b', 'a', 'a'], ['a', 'a', 'a', 'a'], ['c', 'a', 'a', 'a']]
+output: [['j', 'a', 'a', 'a'], ['b', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['c', 'a', 'a', 'a']]
+
+Example_3:
+input: [['a', 'd', 'd', 'a'], ['i', 'i', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a']]
+output: [['d', 'd', 'a', 'a'], ['i', 'i', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a']]
+
+Test case:
+input: [['f', 'a', 'a', 'f'], ['h', 'h', 'a', 'h'], ['a', 'c', 'a', 'a'], ['d', 'd', 'd', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['f', 'a', 'a', 'f'], ['h', 'h', 'a', 'h'], ['a', 'c', 'a', 'a'], ['d', 'd', 'd', 'a']]
+"""
+import collections
+from typing import List, Optional, Tuple
+
+
+def get_transformed(inputs: List[List[str]], output: str) -> int:
+    """
+    :param inputs: a list of lists containing strings to be transformed
+    :type inputs: List[List[str]]
+    :param output: a string representing the desired output
+    :type output: str
+    :return: 0 if the input is valid or -1 otherwise
+    """
+    def _get_indexes() -> Tuple[int,...]:
+        indexes = []
+        for i in range(len(inputs)):
+            for j in range(len(inputs[i])):
+                if outputs[i][j].startswith('a'):
+                    indexes += (i, j)
+        return tuple(sorted(set(indexes)))
+
+    def _is_valid(indexes: Tuple[int,...]) -> bool:
+        if len(indexes) == 0:
+            return False
+        elif not all([x < y for x, y in zip(indexes)]):
+            return False
+        else:
+            return True
+
+    # check if the input is valid
+    if not any(_is_valid(indexes) for indexes in _get_indexes()):
+        return -1
+
+    # transform the input
+    new_inputs = [[inputs[i][j] for j in indexes] for i in range(len(inputs))]
+    return sum((new_inputs!= inputs).all())
+
+
+if __name__ == "__main__":
+    print("Input:")
+    print("\t", "\n".join(['\t'.join(line) for line in Example_1] + ["\n"]))
+    print("Output:")
+    print("\t", "\n".join(['\t'.join(line) for line in Example_2] + ["\n"]))
+    print("\t", "\n".join(['\t'.join(line) for line in Example_3] + ["\n"]))
+
+################################################################
+
+Solution:
+[['f', 'f', 'a', 'a'], ['h', 'h', 'h', 'a'], ['c', 'a', 'a', 'a'], ['d', 'd', 'd', 'a']]
+

@@ -1,0 +1,110 @@
+Input token: 612
+Output token: 1151
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'g', 'a', 'a', 'a'], ['a', 'g', 'f', 'h', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'g', 'a', 'h', 'a'], ['a', 'a', 'a', 'h', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'g', 'a', 'h', 'a'], ['a', 'g', 'a', 'h', 'a'], ['a', 'g', 'f', 'h', 'a']]
+
+Example_2:
+input: [['e', 'a', 'a', 'f'], ['e', 'a', 'a', 'a'], ['e', 'd', 'a', 'f'], ['a', 'd', 'c', 'f']]
+output: [['a', 'a', 'a', 'a'], ['e', 'a', 'a', 'f'], ['e', 'd', 'a', 'f'], ['e', 'd', 'c', 'f']]
+
+Example_3:
+input: [['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'g', 'a', 'a', 'a', 'f'], ['j', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['j', 'g', 'a', 'a', 'c', 'a'], ['j', 'a', 'a', 'a', 'a', 'f']]
+output: [['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['j', 'a', 'a', 'a', 'a', 'a'], ['j', 'g', 'a', 'a', 'a', 'f'], ['j', 'g', 'a', 'a', 'c', 'f']]
+
+Test case:
+input: [['j', 'a', 'a', 'a', 'a'], ['j', 'a', 'a', 'h', 'c'], ['j', 'g', 'a', 'h', 'a'], ['a', 'g', 'e', 'a', 'a'], ['a', 'g', 'e', 'h', 'c']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['j', 'a', 'a', 'a', 'a'], ['j', 'a', 'a', 'h', 'c'], ['j', 'g', 'a', 'h', 'a'], ['j', 'g', 'a', 'h', 'a']]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_input(filename):
+    with open(filename) as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def get_output(filename):
+    with open(filename) + '.out' as f:
+        return list(map(''.join, map(lambda x: tuple(x), f)))
+
+
+def main():
+    filename = sys.argv[1] if len(sys.argv) > 1 else "input.txt"
+    input_list = get_input(filename)
+    output_list = get_output(filename)
+
+    # 0. 입력과 출력의 길이가 다름
+    if len(input_list)!= len(output_list):
+        print("Input length is different from Output length")
+        exit()
+
+    # 1. 패턴을 만들기 위한 전처리
+    # 숫자를 제외하고 모든 문자는 소문자로 바꾼다.
+    # 그리고 약수에서 나오는 부분은 아무거나 제외해도 상관없다.
+    def preprocess(s):
+        s = set([char for char in s]) - {'0'}
+        return ''.join(['a' if ord(char) < 97 or ord(char) >= 122 else 'b' for char in s])
+
+    # 2. 정보를 생성하기 위한 전처리
+    def generate_info(s):
+        info = []
+        for i in range(len(s)):
+            if not (i % 5 == 0):
+                continue
+            if i % 4 == 0:
+                info += [preprocess(s[i]), preprocess(s[i+1]), preprocess(s[i+2]), preprocess(s[i+3])]
+            elif i % 4 == 1:
+                info += [preprocess(s[i], preprocess(s[i+1]))]
+            elif i % 4 == 2:
+                info += [preprocess(s[i], preprocess(s[i+1]), preprocess(s[i+2]))]
+            elif i % 4 == 3:
+                info += [preprocess(s[i], preprocess(s[i+1]), preprocess(s[i+2], preprocess(s[i+3]))]
+        return info
+
+    # 3. 정보를 사용하여 최종 계산
+    def transform(info):
+        result = ''
+        for i in range(len(info)):
+            if i % 5 == 0:
+                result += 'a' * (i // 5)
+            elif i % 4 == 0:
+                result += 'a' * ((i // 4) + 1)
+            elif i % 4 == 1:
+                result += 'a' * ((i // 4) + 2)
+            elif i % 4 == 2:
+                result += 'a' * ((i // 4) + 3)
+            elif i % 4 == 3:
+                result += 'a' * ((i // 4) + 4)
+        return result
+
+    # 4. 실행
+    for index, item in enumerate(input_list):
+        if index % 5 == 0:
+            print(transform(generate_info(item)), end='')
+        elif index % 4 == 0:
+            print(transform(generate_info(item)) + '\n', end='')
+        elif index % 4 == 1:
+            print(transform(generate_info(item)) + ', ', end='')
+        elif index % 4 == 2:
+            print(transform(generate_info(item)) + ',\n', end='')
+        elif index % 4 == 3:
+            print(transform(generate_info(item)) + '\n\n', end='')
+
+if __name__ == '__main__':
+    main()
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['j', 'g', 'a', 'h', 'a'], ['j', 'g', 'e', 'h', 'c'], ['j', 'g', 'e', 'h', 'c']]
+

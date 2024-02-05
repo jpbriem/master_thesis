@@ -1,0 +1,71 @@
+Input token: 482
+Output token: 571
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'b', '.'], ['.', 'a', '.', '.', '.', '.'], ['.', '.', '.', 'e', 'b', '.'], ['.', '.', '.', '.', 'b', '.'], ['.', '.', '.', '.', '.', 'g']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'b', '.'], ['.', '.', '.', '.', 'b', '.'], ['.', 'a', '.', 'e', 'b', 'g']]
+
+Example_2:
+input: [['.', '.', 'c', '.'], ['.', 'b', '.', '.'], ['a', '.', '.', '.'], ['.', '.', '.', '.']]
+output: [['.', '.', '.', '.'], ['.', '.', '.', '.'], ['.', '.', '.', '.'], ['a', 'b', 'c', '.']]
+
+Example_3:
+input: [['.', '.', '.', 'e'], ['c', '.', '.', 'e'], ['.', '.', '.', '.'], ['c', '.', '.', 'e']]
+output: [['.', '.', '.', '.'], ['.', '.', '.', 'e'], ['c', '.', '.', 'e'], ['c', '.', '.', 'e']]
+
+Test case:
+input: [['.', '.', '.', 'g', '.'], ['i', 'a', 'e', '.', '.'], ['i', 'a', '.', 'g', 'd'], ['.', 'a', 'e', '.', '.'], ['i', '.', '.', 'g', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', 'g', '.'], ['i', 'a', 'e', '.', '.'], ['i', 'a', '.', 'g', 'd'], ['.', 'a', 'e', '.', '.'], ['i', '.', '.', 'g', '.']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def reconstructQueue(self, people: List[List[str]]) -> List[List[str]]:
+        """
+        思路：
+            1、找到所有的人，并且按照顺序排列起来。
+            2、对于每一个人，如果他在前面的人中出现过，那么就将这两个人交换位置。
+                因为我们知道了这些人之间的相对位置，只要保证各自的相对位置不变，那么最后得到的结果是正确的。
+            3、最后返回结果。
+        """
+        # 记录每个人的位置信息
+        position = {}
+        for i in range(len(people)):
+            person = "".join(people[i])
+            if person not in position:
+                position[person] = []
+            position[person].append((i, len(position[person])) - 1)
+
+        # 根据人名从小到大进行排序
+        sorted_keys = list(sorted(position))
+        result = [[None for _ in range(5)] for _ in range(6)]
+        for key in sorted_keys:
+            for index in reversed(range(len(result))):
+                if result[index][0] is None or (key < result[index][0] and result[index][4] > key):
+                    result[index][0] = key
+                    break
+
+        # 处理每个人的位置信息
+        for i in range(len(result)):
+            person = result[i][0]
+            for j in range(len(position[person])):
+                k = position[person][j][0]
+                l = position[person][j][1]
+                temp = people[k][l]
+                people[k][l] = people[i][j]
+                people[i][j] = temp
+
+        return people
+
+################################################################
+
+Solution:
+[['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['i', 'a', '.', 'g', '.'], ['i', 'a', 'e', 'g', '.'], ['i', 'a', 'e', 'g', 'd']]
+

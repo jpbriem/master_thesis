@@ -1,0 +1,107 @@
+Input token: 633
+Output token: 884
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'a', 'a'], ['a', 'h', 'a', 'a', 'a'], ['a', 'h', 'a', 'a', 'a'], ['a', 'h', 'b', 'a', 'a'], ['a', 'a', 'b', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'h', 'a', 'a', 'a'], ['a', 'h', 'b', 'a', 'a'], ['a', 'h', 'b', 'a', 'a']]
+
+Example_2:
+input: [['e', 'a', 'a', 'a', 'a'], ['e', 'a', 'a', 'i', 'a'], ['a', 'a', 'a', 'i', 'a'], ['a', 'a', 'a', 'a', 'a'], ['e', 'a', 'a', 'i', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['e', 'a', 'a', 'i', 'a'], ['e', 'a', 'a', 'i', 'a'], ['e', 'a', 'a', 'i', 'a']]
+
+Example_3:
+input: [['e', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'j', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'b'], ['e', 'd', 'i', 'j', 'b']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['e', 'a', 'a', 'j', 'b'], ['e', 'd', 'i', 'j', 'b']]
+
+Test case:
+input: [['a', 'd', 'h', 'e', 'a', 'a'], ['a', 'd', 'a', 'a', 'c', 'a'], ['a', 'd', 'h', 'e', 'a', 'a'], ['j', 'a', 'a', 'e', 'c', 'a'], ['j', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'g']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'd', 'h', 'e', 'a', 'a'], ['a', 'd', 'h', 'e', 'a', 'a'], ['a', 'd', 'a', 'a', 'c', 'a'], ['j', 'a', 'a', 'a', 'a', 'a'], ['j', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'g']]
+
+Constraints:
+0 <= len(grid) <= 50
+0 <= grid[i].length <= 50
+'a' <= grid[i][j] <= 'z'
+ */
+public class Solution {
+    public List<List<String>> removeInvalidParentheses(String[] s) {
+        int m = s.length;
+        if (m == 0 || s[0].length() == 0) return new ArrayList<>();
+        Set<Integer> set = new HashSet<>();
+        for (int i = 0; i < m; ++i) {
+            for (char c : s[i].toCharArray()) {
+                if (c == '(' || c == ')') {
+                    set.add(s[i].indexOf(c));
+                }
+            }
+        }
+        Queue<String> queue = new LinkedList<>();
+        for (int i = 0; i < m; ++i) {
+            queue.offer(s[i]);
+        }
+        while (!queue.isEmpty()) {
+            String str = queue.poll();
+            if (isValid(str)) {
+                return getResult(str);
+            }
+            for (int i = 0; i < m; ++i) {
+                char[] chars = str.toCharArray();
+                boolean flag = false;
+                for (int j = 0; j < chars.length; ++j) {
+                    if (chars[j]!= '(' && chars[j]!= ')') continue;
+                    if (set.contains(j)) {
+                        flag = true;
+                        break;
+                    }
+                }
+                if (!flag) continue;
+                StringBuilder sb = new StringBuilder();
+                for (int j = 0; j < chars.length; ++j) {
+                    if (chars[j] == '(' || chars[j] == ')') continue;
+                    sb.append(chars[j]);
+                }
+                queue.offer(sb.toString());
+            }
+        }
+        return new ArrayList<>();
+    }
+
+    private boolean isValid(String str) {
+        int left = 0, right = 0;
+        for (char c : str.toCharArray()) {
+            if (c == '(') {
+                ++left;
+            } else if (c == ')') {
+                --right;
+            }
+            if (left < 0 || right > 0) return false;
+        }
+        return left == 0 && right == 0;
+    }
+
+    private List<List<String>> getResult(String str) {
+        List<List<String>> res = new ArrayList<>();
+        for (int i = 0; i < str.length(); ++i) {
+            if (str.charAt(i) == '(' || str.charAt(i) == ')') {
+                List<String> list = new ArrayList<>(res);
+                for (String s : list) {
+                    StringBuilder sb = new StringBuilder(s);
+                    sb.insert(i, "");
+                    res.add(new ArrayList<>(Arrays.asList(sb.toString().split(""))));
+                }
+            }
+        }
+        return res;
+    }
+}
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'd', 'a', 'e', 'a', 'a'], ['j', 'd', 'h', 'e', 'c', 'a'], ['j', 'd', 'h', 'e', 'c', 'g']]
+

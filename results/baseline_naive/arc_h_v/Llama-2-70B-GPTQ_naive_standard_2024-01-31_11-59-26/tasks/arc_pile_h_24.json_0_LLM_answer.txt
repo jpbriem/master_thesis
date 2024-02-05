@@ -1,0 +1,84 @@
+Input token: 511
+Output token: 742
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', 'd', 'd', '.'], ['a', '.', '.', 'a'], ['h', 'h', '.', 'h'], ['c', 'c', 'c', '.']]
+output: [['d', 'd', '.', '.'], ['a', 'a', '.', '.'], ['h', 'h', 'h', '.'], ['c', 'c', 'c', '.']]
+
+Example_2:
+input: [['.', '.', '.', '.', '.'], ['h', '.', 'h', '.', '.'], ['.', '.', '.', '.', '.'], ['c', 'c', '.', 'c', '.'], ['.', '.', 'g', 'g', 'g']]
+output: [['.', '.', '.', '.', '.'], ['h', 'h', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['c', 'c', 'c', '.', '.'], ['g', 'g', 'g', '.', '.']]
+
+Example_3:
+input: [['.', '.', '.', 'b', '.'], ['.', '.', 'f', 'f', 'f'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', 'g', 'g']]
+output: [['b', '.', '.', '.', '.'], ['f', 'f', 'f', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['g', 'g', '.', '.', '.']]
+
+Test case:
+input: [['.', '.', '.', '.', 'b', 'b'], ['.', 'i', '.', 'i', '.', 'i'], ['.', 'd', '.', '.', '.', '.'], ['.', '.', '.', '.', 'a', '.'], ['e', '.', 'e', '.', 'e', '.'], ['.', 'h', '.', 'h', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['b', '.', '.', '.', '.', '.'], ['i', 'i', 'i', '.', '.', '.'], ['.', 'd', '.', '.', '.', '.'], ['.', '.', '.', '.', 'a', '.'], ['e', 'e', 'e', '.', '.', '.'], ['.', 'h', '.', 'h', '.', '.']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def transform(self, grid: List[List[str]]) -> None:
+        """
+        Do not return anything, modify grid in-place instead.
+        
+        >>> solution = Solution()
+        >>> grid = [['.', '.', '.', '.', 'b', 'b'], ['.', 'i', '.', 'i', '.', 'i'], ['.', 'd', '.', '.', '.', '.'], ['.', '.', '.', '.', 'a', '.'], ['e', '.', 'e', '.', 'e', '.'], ['.', 'h', '.', 'h', '.', '.']]
+        >>> solution.transform(grid)
+        >>> print(grid)
+        [['b', '.', '.', '.', '.', '.'], ['i', 'i', 'i', '.', '.', '.'], ['.', 'd', '.', '.', '.', '.'], ['.', '.', '.', '.', 'a', '.'], ['e', 'e', 'e', '.', '.', '.'], ['.', 'h', '.', 'h', '.', '.']]
+        """
+        if len(grid) == 0 or len(grid[0]) == 0:
+            return
+            
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j]!= '.':
+                    continue
+                else:
+                    self._fill_cells(grid, i, j)
+    
+    def _fill_cells(self, grid: List[List[str]], row: int, col: int):
+        if (row < 0 or row >= len(grid)) or \
+           (col < 0 or col >= len(grid[0])):
+            return
+        
+        if grid[row][col]!= '.':
+            return
+        
+        # fill cell with current character
+        grid[row][col] = grid[row - 1][col]
+        
+        # fill cells to left of current cell
+        while True:
+            if grid[row][col - 1] == '.':
+                break
+            elif grid[row][col - 1] == grid[row - 1][col]:
+                grid[row][col - 1] = grid[row - 1][col]
+                col -= 1
+            else:
+                break
+        
+        # fill cells below current cell
+        while True:
+            if grid[row + 1][col] == '.':
+                break
+            elif grid[row + 1][col] == grid[row][col]:
+                grid[row + 1][col] = grid[row][col]
+                row += 1
+            else:
+                break
+################################################################
+
+Solution:
+[['b', 'b', '.', '.', '.', '.'], ['i', 'i', 'i', '.', '.', '.'], ['d', '.', '.', '.', '.', '.'], ['a', '.', '.', '.', '.', '.'], ['e', 'e', 'e', '.', '.', '.'], ['h', 'h', '.', '.', '.', '.']]
+

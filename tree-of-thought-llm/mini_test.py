@@ -47,21 +47,21 @@ from tot.models import gpt_usage
 ########## ARC ##########
 args = argparse.Namespace(
     # backend='gpt-3.5-turbo-1106',   # TODO: Set model!
-    backend='gpt-4-1106-preview', 
+    # backend='gpt-4-1106-preview', 
     # backend='NousResearch/Llama-2-7b-chat-hf',
-    # backend='TheBloke/Llama-2-70b-Chat-GPTQ',
-    # model_revision='main',
+    backend='TheBloke/Llama-2-70b-Chat-GPTQ',
+    model_revision='main',
     use_api=True,                       # TODO: Use API?!
     temperature=0.7, 
     # task='arc',                       # TODO: Set task!
-    # task='arc_1D',
-    task = 'arc_h_v',
+    task='arc_1D',
+    # task = 'arc_h_v',
     input_representation = None,    # TODO: set input representation
     # input_representation = 'objects',
     naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
-    prompt_sample='standard',                # TODO: Set prompt sample: cot - standard!
+    prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy',
@@ -74,6 +74,8 @@ args = argparse.Namespace(
 # data = pd.read_csv('/work/jbriem/repos/master_thesis/ARC_datasets/1D-ARC/LLM4ARC/output-logs/direct-grid/ARC-subset/direct_grid_few_shot_number_3.5.csv')
 # tasks = list(data["Task_ID"])
 # solved_gpt3 = ["25ff71a9.json", "6150a2bd.json", "74dd1130.json", "9dfd6313.json", "b1948b0a.json", "c8f0f002.json", "d037b0a7.json", "dc433765.json"]
+# solved_gpt3 = ['1d_move_1p_2.json', '1d_flip_30.json', '1d_move_1p_33.json', '1d_scale_dp_41.json', '1d_move_1p_27.json', '1d_flip_48.json', '1d_move_1p_12.json', '1d_scale_dp_20.json', '1d_move_1p_4.json', '1d_flip_8.json', '1d_scale_dp_12.json', '1d_flip_10.json', '1d_flip_36.json', '1d_move_1p_30.json', '1d_move_1p_20.json', '1d_scale_dp_11.json', '1d_move_1p_31.json', '1d_flip_33.json', '1d_move_1p_1.json', '1d_move_1p_25.json', '1d_scale_dp_44.json', '1d_flip_29.json', '1d_flip_0.json', '1d_scale_dp_39.json', '1d_move_1p_23.json', '1d_scale_dp_33.json', '1d_scale_dp_47.json', '1d_move_1p_16.json', '1d_scale_dp_22.json', '1d_flip_4.json', '1d_move_1p_39.json', '1d_flip_9.json', '1d_scale_dp_21.json', '1d_scale_dp_28.json', '1d_flip_40.json', '1d_move_1p_41.json', '1d_flip_3.json', '1d_scale_dp_50.json', '1d_move_1p_10.json', '1d_flip_43.json', '1d_flip_46.json', '1d_scale_dp_30.json', '1d_flip_47.json', '1d_move_1p_40.json', '1d_flip_34.json', '1d_scale_dp_10.json', '1d_move_1p_35.json', '1d_move_1p_19.json', '1d_scale_dp_49.json', '1d_move_1p_36.json']
+
 # multi_colour  = ["3c940459.json", "67a3c6ac.json", "88a10436.json", "6150a2bd.json", "74dd1130.json", "b2862040.json"]
 def run(args):
     log, failure_log = [], ""
@@ -98,22 +100,23 @@ def run(args):
 
     # solve the task
     indices = list(range(len(task)))
-    # random.seed(42)
-    # random.shuffle(indices)
-    # count = 0 # TODO: delete!!!
+    random.seed(42)
+    random.shuffle(indices)
+    count = 0 # TODO: delete!!!
     for idx in indices:
         print(f"Task {idx} of {len(task)}")
-        # if count == 50: # TODO: delete!!!
-        #     break
+        if count == 50: # TODO: delete!!!
+            break
         Node.reset_tree()
         task_name = task.names[idx].split(".json")[0]
         task_category = task.categories[idx]
 
-        # if 'scale' in task_name or "flip" in task_name or "move_1p" in task_name: # TODO: delete!!! 
-        #     count += 1 # TODO: delete!!!
-        # else:
-        #     continue
-        # if not task_name+".json" in solved_gpt3+multi_colour: # TODO delete!!!
+        # if 'pile_h' in task_name: # TODO: delete!!! 
+        if "scale" in task_name or "move_1p" in task_name or "flip" in task_name: # TODO: delete!!!
+            count += 1 # TODO: delete!!!
+        else:
+            continue
+        # if not task_name+".json" in solved_gpt3:#+multi_colour: # TODO delete!!!
         #     continue
         
         if args.search_algo == "bfs":

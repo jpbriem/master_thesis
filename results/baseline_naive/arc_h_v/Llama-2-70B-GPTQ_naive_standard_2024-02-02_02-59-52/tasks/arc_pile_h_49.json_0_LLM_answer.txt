@@ -1,0 +1,75 @@
+Input token: 465
+Output token: 510
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['h', 'a', 'a', 'h'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'j', 'j', 'j']]
+output: [['h', 'h', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['j', 'j', 'j', 'a']]
+
+Example_2:
+input: [['a', 'f', 'f', 'f', 'a'], ['c', 'a', 'a', 'c', 'c'], ['a', 'a', 'a', 'a', 'g'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a']]
+output: [['f', 'f', 'f', 'a', 'a'], ['c', 'c', 'c', 'a', 'a'], ['g', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a']]
+
+Example_3:
+input: [['j', 'j', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['h', 'a', 'h', 'h']]
+output: [['j', 'j', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['h', 'h', 'h', 'a']]
+
+Test case:
+input: [['a', 'b', 'a', 'a'], ['a', 'a', 'a', 'j'], ['a', 'a', 'h', 'h'], ['a', 'a', 'g', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a']]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, children=None):
+        self.val = val
+        self.children = children
+
+
+class Solution(object):
+    def transformToHighestBits(self, arr):
+        """
+        :type arr: List[List[str]]
+        :rtype: List[List[str]]
+        """
+        
+        # 1. init
+        res = [[0]*len(arr[0]) for _ in range(len(arr))]
+        queue = [(i, j) for i in range(len(arr)) for j in range(len(arr[0])) if arr[i][j] == "?"]
+        visited = set()
+        while len(queue) > 0:
+            i, j = queue.pop()
+            
+            # 2. DFS
+            if (i, j) not in visited:
+                visited.add((i, j))
+                
+                # 3. get neighbors
+                neighbors = []
+                for k in [-1, 0, 1]:
+                    for l in [-1, 0, 1]:
+                        if -1 < i+k < len(arr) and -1 < j+l < len(arr[0]) \
+                           and (i+k, j+l)!= (i, j) and arr[i+k][j+l] == "?"\
+                           and (i+k, j+l) not in visited:
+                            neighbors.append((i+k, j+l))
+                    
+                # 4. update
+                if len(neighbors) >= 2:
+                    res[i][j] = 1
+                    for neighbor in neighbors:
+                        queue.remove(neighbor)
+                        visited.discard(neighbor)
+                        queue.append(neighbor)
+                
+        return res
+################################################################
+
+Solution:
+[['b', 'a', 'a', 'a'], ['j', 'a', 'a', 'a'], ['h', 'h', 'a', 'a'], ['g', 'a', 'a', 'a']]
+

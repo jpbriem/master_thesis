@@ -1,0 +1,93 @@
+Input token: 465
+Output token: 857
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'b', 'a', 'a'], ['a', 'b', 'c', 'a'], ['a', 'a', 'a', 'a'], ['a', 'b', 'a', 'a']]
+output: [['a', 'a', 'a', 'a'], ['a', 'b', 'a', 'a'], ['a', 'b', 'a', 'a'], ['a', 'b', 'c', 'a']]
+
+Example_2:
+input: [['b', 'a', 'a', 'a'], ['b', 'a', 'c', 'f'], ['b', 'a', 'a', 'f'], ['a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a'], ['b', 'a', 'a', 'a'], ['b', 'a', 'a', 'f'], ['b', 'a', 'c', 'f']]
+
+Example_3:
+input: [['i', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'j', 'a'], ['a', 'a', 'a', 'a', 'e'], ['a', 'a', 'a', 'j', 'a'], ['a', 'a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'j', 'a'], ['i', 'a', 'a', 'j', 'e']]
+
+Test case:
+input: [['a', 'd', 'a', 'g'], ['a', 'd', 'a', 'a'], ['f', 'd', 'a', 'a'], ['a', 'a', 'h', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a'], ['a', 'd', 'a', 'a'], ['f', 'd', 'a', 'a'], ['a', 'a', 'h', 'a']]
+"""
+import collections
+from typing import List, Optional, Tuple
+
+
+def merge(list_of_lists):
+    """Merge two lists of lists into one list."""
+    if len(list_of_lists) == 0:
+        return []
+    elif len(list_of_lists[0])!= len(list_of_lists[-1]):
+        raise ValueError("The length of each sublist must be equal.")
+    else:
+        merged = []
+        for i in range(len(list_of_lists)):
+            merged += list_of_lists[i]
+        return merged
+
+
+def remove_duplicates(list_of_lists):
+    """Remove duplicates from a list of lists."""
+    if not isinstance(list_of_lists, (tuple, list)):
+        raise TypeError("Input should be a tuple or a list")
+    if len(list_of_lists) < 2:
+        return list_of_lists
+    else:
+        result = []
+        for item in list_of_lists:
+            if item not in result:
+                result.append(item)
+        return result
+
+
+def get_transformation_patterns(input_list: List[List], output_list: List[Tuple]) -> None:
+    """Get all possible transformations between two lists."""
+    # Get the number of elements in both lists
+    num_elements = len(input_list) + len(output_list) - 1
+    # Create an empty dictionary to store the patterns
+    patterns = {}
+    # Iterate through the input list
+    for index in range(num_elements):
+        # If we have reached the end of the input list, then add it as the last element
+        if index >= len(input_list):
+            patterns[(index+1,)] = (input_list, output_list)
+        # Otherwise, check whether there exists any duplicate elements in the current iteration
+        elif index > 0 and index <= len(input_list)-1:
+            if input_list[index] == input_list[index-1]:
+                continue
+            else:
+                patterns[(index+1,)] = (input_list, output_list)
+        # Else, this means that we haven't reached the end yet
+        else:
+            patterns[(index+1,)] = (input_list, output_list)
+    # Sort the keys by ascending order
+    sorted_keys = sorted(patterns.items(), key=lambda x: x[0])
+    # Print out the results
+    print("\n".join([str(x) for x in sorted_keys]))
+
+
+if __name__ == "__main__":
+    test_case = [[["a", "d", "a", "g"], ["a", "d", "a", "a"], ["f", "d", "a", "a"], ["a", "a", "h", "a"]]]
+    input_list = [["a", "d", "a", "g"], ["a", "d", "a", "a"], ["f", "d", "a", "a"], ["a", "a", "h", "a"]]
+    output_list = [["a", "a", "a", "a"], ["a", "d", "a", "a"], ["f", "d", "a", "a"], ["a", "a", "h", "a"]]
+    get_transformation_patterns(input_list, output_list)
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a'], ['a', 'd', 'a', 'a'], ['a', 'd', 'a', 'a'], ['f', 'd', 'h', 'g']]
+

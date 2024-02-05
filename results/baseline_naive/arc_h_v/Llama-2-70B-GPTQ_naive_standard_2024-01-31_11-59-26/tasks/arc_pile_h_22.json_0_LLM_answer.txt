@@ -1,0 +1,78 @@
+Input token: 545
+Output token: 848
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', 'd', '.', '.', '.'], ['.', '.', 'i', '.', '.', '.'], ['.', '.', 'b', '.', '.', 'b'], ['h', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['d', '.', '.', '.', '.', '.'], ['i', '.', '.', '.', '.', '.'], ['b', 'b', '.', '.', '.', '.'], ['h', '.', '.', '.', '.', '.']]
+
+Example_2:
+input: [['.', '.', 'h', 'h', 'h'], ['.', 'd', '.', 'd', '.'], ['b', 'b', 'b', '.', '.'], ['.', '.', '.', '.', '.'], ['.', 'f', '.', '.', '.']]
+output: [['h', 'h', 'h', '.', '.'], ['d', 'd', '.', '.', '.'], ['b', 'b', 'b', '.', '.'], ['.', '.', '.', '.', '.'], ['f', '.', '.', '.', '.']]
+
+Example_3:
+input: [['a', 'a', '.', 'a', '.'], ['c', '.', '.', '.', '.'], ['.', '.', 'd', '.', '.'], ['h', '.', 'h', '.', '.'], ['.', 'f', 'f', '.', '.']]
+output: [['a', 'a', 'a', '.', '.'], ['c', '.', '.', '.', '.'], ['d', '.', '.', '.', '.'], ['h', 'h', '.', '.', '.'], ['f', 'f', '.', '.', '.']]
+
+Test case:
+input: [['.', '.', '.', 'e'], ['.', '.', 'g', '.'], ['f', '.', 'f', '.'], ['a', 'a', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', 'e'], ['.', '.', 'g', '.'], ['f', 'f', 'f', '.'], ['a', 'a', 'a', '.']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def findWords(self, board: List[List[str]]) -> List[Optional[str]]:
+        """
+        1. 找到所有的单词，并且将其转换为字符串。
+        2. 对于每个单词，我们可以使用一个固定长度的数组来表示该单词中的每个字母。
+        3. 然后，我们可以在这些数组之间进行比较，以查看是否存在任何重复项。
+        4. 如果发现了重复项，则说明该单词不能放置在矩阵中。
+        5. 最后，返回一个列表，其中包含所有未被删除的单词。
+        """
+        words = [] # 保存所有单词
+        for i in range(len(board)):
+            for j in range(len(board[0])):
+                if board[i][j] == '.':
+                    continue
+                word = self._findWord(board, i, j)
+                if word is not None:
+                    words.append(word)
+        return words
+    
+    def _findWord(self, board: List[List[str]], x: int, y: int):
+        """
+        1. 首先，我们需要确定单词的起始位置和方向（水平或垂直）。
+        2. 接下来，我们从起点开始检索单词，直到我们无法再移动或者已经达到单词结尾。
+        3. 如果我们没有发现任何错误，那么就返回该单词；否则，返回None。
+        """
+        direction = (x > len(board)-1 or y > len(board[0]) - 1) and "v" or "h"
+        start = (y, x)
+        end = (y + 1, x + 1) if direction == "h" else (y + 1, x - 1)
+        word = ""
+        while True:
+            if board[end[0]][end[1]]!= ".":
+                break
+            word += board[end[0]][end[1]]
+            end = (end[0] + 1, end[1] + 1) if direction == "h" else (end[0] + 1, end[1] - 1)
+        if word == "":
+            return None
+        if direction == "h":
+            for i in range(start[0]+1, end[0]+1):
+                if board[i][start[1]:end[1]+1]!= list(word)*int((end[1]-start[1]+1)/len(word)):
+                    return None
+        elif direction == "v":
+            for i in range(start[1]+1, end[1]+1):
+                if board[start[0]:end[0]+1][i]!= list(word)*int((end[0]-start[0]+1)/len(word)):
+                    return None
+        return word
+################################################################
+
+Solution:
+[['e', '.', '.', '.'], ['g', '.', '.', '.'], ['f', 'f', '.', '.'], ['a', 'a', '.', '.']]
+

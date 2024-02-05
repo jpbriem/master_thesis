@@ -1,0 +1,110 @@
+Input token: 633
+Output token: 1025
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'a', 'a'], ['a', 'h', 'h', 'h', 'a'], ['b', 'b', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['h', 'h', 'h', 'a', 'a'], ['b', 'b', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a']]
+
+Example_2:
+input: [['e', 'a', 'a', 'e', 'e'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['i', 'a', 'i', 'i', 'a'], ['a', 'a', 'a', 'a', 'a']]
+output: [['e', 'e', 'e', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['i', 'i', 'i', 'a', 'a'], ['a', 'a', 'a', 'a', 'a']]
+
+Example_3:
+input: [['e', 'a', 'a', 'a', 'e'], ['d', 'a', 'a', 'a', 'a'], ['i', 'a', 'a', 'a', 'a'], ['j', 'a', 'a', 'j', 'a'], ['b', 'b', 'a', 'a', 'a']]
+output: [['e', 'e', 'a', 'a', 'a'], ['d', 'a', 'a', 'a', 'a'], ['i', 'a', 'a', 'a', 'a'], ['j', 'j', 'a', 'a', 'a'], ['b', 'b', 'a', 'a', 'a']]
+
+Test case:
+input: [['a', 'j', 'j', 'a', 'a', 'a'], ['a', 'a', 'a', 'd', 'd', 'd'], ['a', 'a', 'a', 'h', 'a', 'h'], ['a', 'a', 'e', 'e', 'a', 'e'], ['a', 'a', 'c', 'a', 'c', 'a'], ['g', 'a', 'a', 'a', 'a', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'd', 'd', 'd'], ['a', 'a', 'a', 'h', 'a', 'h'], ['a', 'a', 'e', 'e', 'a', 'e'], ['a', 'a', 'c', 'c', 'a', 'c'], ['g', 'g', 'a', 'a', 'a', 'a']]
+
+Constraints:
+1 <= len(arr) <= 500
+1 <= arr[i].length <= 500
+arr[i][j] is a lowercase English letter.
+ */
+public class Solution {
+    public List<List<String>> findLadders(String beginWord, String endWord, Set<String> wordList) {
+        if (beginWord == null || endWord == null ||!wordList.contains(endWord)) return new ArrayList<>();
+        Map<String, Integer> map = new HashMap<>();
+        for (String s : wordList) {
+            map.put(s, map.getOrDefault(s, 0) + 1);
+        }
+        Queue<Pair> queue = new LinkedList<>();
+        queue.offer(new Pair(beginWord, 1));
+        Set<String> visited = new HashSet<>();
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            for (int i = 0; i < size; ++i) {
+                Pair p = queue.poll();
+                String cur = p.first;
+                int level = p.second;
+                if (cur.equals(endWord)) return getPath(map, queue, visited, cur, level);
+                char[] chars = cur.toCharArray();
+                for (int j = 0; j < chars.length; ++j) {
+                    char c = chars[j];
+                    for (char k = 'a'; k <= 'z'; ++k) {
+                        if (k!= c) {
+                            chars[j] = k;
+                            String next = new String(chars);
+                            if (!visited.contains(next) && map.containsKey(next)) {
+                                queue.offer(new Pair(next, level + 1));
+                                visited.add(next);
+                            }
+                        }
+                    }
+                    chars[j] = c;
+                }
+            }
+        }
+        return new ArrayList<>();
+    }
+
+    private List<List<String>> getPath(Map<String, Integer> map, Queue<Pair> queue, Set<String> visited, String cur, int level) {
+        List<List<String>> res = new ArrayList<>();
+        if (level > map.get(cur)) return res;
+        if (cur.equals(queue.peek().first)) {
+            List<String> path = new ArrayList<>();
+            path.add(cur);
+            while (!path.isEmpty() &&!path.get(0).equals(queue.peek().first)) {
+                path.remove(0);
+            }
+            res.add(path);
+        } else {
+            char[] chars = cur.toCharArray();
+            for (int j = 0; j < chars.length; ++j) {
+                char c = chars[j];
+                for (char k = 'a'; k <= 'z'; ++k) {
+                    if (k!= c) {
+                        chars[j] = k;
+                        String next = new String(chars);
+                        if (!visited.contains(next) && map.containsKey(next)) {
+                            queue.offer(new Pair(next, level + 1));
+                            visited.add(next);
+                            List<List<String>> subRes = getPath(map, queue, visited, next, level + 1);
+                            if (!subRes.isEmpty()) {
+                                for (List<String> list : subRes) {
+                                    list.add(0, cur);
+                                    res.add(list);
+                                }
+                            }
+                        }
+                    }
+                }
+                chars[j] = c;
+            }
+        }
+        return res;
+    }
+}
+################################################################
+
+Solution:
+[['j', 'j', 'a', 'a', 'a', 'a'], ['d', 'd', 'd', 'a', 'a', 'a'], ['h', 'h', 'a', 'a', 'a', 'a'], ['e', 'e', 'e', 'a', 'a', 'a'], ['c', 'c', 'a', 'a', 'a', 'a'], ['g', 'a', 'a', 'a', 'a', 'a']]
+

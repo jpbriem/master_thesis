@@ -1,0 +1,78 @@
+Input token: 558
+Output token: 564
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'c', 'a'], ['a', 'b', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'f', 'c', 'a'], ['a', 'a', 'a', 'a', 'c', 'a'], ['a', 'a', 'a', 'a', 'a', 'h']]
+output: [['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'c', 'a'], ['a', 'a', 'a', 'a', 'c', 'a'], ['a', 'b', 'a', 'f', 'c', 'h']]
+
+Example_2:
+input: [['a', 'a', 'd', 'a'], ['a', 'c', 'a', 'a'], ['b', 'a', 'a', 'a'], ['a', 'a', 'a', 'a']]
+output: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['b', 'c', 'd', 'a']]
+
+Example_3:
+input: [['a', 'a', 'a', 'f'], ['d', 'a', 'a', 'f'], ['a', 'a', 'a', 'a'], ['d', 'a', 'a', 'f']]
+output: [['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'f'], ['d', 'a', 'a', 'f'], ['d', 'a', 'a', 'f']]
+
+Test case:
+input: [['a', 'a', 'a', 'h', 'a'], ['j', 'b', 'f', 'a', 'a'], ['j', 'b', 'a', 'h', 'e'], ['a', 'b', 'f', 'a', 'a'], ['j', 'a', 'a', 'h', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'h', 'a'], ['j', 'b', 'f', 'a', 'a'], ['j', 'b', 'a', 'h', 'e'], ['a', 'b', 'f', 'a', 'a'], ['j', 'a', 'a', 'h', 'a']]
+"""
+import sys
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+
+def get_next(current_state: str) -> Tuple[str, int]:
+    """Return next state and index of current state."""
+    if len(current_state) == 0:
+        return "", -1
+    elif current_state[-1] in "ab":
+        return current_state[:-1], -1
+    else:
+        return current_state + "a", 0
+
+
+class Solution:
+    def findTheDifference(self, words: List[str]) -> None:
+        """
+        Do not change code
+        """
+        # your code here
+        dp = defaultdict(list)
+        for word in words:
+            dp[word].append((len(word), 0))
+        res = []
+        for i in range(len(words)):
+            for j in range(i+1):
+                if words[i][-1]!= words[j][-1]:
+                    continue
+                for k in range(dp[words[i]][-1]+1, dp[words[j]][0]):
+                    if (k % 2) == 0:
+                        dp[words[i]].pop()
+                    else:
+                        dp[words[j]].insert(0, (k, 0))
+                    if dp[words[i]][-1] >= dp[words[j]][0]:
+                        break
+                if dp[words[i]][-1] < dp[words[j]][0]:
+                    break
+                res.append("".join([x[0] for x in sorted(dp[words[i]], key=lambda x: x[0])]))
+        print(*res, sep="\n")
+
+
+if __name__ == "__main__":
+    solution = Solution()
+    words = ["a", "a", "a", "a", "a"]
+    result = solution.findTheDifference(words)
+
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['j', 'b', 'a', 'h', 'a'], ['j', 'b', 'f', 'h', 'a'], ['j', 'b', 'f', 'h', 'e']]
+

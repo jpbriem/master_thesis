@@ -1,0 +1,95 @@
+Input token: 411
+Output token: 668
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['i', 'a', 'a', 'a'], ['d', 'd', 'd', 'a'], ['a', 'a', 'c', 'a'], ['a', 'b', 'b', 'a']]
+output: [['i', 'a', 'a', 'a'], ['d', 'd', 'd', 'a'], ['c', 'a', 'a', 'a'], ['b', 'b', 'a', 'a']]
+
+Example_2:
+input: [['c', 'a', 'a', 'a'], ['h', 'a', 'h', 'h'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a']]
+output: [['c', 'a', 'a', 'a'], ['h', 'h', 'h', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a']]
+
+Example_3:
+input: [['a', 'e', 'e', 'e'], ['b', 'a', 'a', 'a'], ['a', 'f', 'f', 'a'], ['a', 'a', 'a', 'a']]
+output: [['e', 'e', 'e', 'a'], ['b', 'a', 'a', 'a'], ['f', 'f', 'a', 'a'], ['a', 'a', 'a', 'a']]
+
+Test case:
+input: [['j', 'a', 'a', 'a'], ['a', 'g', 'g', 'g'], ['a', 'a', 'f', 'a'], ['a', 'd', 'a', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['j', 'a', 'a', 'a'], ['a', 'g', 'g', 'a'], ['a', 'a', 'f', 'a'], ['a', 'd', 'a', 'a']]
+"""
+
+# Definition for a Node.
+class Node(object):
+    def __init__(self, val, neighbors=None):
+        self.val = val
+        self.neighbors = neighbors if neighbors is not None else []
+
+def dfs(graph, node, visited):
+    # Mark this node as visited.
+    visited[node.val] = True
+    # Recursively traverse all the adjacent nodes of current node.
+    for neighbor in graph[node.val]:
+        if not visited.get(neighbor.val, False):
+            dfs(graph, neighbor, visited)
+
+def bfs(graph, startNode, endNode):
+    queue = collections.deque()
+    queue.append((startNode, 0))
+    while queue:
+        currNode, level = queue.popleft()
+        if currNode == endNode:
+            return level
+        for neighbor in graph[currNode.val]:
+            if not visited.get(neighbor.val, False):
+                queue.append((neighbor, level + 1))
+
+class Solution(object):
+    def findLUSlength(self, words):
+        """
+        :type words: List[str]
+        :rtype: int
+        """
+        # Input validation
+        assert len(words), "No input."
+        
+        # Build the directed graph with each word as a node.
+        graph = {}
+        for i, word in enumerate(words):
+            graph[word] = Node(word)
+            
+        # Add edges to the graph by comparing every pair of words.
+        for i, w1 in enumerate(words):
+            for j, w2 in enumerate(words):
+                if i!= j:
+                    lcs = longestCommonSubsequence(w1, w2)
+                    
+                    # If LCS length > 0, add an edge from w1 to w2.
+                    if lcs:
+                        graph[w1].addNeighbor(graph[w2])
+                        graph[w2].addNeighbor(graph[w1])
+                    
+        # Find the maximum distance between any two connected nodes.
+        maxDistance = -1
+        for key in graph:
+            visited = {key: True}
+            dfs(graph, graph[key], visited)
+            dist = bfs(graph, graph[key], key)
+            maxDistance = max(maxDistance, dist)
+        
+        return maxDistance
+
+if __name__ == "__main__":
+    solution = Solution()
+    print(solution.findLUSlength([["a", "a"], ["a", "a"]]))
+################################################################
+
+Solution:
+[['j', 'a', 'a', 'a'], ['g', 'g', 'g', 'a'], ['f', 'a', 'a', 'a'], ['d', 'a', 'a', 'a']]
+

@@ -1,0 +1,85 @@
+Input token: 691
+Output token: 531
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[1, 0, 0, 7, 0, 9], [0, 0, 4, 7, 5, 9], [0, 0, 4, 0, 0, 9], [1, 6, 0, 0, 0, 0], [0, 0, 4, 7, 5, 0], [0, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 4, 7, 0, 9], [1, 0, 4, 7, 5, 9], [1, 6, 4, 7, 5, 9]]
+
+Example_2:
+input: [[0, 0, 0, 5, 0, 0], [0, 0, 0, 5, 6, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 6, 7], [0, 0, 0, 0, 0, 0], [0, 0, 0, 5, 6, 0]]
+output: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 5, 6, 0], [0, 0, 0, 5, 6, 0], [0, 0, 0, 5, 6, 7]]
+
+Example_3:
+input: [[6, 0, 5, 7, 4], [0, 0, 0, 0, 0], [0, 0, 0, 7, 4], [6, 0, 5, 0, 0], [0, 9, 5, 7, 4]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 5, 7, 4], [6, 0, 5, 7, 4], [6, 9, 5, 7, 4]]
+
+Test case:
+input: [[9, 8, 1, 0], [9, 8, 0, 7], [0, 0, 1, 0], [0, 8, 1, 7]]
+################################################################
+
+LLM answer:
+
+output: [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+"""
+
+import numpy as np
+from scipy import sparse
+
+def solve(grid):
+    """
+    Parameters
+    ----------
+    grid : list of lists
+        A two dimensional array representing a sudoku puzzle.
+    
+    Returns
+    -------
+    None. In place modification to `grid`.
+        
+    Notes
+    -----
+    This is an implementation of the backtracking algorithm for solving Sudokus.
+    It uses a depth first search approach with pruning based on the fact that if there exists a solution then it must be unique.
+    """
+    # Check if we have reached a terminal state (i.e., all cells filled)
+    if len([x for x in range(len(grid))]) == sum(sum(np.array(grid))) + len(set(list(range(1, 10)))):
+        return
+
+    # Find the next empty cell
+    i = j = 0
+    while True:
+        if not grid[i][j]:
+            break
+        else:
+            j += 1
+            if j >= len(grid[0]):
+                j = 0
+                i += 1
+                if i >= len(grid):
+                    return
+
+    # Fill the cell with possible values
+    candidates = set()
+    for k in range(1, 10):
+        if k not in grid[i] and k not in grid[:i+1] and k not in grid[::-1][i] and k not in grid[::-1][:i+1] \
+           and k not in grid[::-1][::-1][i] and k not in grid[::-1][::-1][:i+1]:
+            candidates.add(k)
+
+    # If no candidate found, backtrack
+    if not candidates:
+        return
+
+    # Otherwise fill the cell with each candidate value and recurse
+    for c in sorted(candidates):
+        grid[i][j] = c
+        solve(grid)
+        grid[i][j] = 0
+
+################################################################
+
+Solution:
+[[0, 0, 0, 0], [0, 8, 1, 0], [9, 8, 1, 7], [9, 8, 1, 7]]
+

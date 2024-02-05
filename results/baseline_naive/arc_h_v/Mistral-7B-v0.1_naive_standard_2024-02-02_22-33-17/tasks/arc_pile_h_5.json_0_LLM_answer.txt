@@ -1,0 +1,76 @@
+Input token: 471
+Output token: 640
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'a', 'a'], ['a', 'i', 'a', 'a'], ['a', 'b', 'a', 'b'], ['e', 'e', 'a', 'e']]
+output: [['a', 'a', 'a', 'a'], ['i', 'a', 'a', 'a'], ['b', 'b', 'a', 'a'], ['e', 'e', 'e', 'a']]
+
+Example_2:
+input: [['a', 'h', 'h', 'h'], ['a', 'a', 'j', 'a'], ['f', 'f', 'f', 'a'], ['a', 'a', 'a', 'd']]
+output: [['h', 'h', 'h', 'a'], ['j', 'a', 'a', 'a'], ['f', 'f', 'f', 'a'], ['d', 'a', 'a', 'a']]
+
+Example_3:
+input: [['i', 'i', 'a', 'i'], ['a', 'a', 'g', 'a'], ['j', 'a', 'a', 'j'], ['a', 'a', 'a', 'a']]
+output: [['i', 'i', 'i', 'a'], ['g', 'a', 'a', 'a'], ['j', 'j', 'a', 'a'], ['a', 'a', 'a', 'a']]
+
+Test case:
+input: [['h', 'a', 'h', 'a', 'a', 'h'], ['a', 'a', 'a', 'a', 'j', 'a'], ['d', 'a', 'a', 'a', 'a', 'd'], ['e', 'e', 'a', 'e', 'a', 'a'], ['a', 'a', 'c', 'c', 'a', 'a'], ['a', 'i', 'a', 'i', 'a', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['h', 'a', 'h', 'a', 'a', 'h'], ['j', 'a', 'a', 'a', 'a', 'a'], ['d', 'a', 'a', 'a', 'a', 'd'], ['e', 'e', 'e', 'a', 'a', 'a'], ['c', 'c', 'c', 'a', 'a', 'a'], ['i', 'i', 'a', 'a', 'a', 'a']]
+*/
+public class Solution {
+    public List<List<String>> findLadders(String beginWord, String endWord, Set<String> wordList) {
+        if (beginWord == null || endWord == null ||!wordList.contains(endWord)) return new ArrayList<>();
+        Map<String, Integer> map = new HashMap<>();
+        for (String s : wordList) {
+            map.put(s, 0);
+        }
+        Queue<Pair> queue = new LinkedList<>();
+        Pair p = new Pair(beginWord, 0);
+        queue.offer(p);
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            for (int i = 0; i < size; ++i) {
+                Pair cur = queue.poll();
+                String str = cur.str;
+                int level = cur.level + 1;
+                if (map.getOrDefault(endWord, -1)!= -1 && level <= map.get(endWord)) {
+                    List<List<String>> res = new ArrayList<>();
+                    res.add(new ArrayList<>(Arrays.asList(cur.str)));
+                    return res;
+                }
+                char[] chars = str.toCharArray();
+                for (int j = 0; j < chars.length; ++j) {
+                    char c = chars[j];
+                    for (char k = 'a'; k <= 'z'; ++k) {
+                        if (k == c) continue;
+                        chars[j] = k;
+                        String nextStr = new String(chars);
+                        if (!map.containsKey(nextStr)) {
+                            map.put(nextStr, level);
+                            queue.offer(new Pair(nextStr, level));
+                        } else {
+                            if (map.get(nextStr) > level) {
+                                map.put(nextStr, level);
+                                queue.offer(new Pair(nextStr, level));
+                            }
+                        }
+                    }
+                    chars[j] = c;
+                }
+            }
+        }
+        return new ArrayList<>();
+    }
+}
+################################################################
+
+Solution:
+[['h', 'h', 'h', 'a', 'a', 'a'], ['j', 'a', 'a', 'a', 'a', 'a'], ['d', 'd', 'a', 'a', 'a', 'a'], ['e', 'e', 'e', 'a', 'a', 'a'], ['c', 'c', 'a', 'a', 'a', 'a'], ['i', 'i', 'a', 'a', 'a', 'a']]
+

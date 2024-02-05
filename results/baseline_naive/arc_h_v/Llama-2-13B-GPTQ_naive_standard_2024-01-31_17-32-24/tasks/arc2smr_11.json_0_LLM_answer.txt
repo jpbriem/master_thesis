@@ -1,0 +1,191 @@
+Input token: 1401
+Output token: 2050
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', '.', 'e', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'e', 'g', 'e', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.', '.', '.']]
+
+Example_2:
+input: [['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', '.', '.'], ['.', '.', '.', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.', '.'], ['.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.', '.', '.']]
+
+Example_3:
+input: [['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', 'e', '.', 'e', '.', 'e', '.', '.', '.'], ['.', '.', '.', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', '.', '.', '.'], ['.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.', '.', '.']]
+
+Test case:
+input: [['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', 'e', '.', 'e', '.', 'e', '.', '.', '.'], ['.', '.', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', 'e', '.', 'e', '.', 'e', '.', 'e', '.', '.', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', '.', '.', '.'], ['.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.', '.', '.']]
+'''
+
+# Definition for an Intersection Node.
+class INode(object):
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def __repr__(self):
+        return "({}, {}, {})".format(self.x, self.y, self.z)
+
+    def __eq__(self, other):
+        if isinstance(other, INode):
+            return (self.x == other.x and self.y == other.y and self.z == other.z)
+        else:
+            raise ValueError("Comparing {} to {}".format(type(self), type(other)))
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    @property
+    def key(self):
+        return (self.x, self.y, self.z)
+
+    @key.setter
+    def key(self, value):
+        self.x, self.y, self.z = value
+
+    def __hash__(self):
+        return hash((self.x, self.y, self.z))
+
+    def __lt__(self, other):
+        if isinstance(other, INode):
+            return (self.x < other.x or (self.x == other.x and self.y < other.y))
+        else:
+            raise ValueError("Comparing {} to {}".format(type(self), type(other)))
+
+    def __le__(self, other):
+        return self <= other
+
+    def __gt__(self, other):
+        if isinstance(other, INode):
+            return (self.x > other.x or (self.x == other.x and self.y > other.y))
+        else:
+            raise ValueError("Comparing {} to {}".format(type(self), type(other)))
+
+    def __ge__(self, other):
+        return self >= other
+
+    def __eq__(self, other):
+        if isinstance(other, INode):
+            return (self.x == other.x and self.y == other.y and self.z == other.z)
+        elif isinstance(other, tuple):
+            return (self.x == other[0] and self.y == other[1] and self.z == other[2])
+        else:
+            raise ValueError("Comparing {} to {}".format(type(self), type(other)))
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((self.x, self.y, self.z))
+
+    def __str__(self):
+        return str(tuple([self.x, self.y, self.z]))
+
+    def __add__(self, other):
+        if isinstance(other, INode):
+            return INode(self.x + other.x, self.y + other.y, self.z + other.z)
+        elif isinstance(other, int):
+            return INode(self.x + other, self.y, self.z)
+        else:
+            raise ValueError("Adding {} to {}".format(type(self), type(other)))
+
+    def __sub__(self, other):
+        if isinstance(other, INode):
+            return INode(self.x - other.x, self.y - other.y, self.z - other.z)
+        elif isinstance(other, int):
+            return INode(self.x - other, self.y, self.z)
+        else:
+            raise ValueError("Subtracting {} from {}".format(type(self), type(other)))
+
+    def __mul__(self, other):
+        if isinstance(other, int):
+            return INode(self.x * other, self.y * other, self.z * other)
+        else:
+            raise ValueError("Multiplying {} by {}".format(type(self), type(other)))
+
+    def __truediv__(self, other):
+        if isinstance(other, int):
+            return INode(self.x // other, self.y // other, self.z // other)
+        else:
+            raise ValueError("Dividing {} by {}".format(type(self), type(other)))
+
+    def __floordiv__(self, other):
+        if isinstance(other, int):
+            return INode(int(self.x / other), int(self.y / other), int(self.z / other))
+        else:
+            raise ValueError("Floor dividing {} by {}".format(type(self), type(other)))
+
+    def __mod__(self, other):
+        if isinstance(other, int):
+            return INode(self.x % other, self.y % other, self.z % other)
+        else:
+            raise ValueError("Modulo {} by {}".format(type(self), type(other)))
+
+    def __divmod__(self, other):
+        if isinstance(other, int):
+            quotient, remainder = divmod(self.x, other)
+            return INode(quotient, self.y, self.z), remainder
+        else:
+            raise ValueError("Divmod {} by {}".format(type(self), type(other)))
+
+    def __pow__(self, other):
+        if isinstance(other, int):
+            return INode(self.x ** other, self.y ** other, self.z ** other)
+        else:
+            raise ValueError("Powering {} by {}".format(type(self), type(other)))
+
+    def __rshift__(self, other):
+        if isinstance(other, int):
+            return INode(self.x << other, self.y << other, self.z << other)
+        else:
+            raise ValueError("Right shifting {} by {}".format(type(self), type(other)))
+
+    def __lshift__(self, other):
+        if isinstance(other, int):
+            return INode(self.x >> other, self.y >> other, self.z >> other)
+        else:
+            raise ValueError("Left shifting {} by {}".format(type(self), type(other)))
+
+    def __and__(self, other):
+        if isinstance(other, INode):
+            return INode(self.x & other.x, self.y & other.y, self.z & other.z)
+        elif isinstance(other, int):
+            return INode(self.x & other, self.y & other, self.z & other)
+        else:
+            raise ValueError("Bitwise ANDing {} with {}".format(type(self), type(other)))
+
+    def __or__(self, other):
+        if isinstance(other, INode):
+            return INode(self.x | other.x, self.y | other.y, self.z | other.z)
+        elif isinstance(other, int):
+            return INode(self.x | other, self.y | other, self.z | other)
+        else:
+            raise ValueError("Bitwise ORing {} with {}".format(type(self), type(other)))
+
+    def __xor__(self, other):
+        if isinstance(other, INode):
+            return INode(self.x ^ other.x, self.y ^ other.y, self.z ^ other.z)
+        elif isinstance(other, int):
+            return INode(self.x ^ other, self.y ^ other, self.z ^ other)
+        else:
+            raise ValueError("Bitwise XORing {} with {}".format(type(self), type(other)))
+
+    def __invert__(self):
+        return INode(~self.x, ~self.y, ~self.z)
+
+    def __bool__(self):
+        return
+################################################################
+
+Solution:
+[['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', '.', '.', '.'], ['.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.', 'e', 'g', 'e', 'g', 'e', 'g', 'e', '.', '.', '.']]
+

@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '0,4'
+GPU = '4,5'
 
 #################### OPEN SOURCE ###############
 MAX_TOKEN = 4096
@@ -10,36 +10,36 @@ REVISIONS = []
 #### Llama Chat ####
 # MODEL_NAMES.append("meta-llama/Llama-2-7b")
 # fine-tuned by meta 
-MODEL_NAMES.append("TheBloke/Llama-2-70b-Chat-GPTQ")
-REVISIONS.append("main")
-MODEL_NAMES.append("TheBloke/Llama-2-13B-chat-GPTQ") # TODO: Run all tests)
-REVISIONS.append("main")
-MODEL_NAMES.append("NousResearch/Llama-2-7b-chat-hf") # TODO: TODO: Replace with Bloke's model & see if differences?!)
-REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-70b-Chat-GPTQ")
+# REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-13B-chat-GPTQ") # TODO: Run all tests)
+# REVISIONS.append("main")
+# MODEL_NAMES.append("NousResearch/Llama-2-7b-chat-hf") # TODO: TODO: Replace with Bloke's model & see if differences?!)
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Llama-2-7B-chat-GPTQ") # TODO: Run all tests)
 # fine-tuned by others
 # MODEL_NAMES.append("TheBloke/Llama-2-7B-32K-Instruct-GPTQ") # TODO: Run all tests)
 
 #### Llama pre-trained ####
-MODEL_NAMES.append("TheBloke/Llama-2-70B-GPTQ") 
-REVISIONS.append("main")
-MODEL_NAMES.append("TheBloke/Llama-2-13B-GPTQ") 
-REVISIONS.append("main")
-MODEL_NAMES.append("TheBloke/Llama-2-7B-GPTQ") 
-REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-70B-GPTQ") 
+# REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-13B-GPTQ") 
+# REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-7B-GPTQ") 
+# REVISIONS.append("main")
 
 #### Platypus2 ####
 # MODEL_NAMES.append("garage-bAInd/Platypus2-70B") --> dauert lange und braucht tausend GPUs?! liegt vielleicht an dem 16float oder so)
-MODEL_NAMES.append("TheBloke/Platypus2-70B-GPTQ") 
-REVISIONS.append("main")
-MODEL_NAMES.append("TheBloke/Platypus2-13B-GPTQ") 
-REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Platypus2-70B-GPTQ") 
+# REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Platypus2-13B-GPTQ") 
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Camel-Platypus2-70B-GPTQ") 
 # REVISIONS.append("main")
 
 #### Mistral ####
-MODEL_NAMES.append("mistralai/Mistral-7B-Instruct-v0.1")
-REVISIONS.append("main")
+# MODEL_NAMES.append("mistralai/Mistral-7B-Instruct-v0.1")
+# REVISIONS.append("main")
 MODEL_NAMES.append("mistralai/Mistral-7B-v0.1")
 REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
@@ -88,17 +88,17 @@ MODEL_CONFIG_GPT = {
 }
 
 #################### Prompt ####################
-CHANGE_REPRESENTATION = True
-NEW_REPRESENTATION = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+CHANGE_REPRESENTATION = False
+NEW_REPRESENTATION = [".", "a", "b", "c", "d", "e", "f", "g", "h", "i"]
 
 POST_TEST_CASE = ""
 DELIMITER = {
     "arc": {
-        "item": "', '", # TODO: add apostroph if needed
+        "item": ", ", # TODO: add apostroph if needed
         "grid_start": "[",
-        "grid_end": "']]\n", # include end of last row # TODO: add apostroph if needed
-        "row_start": "['", # TODO: add apostroph if needed
-        "row_end": "'], ", # except for last row # TODO: add apostroph if needed
+        "grid_end": "]]\n", # include end of last row # TODO: add apostroph if needed
+        "row_start": "[", # TODO: add apostroph if needed
+        "row_end": "], ", # except for last row # TODO: add apostroph if needed
         "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
         "example_end": "\n",
         "task_start": "Test case:\n",

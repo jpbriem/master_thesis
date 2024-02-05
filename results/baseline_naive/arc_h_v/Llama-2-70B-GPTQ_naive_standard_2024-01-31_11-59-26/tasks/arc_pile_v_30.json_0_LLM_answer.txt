@@ -1,0 +1,80 @@
+Input token: 510
+Output token: 647
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['.', '.', '.', '.', '.'], ['.', '.', '.', 'a', '.'], ['e', 'c', '.', 'a', '.'], ['.', 'c', '.', '.', 'd'], ['.', 'c', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', 'c', '.', '.', '.'], ['.', 'c', '.', 'a', '.'], ['e', 'c', '.', 'a', 'd']]
+
+Example_2:
+input: [['i', '.', 'c', '.', '.'], ['.', 'e', 'c', 'a', '.'], ['i', '.', '.', '.', '.'], ['.', 'e', '.', '.', 'h'], ['.', 'e', 'c', '.', '.']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', 'e', 'c', '.', '.'], ['i', 'e', 'c', '.', '.'], ['i', 'e', 'c', 'a', 'h']]
+
+Example_3:
+input: [['.', '.', 'b', 'f', '.'], ['.', '.', '.', 'f', '.'], ['.', '.', 'b', '.', '.'], ['.', '.', '.', 'f', '.'], ['.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', 'f', '.'], ['.', '.', 'b', 'f', '.'], ['.', '.', 'b', 'f', '.']]
+
+Test case:
+input: [['.', 'f', 'e', '.'], ['h', '.', 'e', '.'], ['.', 'f', '.', 'c'], ['.', 'f', 'e', '.']]
+################################################################
+
+LLM answer:
+
+output: [['.', 'f', 'e', '.'], ['h', '.', 'e', '.'], ['.', 'f', '.', 'c'], ['.', 'f', 'e', '.']]
+"""
+from typing import List, Optional
+
+class Solution:
+    def findWords(self, board: List[List[str]], words: List[str]) -> List[str]:
+        if not board or not words: return []
+        
+        m = len(board)
+        n = len(board[0])
+        wordDict = {}
+        for w in words:
+            wordDict[w] = 0
+            
+        for i in range(m):
+            for j in range(n):
+                if board[i][j] == '.': continue
+                
+                for k in range(len(words)):
+                    if board[i][j]!= words[k][0]: continue
+                    
+                    self._dfs(board, i, j, words[k], wordDict)
+                    
+        res = []
+        for w in wordDict:
+            if wordDict[w] > 0:
+                res.append(w)
+        return res
+    
+    def _dfs(self, board, x, y, word, wordDict):
+        if wordDict[word] >= 1: return
+        
+        board[x][y] = '*'
+        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+            newX, newY = x + dx, y + dy
+            if newX < 0 or newX >= len(board) or newY < 0 or newY >= len(board[0]) \
+               or board[newX][newY]!= word[wordDict[word]]:
+                continue
+            
+            wordDict[word] += 1
+            self._dfs(board, newX, newY, word, wordDict)
+            wordDict[word] -= 1
+        board[x][y] = word[wordDict[word]]
+
+# TESTS
+solution = Solution()
+print("The words found are:", solution.findWords([["."], ["."], ["."], ["."], ["."]], ["abc"]))
+print("The words found are:", solution.findWords([["."], ["."], ["."], ["."], ["."]], ["abcd"]))
+print("The words found are:", solution.findWords([["."], ["."], ["."], ["."], ["."]], ["abcde"]))
+print("The words found are:", solution.findWords([["."], ["."], ["."], ["."], ["."]], ["abcdefghijklmnopqrstuvwxyz"]))
+
+################################################################
+
+Solution:
+[['.', '.', '.', '.'], ['.', 'f', 'e', '.'], ['.', 'f', 'e', '.'], ['h', 'f', 'e', 'c']]
+

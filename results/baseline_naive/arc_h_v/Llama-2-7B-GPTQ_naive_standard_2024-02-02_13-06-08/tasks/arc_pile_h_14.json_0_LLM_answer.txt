@@ -1,0 +1,85 @@
+Input token: 546
+Output token: 601
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['f', 'f', 'f', 'a'], ['a', 'a', 'a', 'a'], ['e', 'e', 'a', 'e'], ['a', 'c', 'c', 'c']]
+output: [['f', 'f', 'f', 'a'], ['a', 'a', 'a', 'a'], ['e', 'e', 'e', 'a'], ['c', 'c', 'c', 'a']]
+
+Example_2:
+input: [['d', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'c', 'c'], ['a', 'a', 'a', 'a', 'a'], ['a', 'e', 'e', 'a', 'a'], ['b', 'a', 'a', 'a', 'b']]
+output: [['d', 'a', 'a', 'a', 'a'], ['c', 'c', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['e', 'e', 'a', 'a', 'a'], ['b', 'b', 'a', 'a', 'a']]
+
+Example_3:
+input: [['a', 'j', 'a', 'a', 'j'], ['a', 'f', 'f', 'f', 'a'], ['e', 'a', 'e', 'a', 'e'], ['a', 'd', 'a', 'a', 'd'], ['a', 'a', 'a', 'a', 'a']]
+output: [['j', 'j', 'a', 'a', 'a'], ['f', 'f', 'f', 'a', 'a'], ['e', 'e', 'e', 'a', 'a'], ['d', 'd', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a']]
+
+Test case:
+input: [['a', 'a', 'i', 'a', 'a'], ['h', 'a', 'h', 'h', 'a'], ['c', 'a', 'a', 'a', 'a'], ['a', 'f', 'a', 'a', 'a'], ['a', 'a', 'j', 'j', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'i', 'a', 'a'], ['h', 'h', 'a', 'a', 'a'], ['c', 'c', 'a', 'a', 'a'], ['f', 'f', 'a', 'a', 'a'], ['j', 'j', 'a', 'a', 'a']]
+"""
+import collections
+from typing import List, Optional, Tuple
+
+
+def get_transformed(inputs: List[str], output: str) -> int:
+    """
+    :param inputs: a list of strings to be transformed into another string
+    :type inputs: List[str]
+    :param output: a string representing the desired result
+    :type output: str
+    :return: 0 if the input is valid or -1 otherwise
+    """
+    # check if the input is empty
+    if not any([x for x in inputs]):
+        return -1
+
+    # split each element from the input into a tuple
+    tuples = []
+    for i in range(len(inputs)):
+        tuples += [(inputs[i].split(), i)]
+
+    # sort the elements by index
+    sorted_tuples = sorted(tuples, key=lambda tup: tup[1])
+
+    # create an array with the indices of the first letter that matches the target character
+    match_indices = [[index + 1 for index in range(len(target))][0] for target in output]
+
+    # iterate through all the tuples
+    for idx, (current_tuple, current_idx) in enumerate(sorted_tuples):
+        # if there's no match, continue
+        if not any((char, char_idx) for char, char_idx in zip(current_tuple[0], match_indices)):
+            continue
+
+        # update the matched index
+        match_indices[idx] = current_idx
+
+        # if we have found all the targets, break out
+        if all(match_indices):
+            break
+
+    # return 0 if everything was successful
+    return 0
+
+
+if __name__ == "__main__":
+    print("Input:")
+    print("\t", "\n".join(['\t'.join(line) for line in Example_1]))
+    print()
+    print("Output:")
+    print("\t", "\n".join(['\t'.join(line) for line in Example_2]))
+    print()
+    print("Output:")
+    print("\t", "\n".join(['\t'.join(line) for line in Example_3]))
+
+################################################################
+
+Solution:
+[['i', 'a', 'a', 'a', 'a'], ['h', 'h', 'h', 'a', 'a'], ['c', 'a', 'a', 'a', 'a'], ['f', 'a', 'a', 'a', 'a'], ['j', 'j', 'a', 'a', 'a']]
+

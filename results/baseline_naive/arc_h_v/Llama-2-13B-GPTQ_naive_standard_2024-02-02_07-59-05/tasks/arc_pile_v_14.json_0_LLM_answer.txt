@@ -1,0 +1,74 @@
+Input token: 546
+Output token: 536
+################################################################
+
+LLM prompt:
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [['a', 'a', 'e', 'c'], ['f', 'a', 'a', 'c'], ['f', 'a', 'e', 'c'], ['f', 'a', 'e', 'a']]
+output: [['a', 'a', 'a', 'a'], ['f', 'a', 'e', 'c'], ['f', 'a', 'e', 'c'], ['f', 'a', 'e', 'c']]
+
+Example_2:
+input: [['a', 'c', 'a', 'a', 'b'], ['a', 'c', 'a', 'a', 'a'], ['a', 'a', 'a', 'e', 'a'], ['a', 'a', 'a', 'e', 'a'], ['d', 'a', 'a', 'a', 'b']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'c', 'a', 'e', 'b'], ['d', 'c', 'a', 'e', 'b']]
+
+Example_3:
+input: [['j', 'a', 'e', 'd', 'a'], ['a', 'f', 'a', 'a', 'a'], ['a', 'f', 'e', 'a', 'a'], ['j', 'f', 'a', 'd', 'a'], ['a', 'a', 'e', 'a', 'a']]
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'f', 'e', 'a', 'a'], ['j', 'f', 'e', 'd', 'a'], ['j', 'f', 'e', 'd', 'a']]
+
+Test case:
+input: [['a', 'a', 'a', 'a', 'a'], ['a', 'h', 'a', 'a', 'j'], ['i', 'h', 'a', 'a', 'j'], ['a', 'a', 'a', 'f', 'a'], ['a', 'h', 'c', 'a', 'a']]
+################################################################
+
+LLM answer:
+
+output: [['a', 'a', 'a', 'a', 'a'], ['a', 'h', 'a', 'a', 'j'], ['i', 'h', 'a', 'a', 'j'], ['a', 'a', 'a', 'f', 'a'], ['a', 'h', 'c', 'a', 'a']]
+"""
+
+import unittest
+from typing import List, Tuple
+
+class Solution:
+    def groupAnagrams(self, strs: List[str]) -> List[List[str]]:
+        if not strs: return []
+        n = len(strs)
+        d = {}
+        for s in strs:
+            d[s] = d.get(s, 0) + 1
+        ans = [[[]]] * (n // 2)
+        i = 0
+        while True:
+            j = i + n // 2
+            while j < n:
+                k = d.pop(strs[j], -1)
+                if k == -1: break
+                ans[i].append(strs[j])
+                del d[strs[j]]
+            i += 1
+            if not d: break
+        return ans
+
+class TestSolution(unittest.TestCase):
+    def test_solution(self):
+        self._test([
+            ([], []),
+            (["a"], ["a"]),
+            (["aa","bb","cc"], ["aa", "bb", "cc"]),
+            (["ab","ac","bc","ca"], ["ab", "ac", "bc", "ca"]),
+            (["abc","def","ghi"], ["abc", "def", "ghi"]),
+            (["a","b","c","d","e","f","g","h","i","j"], [["a","b","c","d","e","f","g","h","i","j"]]),
+        ])
+    
+    def _test(self, cases: Tuple[List[str], List[List[str]]]):
+        solution = Solution()
+        for inputs, outputs in cases:
+            actual = list(solution.groupAnagrams(inputs))
+            self.assertEqual(actual, outputs)
+
+if __name__ == '__main__':
+    unittest.main()
+################################################################
+
+Solution:
+[['a', 'a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a', 'a'], ['a', 'h', 'a', 'a', 'a'], ['a', 'h', 'a', 'a', 'j'], ['i', 'h', 'c', 'f', 'j']]
+

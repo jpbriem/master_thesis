@@ -1,6 +1,6 @@
 ################## General Task Explanation ##################
-general_explanation = '''You are confronted with a task in which a 2-dimensional input grid of pixels should be transformed into a corresponding output grid. The input and output grids have values from 'a' to 'i' representing different pixel colours, and '.' representing the background colour. The transformation can relate to the entire grid or individual objects in the grid. Objects are usually adjacent pixels of a single colour. 
-Example: [['.','b','b','.','c'], ['.','b','.','.','.']] represents a pixel grid of dimension (2,5) with the following objects: [Object_1: {{colour: 'b', coordinates: [(0,1), (0,2), (1,1)], size: 3}}, Object_2: {{colour: 'b', coordinates: [(0,4)], size: 1}}], with zero-indexing for the coordinates.\n'''
+general_explanation = '''You are confronted with a task in which a 2-dimensional input grid of pixels should be transformed into a corresponding output grid. The input and output grids have values from 1 to 9 representing different pixel colors, and 0 representing the background color. The transformation can relate to the entire grid or individual objects in the grid. Objects are usually adjacent pixels of a single color. 
+Example: [[0, 2, 2, 0, 3], [0, 2, 0, 0, 0]] represents a pixel grid of dimension (2,5) with the following objects: [Object_1: {{color: '2', coordinates: [(0,1), (0,2), (1,1)], size: 3}}, Object_2: {{color: '3', coordinates: [(0,4)], size: 1}}], with zero-indexing for the coordinates.\n'''
 
 human_priors = '''\nThe logical pattern might refer to concepts as follows:
 - Geometry and topology:
@@ -103,7 +103,7 @@ prompt_modules = {
 				'Example_2': {...},
     			'description': {	
      				'input_dimension': 'Regarding all input grids, is there a pattern describing the typical dimension of an input grid? e.g. all have the same fixed dimension or random or varying dimensions with a pattern..',
-					'output_dimension': 'Regarding all output grids, is there a pattern describing the typical dimension of an output grid? e.g. all have the same fixed dimension or varying dimensions with a pattern dependend on certain characteristics of the input grid; be specific and explain how to determine the output grid dimension!',
+					'output_dimension': 'Regarding all output grids, is there a pattern describing the typical dimension of an output grid? e.g. all have the same fixed dimension or varying dimensions with a pattern depended on certain characteristics of the input grid; be specific and explain how to determine the output grid dimension!',
 					},
     			},
    		 	},
@@ -303,11 +303,11 @@ prompt_modules = {
 prompt_modules_naive = {
 	"0": {
 		'generation': {
-			"instruct_task": f'\n\nYou are to infer the simplest possible relation beetween input and output. Then, your task is to transform the test input grid into its test output grid.',
+			"instruct_task": f'\n\nYou are to infer the simplest possible relation between input and output. Then, your task is to transform the test input grid into its test output grid.',
 			"output_format": {
           		'grid_changes': 'describe if the dimension of the input grid is different to its output grid', 
 				'pixel_changes': 'describe the changes between the input and output pixels, focusing on movement or pattern changes', 
-				'object_changes': 'describe the changes between the input and output objects, focusing on colour, size, coordinates and movement, shape, and object number', 
+				'object_changes': 'describe the changes between the input and output objects, focusing on color, size, coordinates and movement, shape, and object number', 
 				'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
 				'instructions': 'describe the transformation actions in detail step by step', 
 				'test_output': 'Use the instructions to transform the test input grid and return only the resulting output grid in numpy array format.'
@@ -315,17 +315,17 @@ prompt_modules_naive = {
    		 	},
 		},
 	}
-# 2nd Try -  auf test_output achten: In transformation drin!
+# 2nd Try 
 prompt_modules_naive = {
 	"0": {
 		'generation': {
-			"instruct_task": f'\n\nYou are to infer the relation beetween input and output. Then, your task is to transform the test input grid into its test output grid.',
+			"instruct_task": f'\n\nYou are to infer the relation between input and output. Then, your task is to transform the test input grid into its test output grid.',
 			"output_format": {
 				'description': {
 					'Example_1': {
 						'grid_changes': 'regarding the first example, analyze if the entire grid has changed and describe how',
 						#'pixel_changes': 'regarding the first example, describe the changes between the input and output pixels, focusing on movement or pattern changes', 
-						'object_changes': 'regarding the first example, describe the changes between the input and output objects, focusing on colour, size, coordinates, shape, and object number', 
+						'object_changes': 'regarding the first example, describe the changes between the input and output objects, focusing on color, size, coordinates, shape, and object number', 
 						},
 					'Example_2': {...},
      				},
@@ -333,7 +333,31 @@ prompt_modules_naive = {
 				'instructions': 'describe the required transformation actions in detail step by step', 
 				'test_case_grid_view': 'regarding the test input, describe the pixels of the entire grid, focusing on patterns', 
 #				'pixel_view': 'regarding the test input, describe the pixels, focusing on patterns', 
-				'test_case_object_view': 'regarding the test input, describe the objects, focusing on colour, size, coordinates and movement, shape, and object number', 
+				'test_case_object_view': 'regarding the test input, describe the objects, focusing on color, size, coordinates and movement, shape, and object number', 
+				'test_case_transformation': 'describe how the grid or objects should be transformed',
+				'test_case_output': 'create the resulting output grid as numpy array.'	
+            	},
+   		 	},
+		},
+	}
+# 3rd Try - no nested 
+prompt_modules_naive = {
+	"0": {
+		'generation': {
+			"instruct_task": f'\n\nYou are to infer the relation between input and output. Then, your task is to transform the test input grid into its test output grid.',
+			"output_format": {
+				'example_1_description': {
+					#'grid_changes': 'regarding the first example, analyze if the entire grid has changed and describe how',
+					'pixel_changes': 'regarding the first example, describe the changes between the input and output pixels, focusing on pattern changes', 
+					'object_changes': 'regarding the first example, describe the changes between the input and output objects, focusing on color, size, coordinates, shape, and object number', 
+					},
+				'example_2_description': {...},
+    			'overall_pattern': 'describe the input-output relationship valid for all input-output pairs', 
+				'instructions': 'describe the required transformation actions in detail step by step', 
+				'test_case_input_copy': 'copy the test case input grid from the task',
+    			'test_case_grid_view': 'regarding the test input, describe the pixels of the entire grid, focusing on patterns', 
+#				'pixel_view': 'regarding the test input, describe the pixels, focusing on patterns', 
+				'test_case_object_view': 'regarding the test input, describe the objects, focusing on color, size, coordinates and movement, shape, and object number', 
 				'test_case_transformation': 'describe how the grid or objects should be transformed',
 				'test_case_output': 'create the resulting output grid as numpy array.'	
             	},
