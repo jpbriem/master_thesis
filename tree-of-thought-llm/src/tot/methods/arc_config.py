@@ -1,10 +1,10 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '4,5'
+GPU = '3,4'
 
 #################### OPEN SOURCE ###############
-MAX_TOKEN = 4096
+MAX_TOKEN = 4096 
 MODEL_NAMES = []
 REVISIONS = []
 #### Llama Chat ####
@@ -40,8 +40,8 @@ REVISIONS = []
 #### Mistral ####
 # MODEL_NAMES.append("mistralai/Mistral-7B-Instruct-v0.1")
 # REVISIONS.append("main")
-MODEL_NAMES.append("mistralai/Mistral-7B-v0.1")
-REVISIONS.append("main")
+# MODEL_NAMES.append("mistralai/Mistral-7B-v0.1")
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
 # REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
@@ -52,8 +52,31 @@ REVISIONS.append("main")
 # REVISIONS.append("main")
 # MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
 # REVISIONS.append("main")
-# MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
-# REVISIONS.append("main") # TODO: Mixtral dann am Ende ?!
+MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
+REVISIONS.append("main") 
+MODEL_NAMES.append("TheBloke/Mixtral-8x7B-Instruct-v0.1-GPTQ") 
+REVISIONS.append("main")
+MODEL_NAMES.append("TheBloke/Nous-Hermes-2-Mixtral-8x7B-DPO-GPTQ")
+REVISIONS.append("main")
+
+# TODO: Checken, ob geht!
+# Qwen 
+MODEL_NAMES.append("TheBloke/Qwen-14B-Chat-GPTQ")
+REVISIONS.append("main") 
+MAX_TOKEN = 2048
+MODEL_NAMES.append("TheBloke/Qwen-7B-Chat-GPTQ")
+REVISIONS.append("main")
+MAX_TOKEN = 8192
+MODEL_NAMES.append("Qwen/Qwen-72B-Chat")
+REVISIONS.append("main") 
+MAX_TOKEN = 32768
+
+# Vicuna
+MODEL_NAMES.append("TheBloke/vicuna-7B-v1.5-GPTQ")
+REVISIONS.append("main")
+MODEL_NAMES.append("TheBloke/vicuna-13B-v1.5-GPTQ")
+REVISIONS.append("main")
+
 
 #### LLAMA CONFIG ####
 MODEL_CONFIG_LLAMA = {

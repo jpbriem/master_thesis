@@ -91,7 +91,13 @@ def prompt_preprocessing_for_model(prompt):
                 return prompt["system"] + "\n\nUser: " + prompt["user"] + "\n\nAssistant:"
             else:
                 return "User: " + prompt["user"] + "\n\nAssistant:"
-        elif "mistral" in backend.lower() or "mixtral" in backend.lower():
+        elif "mixtral" in backend.lower() and "DPO" in backend.lower():
+            # use prompting template for Mixtral DPO model
+            if "system" in prompt:
+                return "<|im_start|>system\n" + prompt["system"] + "<|im_end|>\n<|im_start|>user\n" + prompt["user"] + "<|im_end|>\n<|im_start|>assistant"
+            else:
+                return "<|im_start|>user\n" + prompt["user"] + "<|im_end|>\n<|im_start|>assistant"
+        elif ("mistral" in backend.lower() or "mixtral" in backend.lower()) and "instruct" in backend.lower():
             # use prompting template for Mistral models
             if "system" in prompt:
                 return "[INST] " + prompt["system"] + "\n" + prompt["user"] + "\n[/INST]"

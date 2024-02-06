@@ -34,6 +34,7 @@ class ARCTask(Task):
         self.full_success = 0 # counts completely solved tasks
         self.cat_success, self.cat_failures = {}, {} # saves success rates for each category
         self.solved_tasks = []
+        self.solved_tasks_str_comparison = []
         self.value_cache = {}
 
     def __len__(self) -> int:
@@ -82,21 +83,32 @@ class ARCTask(Task):
         solution = solutions[0] # TODO: currently just check first test case 
         
         try_cnt = 0
+        str_comparison = False
         for output in outputs:
             output = output.LLM_answer
             try_cnt += 1 
-            output_key = list(output_format.keys())[-1]
-            # add potential keys, in case model used a slightly different one
-            potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
-            output_keys = [output_key] + [k for k in potential_keys if k != output_key]
-            # extract answer and check if correct
-            test_output_grid = extract_json_value(output, output_format, output_keys) 
-            test_output_grid = grid_to_2D_nparray(test_output_grid)
-            solution_grid = grid_to_2D_nparray(solution)
-            is_success = np.array_equal(test_output_grid, solution_grid)
+            try:
+                output_key = list(output_format.keys())[-1]
+                # add potential keys, in case model used a slightly different one
+                potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
+                output_keys = [output_key] + [k for k in potential_keys if k != output_key]
+                # extract answer and check if correct
+                test_output_grid = extract_json_value(output, output_format, output_keys) 
+                test_output_grid = grid_to_2D_nparray(test_output_grid)
+                solution_grid = grid_to_2D_nparray(solution)
+                is_success = np.array_equal(test_output_grid, solution_grid)
+                if is_success:
+                    break     
+            except:
+                pass
+            # second, if not successful, check if solution string is in output string
+            print("Check if solution string is in output string")
+            is_success = re.sub(r'\s+', ' ', solution).strip() in re.sub(r'\s+', ' ', output).strip()
             if is_success:
+                self.solved_tasks_str_comparison.append(task_name)
+                str_comparison = True
                 break     
-        
+
         # log the success if not revision
         if is_revision:
             node.thought = test_output_grid.tolist()
@@ -107,12 +119,12 @@ class ARCTask(Task):
                 self.full_success += 1
                 self.cat_success[category] += 1
             else:
-                self.cat_failures += 1
+                self.cat_failures[category] += 1
 
             if self.success[task_name] > 0:
                 self.solved_tasks.append((task_name, self.success[task_name]))
             # print('------------')
-            info = {'solution': str(solution), 'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category])}
+            info = {'solution': str(solution), 'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]), 'solved_tasks_str_comparison': str_comparison}
         
         return info
     

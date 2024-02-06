@@ -82,10 +82,10 @@ def solve(args, task, idx, to_print=True):
         
         current_best_nodes = selected_best_nodes
     if args.revision:
-            # get revision results for all end nodes
-            example_success = [node.parent.example_success for node in current_best_nodes]
-            revisions_total = [node.parent.revisions_total for node in current_best_nodes]
-            return current_best_nodes, {'steps': infos, 'revision_success': all(example_success), 'total_revisions': revisions_total}
+        # get revision results for all end nodes
+        example_success = [node.parent.example_success for node in current_best_nodes]
+        revisions_total = [node.parent.revisions_total for node in current_best_nodes]
+        return current_best_nodes, {'steps': infos, 'revision_success': all(example_success), 'total_revisions': revisions_total}
     return current_best_nodes, {'steps': infos}
     
     

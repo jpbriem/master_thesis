@@ -352,7 +352,7 @@ prompt_modules_naive = {
 					'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!',
 					'Example_2': '...',
     				},
-    			'overall_pattern': 'describe the simplest input-output relationship for all input-output pairs', 
+    			'overall_pattern': 'describe the input-output relationship for all input-output pairs', 
 				'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 
 				'transformation': {
         			'input': 'copy the test case input sequence from the task. Mind the sequence length!',

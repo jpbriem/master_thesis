@@ -33,6 +33,7 @@ class ARC_1D(ARCTask):
         self.full_success = 0 # counts completely solved tasks
         self.cat_success, self.cat_failures = {}, {} # saves success rates for each category
         self.solved_tasks = []
+        self.solved_tasks_str_comparison = []
         self.value_cache = {}
 
     
