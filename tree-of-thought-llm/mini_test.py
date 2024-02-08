@@ -47,10 +47,10 @@ from tot.models import gpt_usage
 ########## ARC ##########
 args = argparse.Namespace(
     # backend='gpt-3.5-turbo-1106',   # TODO: Set model!
-    # backend='gpt-4-1106-preview', 
+    backend='gpt-4-1106-preview', 
     # backend='NousResearch/Llama-2-7b-chat-hf',
-    backend='TheBloke/Llama-2-70b-Chat-GPTQ',
-    model_revision='main',
+    # backend='TheBloke/Llama-2-70b-Chat-GPTQ',
+    # model_revision='main',
     use_api=True,                       # TODO: Use API?!
     temperature=0.7, 
     # task='arc',                       # TODO: Set task!
@@ -100,22 +100,22 @@ def run(args):
 
     # solve the task
     indices = list(range(len(task)))
-    random.seed(42)
-    random.shuffle(indices)
-    count = 0 # TODO: delete!!!
+    # random.seed(42)
+    # random.shuffle(indices)
+    # count = 0 # TODO: delete!!!
     for idx in indices:
         print(f"Task {idx} of {len(task)}")
-        if count == 50: # TODO: delete!!!
-            break
+        # if count == 50: # TODO: delete!!!
+        #     break
         Node.reset_tree()
         task_name = task.names[idx].split(".json")[0]
         task_category = task.categories[idx]
 
         # if 'pile_h' in task_name: # TODO: delete!!! 
-        if "scale" in task_name or "move_1p" in task_name or "flip" in task_name: # TODO: delete!!!
-            count += 1 # TODO: delete!!!
-        else:
-            continue
+        # if "scale" in task_name or "move_1p" in task_name or "flip" in task_name: # TODO: delete!!!
+        #     count += 1 # TODO: delete!!!
+        # else:
+        #     continue
         # if not task_name+".json" in solved_gpt3:#+multi_colour: # TODO delete!!!
         #     continue
         
