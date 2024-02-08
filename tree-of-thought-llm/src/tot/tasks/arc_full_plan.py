@@ -104,7 +104,7 @@ class ARCTask(Task):
             # second, if not successful, check if solution string is in output string
             print("Check if solution string is in output string")
             if solution_grid.shape[0] == 1:
-                solution = solution[1:-1] #  remove second brackets for 1D ARC tasks
+                solution = str(solution)[1:-1] #  remove second brackets for 1D ARC tasks
             is_success = re.sub(r'\s+', ' ', solution).strip() in re.sub(r'\s+', ' ', output).strip()
             if is_success:
                 self.solved_tasks_str_comparison.append(task_name)
