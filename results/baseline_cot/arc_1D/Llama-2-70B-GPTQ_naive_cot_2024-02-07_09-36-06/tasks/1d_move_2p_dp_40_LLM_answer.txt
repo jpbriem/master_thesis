@@ -1,0 +1,274 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 7, 0, 0]
+output: [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 7, 0, 0]
+
+Example_2:
+input: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 7, 0, 0, 0]
+output: [0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 7, 0, 0, 0]
+
+Example_3:
+input: [0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 7, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 0, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 7, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 7, 0, 0]
+"""
+import numpy as np
+from PIL import Image
+
+def get_image(path):
+    return Image.open(path)
+
+def save_image(img, path):
+    img.save(path, quality=100)
+
+def load_data(path):
+    data = []
+    with open(path, mode='r') as fp:
+        lines = fp.readlines()
+        for line in lines:
+            if len(line.strip()) == 0: continue
+            data.append([int(x) for x in line.split(',')])
+    return data
+
+def main():
+    # Load training data
+    train_data = load_data('./train/train.csv')
+    test_data = load_data('./test/test.csv')
+    
+    # Get image
+    img = get_image("../images/task.png")
+    width, height = img.size
+    print(width, height)
+    
+    # Transformations
+    def move(start_idx, end_idx, dx, dy):
+        """Move object."""
+        
+        # Move object
+        for i in range(end_idx - start_idx + 1):
+            obj[i][0] += dx
+            obj[i][1] += dy
+            
+        # Update indices
+        start_idx += dx
+        end_idx   += dx
+        
+    def hollow(start_idx, end_idx):
+        """Hollow object."""
+        
+        # Create hollow object
+        for i in range(end_idx - start_idx + 1):
+            obj[i][0], obj[i][1] = (obj[i][0]+1) % width, obj[i][1]
+                
+    def scale(start_idx, end_idx, sx, sy):
+        """Scale object."""
+        
+        # Scale object
+        for i in range(end_idx - start_idx + 1):
+            obj[i][0] *= sx
+            obj[i][1] *= sy
+            
+        # Update indices
+        start_idx *= sx
+        end_idx   *= sy
+        
+    def remove(start_idx, end_idx):
+        """Remove object."""
+        
+        # Remove object
+        del obj[start_idx:end_idx+1]
+        
+    def copy(start_idx, end_idx, dx, dy):
+        """Copy object."""
+        
+        # Copy object
+        for i in range(end_idx - start_idx + 1):
+            obj[len(obj)] = obj[i].copy()
+            obj[-1][0] += dx
+            obj[-1][1] += dy
+            
+    def recolor(start_idx, end_idx, c):
+        """Recolor object."""
+        
+        # Recolor object
+        for i in range(end_idx - start_idx + 1):
+            obj[i][2] = c
+            
+    def count(start_idx, end_idx):
+        """Count number of objects."""
+        
+        # Count number of objects
+        return end_idx - start_idx + 1
+        
+    def sort(start_idx, end_idx, key):
+        """Sort objects."""
+        
+        # Sort objects
+        obj[start_idx:end_idx+1].sort(key=lambda x: x[key])
+        
+    def align(start_idx, end_idx, dx, dy):
+        """Align objects."""
+        
+        # Align objects
+        for i in range(end_idx - start_idx + 1):
+            obj[i][0] -= dx
+            obj[i][1] -= dy
+            
+    def overlap(start_idx, end_idx, dx, dy):
+        """Overlap objects."""
+        
+        # Overlap objects
+        for i in range(end_idx - start_idx + 1):
+            obj[i][0] += dx
+            obj[i][1] += dy
+            
+    def contain(start_idx, end_idx, dx, dy):
+        """Contain objects."""
+        
+        # Contain objects
+        for i in range(end_idx - start_idx + 1):
+            obj[i][0] -= dx
+            obj[i][1] -= dy
+            
+    def condition(start_idx, end_idx, cond):
+        """Condition."""
+        
+        # Check condition
+        if cond:
+            pass
+        else:
+            pass
+        
+    # Main loop
+    for idx, (inp, out) in enumerate(zip(train_data, test_data)):
+        # Input
+        inp = np.array(inp).astype(np.uint8)
+        out = np.array(out).astype(np.uint8)
+        
+        # Output
+        out = np.zeros((height, width), dtype=np.uint8)
+        
+        # Process
+        obj = [(0, 0, 0)]
+        for i in range(len(inp)-1):
+            if inp[i]!= 0:
+                obj.append((i, inp[i]))
+        for o in obj:
+            start_idx, end_idx = o[0], o[0] + o[2] - 1
+            if start_idx < end_idx:
+                pass
+            elif start_idx > end_idx:
+                pass
+            else:
+                pass
+        for o in reversed(obj):
+            start_idx, end_idx = o[0], o[0] + o[2] - 1
+            if start_idx < end_idx:
+                pass
+            elif start_idx > end_idx:
+                pass
+            else:
+                pass
+        for o in sorted(obj, key=lambda x: x[0]):
+            start_idx, end_idx = o[0], o[0] + o[2] - 1
+            if start_idx < end_idx:
+                pass
+            elif start_idx > end_idx:
+                pass
+            else:
+                pass
+        for o in sorted(obj, reverse=True, key=lambda x: x[0]):
+            start_idx, end_idx = o[0], o[0] + o[2] - 1
+            if start_idx < end_idx:
+                pass
+            elif start_idx > end_idx:
+                pass
+            else:
+                pass
+        for o in sorted(obj, key=lambda x: x[2]):
+            start_idx, end_idx = o[0], o[0] + o[2] - 1
+            if start_idx < end_idx:
+                pass
+            elif start_idx > end_idx:
+                pass
+            else:
+                pass
+        for o in sorted(obj, reverse=True, key=lambda x: x[2]):
+            start_idx, end_idx = o[0], o[0] + o[2] - 1
+            if start_idx < end_idx:
+                pass
+            elif start_idx > end_idx:
+                pass
+            else:
+                pass
+        for o in sorted(obj, key=lambda x: x[1]):
+            start_idx, end_idx = o[0], o[0] + o[2] - 1
+            if start_idx < end_idx:
+                pass
+            elif start_idx > end_idx:
+                pass
+            else:
+                pass
+        for o in sorted(obj, reverse=True, key=lambda x: x[1]):
+            start_idx, end_idx = o[0], o[0] + o[2] - 1
+            if start_idx < end_idx:
+                pass
+            elif start_idx > end_idx:
+                pass
+            else:
+                pass
+        for o in sorted(obj, key=lambda x: x[0]*x[1]*x[2]):
+            start_idx, end_idx = o[0], o[0] + o[2] - 1
+            if start_idx < end_idx:
+                pass
+            elif start_idx > end_idx:
+                pass
+            else:
+                pass
+        for o in sorted(obj, reverse=True, key=lambda x: x[0]*x[1]*x[2]):
+            start_idx, end_
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 7, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.16743119266055045
+
+cat_success_cnt: 4
+
+cat_success_rate: 0.1111111111111111
+

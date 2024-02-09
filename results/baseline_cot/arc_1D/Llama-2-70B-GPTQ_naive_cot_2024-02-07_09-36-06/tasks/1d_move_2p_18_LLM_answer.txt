@@ -1,0 +1,239 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 0, 0]
+
+Example_2:
+input: [6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0]
+output: [0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+
+'''
+#%%
+import pandas as pd
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def get_data():
+    '''
+    This function loads the data set and returns it.
+    
+    Returns:
+        df (pandas dataframe): Dataframe containing the training data.
+        
+    '''
+    # Load data
+    df = pd.read_csv('../input/task_1_training_set.csv')
+    return df
+
+def get_labels(df):
+    '''
+    This function extracts the labels from the data frame and returns them.
+    
+    Parameters:
+        df (pandas dataframe): Dataframe containing the training data.
+    
+    Returns:
+        y (list): List containing the labels.
+        
+    '''
+    # Extract labels
+    y = []
+    for i in range(len(df)):
+        if len(df['Input'][i]) == 18:
+            y.append([0]*9)
+        elif len(df['Input'][i]) == 19:
+            y.append([1]*9)
+        else:
+            raise ValueError("Unexpected number of elements.")
+    return y
+
+def get_features(df):
+    '''
+    This function extracts the features from the data frame and returns them.
+    
+    Parameters:
+        df (pandas dataframe): Dataframe containing the training data.
+    
+    Returns:
+        X (numpy array): Array containing the features.
+        
+    '''
+    # Extract features
+    X = []
+    for i in range(len(df)):
+        if len(df['Input'][i]) == 18:
+            X.append(np.array(df['Input'][i]))
+        elif len(df['Input'][i]) == 19:
+            X.append(np.array(df['Output'][i][:-1]))
+        else:
+            raise ValueError("Unexpected number of elements.")
+    return X
+
+def get_test_case():
+    '''
+    This function generates a random test case and returns it.
+    
+    Returns:
+        x (numpy array): Test case.
+        
+    '''
+    # Generate test case
+    x = np.random.randint(low=0, high=10, size=(19))
+    return x
+
+def get_test_label():
+    '''
+    This function generates a label for the test case and returns it.
+    
+    Returns:
+        y (numpy array): Label for the test case.
+        
+    '''
+    # Generate label
+    y = np.zeros((9), dtype='uint8')
+    return y
+
+def get_results(X, y, model):
+    '''
+    This function evaluates the performance of the given model on the given dataset.
+    
+    Parameters:
+        X (numpy array): Features.
+        y (numpy array): Labels.
+        model (keras.Model): Model to evaluate.
+    
+    Returns:
+        None.
+        
+    '''
+    # Evaluate model
+    score = model.evaluate(x=X, y=y, verbose=False)[1]
+    print('\nAccuracy: {:.4f}'.format(score*100))
+
+def train_model(X, y, epochs=100, batch_size=None, verbose=True):
+    '''
+    This function trains the given model on the given dataset.
+    
+    Parameters:
+        X (numpy array): Features.
+        y (numpy array): Labels.
+        epochs (integer): Number of epochs. Default value: 100.
+        batch_size (integer): Batch size. Default value: None.
+        verbose (boolean): If True, prints information about the training process. Default value: True.
+    
+    Returns:
+        None.
+        
+    '''
+    # Train model
+    history = model.fit(x=X, y=y, validation_split=.2, epochs=epochs, batch_size=batch_size, verbose=verbose)
+    return history
+
+def save_model(history, filepath="./models"):
+    '''
+    This function saves the trained model at the specified path.
+    
+    Parameters:
+        history (tensorflow.keras.callbacks.History): History object returned by fit().
+        filepath (string): Path where the model will be saved. Default value: './models'
+    
+    Returns:
+        None.
+        
+    '''
+    # Save model
+    model.save(filepath+'/model.h5')
+    history.history.pickle(open(filepath+'/history.pkl','wb'))
+    return
+
+def load_model(filepath="./models", verbose=True):
+    '''
+    This function loads the previously saved model from the specified path.
+    
+    Parameters:
+        filepath (string): Path where the model was saved. Default value: './models'
+        verbose (boolean): If True, prints information about the loading process. Default value: True.
+    
+    Returns:
+        model (keras.Model): Loaded model.
+        
+    '''
+    # Load model
+    model = keras.models.load_model(filepath+'/model.h5')
+    history = pickle.load(open(filepath+'/history.pkl','rb'))
+    if verbose:
+        print("\nModel loaded successfully.\n")
+    return model
+
+if __name__ == '__main__':
+    # Get data
+    df = get_data()
+    X = get_features(df)
+    y = get_labels(df)
+    
+    # Split data
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    # Create model
+    model = create_model()
+    
+    # Train model
+    history = train_model(X_train, y_train, epochs=100, batch_size=None, verbose=True)
+    
+    # Save model
+    save_model(history, filepath="./models")
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.18005540166204986
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.09090909090909091
+

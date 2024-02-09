@@ -1,0 +1,222 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
+output: [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+
+
+'''
+#%%
+import pandas as pd
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def get_data():
+    df = pd.read_csv('../data/task_data.csv')
+    return df
+
+df = get_data()
+
+#%%
+def plot_examples(df):
+    
+    fig, ax = plt.subplots(figsize=(8,6))
+    sns.heatmap(df[['input','output']], cbar=False)
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.tick_params(axis='both', labelbottom=True, labelleft=True, bottom=True, left=True)
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.xaxis.set_ticks_position("none")
+    ax.yaxis.set_ticks_position("none")
+    plt.show()
+
+plot_examples(df)
+
+#%%
+def get_example_pairs(df):
+    # Get all unique combinations of input and output sequences
+    df_unique = df.drop_duplicates(['input'])
+    df_unique = df_unique.reset_index().rename({'index':'id'}, axis=1).sort_values('id').reset_index(drop=True)
+    df_unique = df_unique.merge(df.drop_duplicates(['output']), on="id", how="outer").fillna(-1)
+    df_unique = df_unique.groupby(['input','output'],as_index=False)[['input','output']].agg(list).apply(pd.Series)
+    df_unique = df_unique.melt(id_vars=['input','output'], value_name='sequence')
+    df_unique = df_unique.loc[:,[col for col in df_unique if col!='sequence'] + ['sequence']]
+    df_unique = df_unique.astype({'input': int,'output':int})
+    df_unique = df_unique.sample(frac=1).reset_index(drop=True)
+    return df_unique
+
+#%%
+def get_sequences(df):
+    df_seq = df.iloc[:,:-1].to_numpy()
+    df_seq = df_seq.reshape((len(df)*len(df.columns)-1, len(df)))
+    return df_seq
+
+#%%
+def get_features(df_seq):
+    features = []
+    for i in range(len(df)):
+        seq = df_seq[i*len(df.columns)-1:(i+1)*len(df.columns)]
+        features.extend(np.array(seq).flatten().tolist())
+    return features
+
+#%%
+def get_targets(df):
+    targets = []
+    for i in range(len(df)):
+        target = df.iloc[i,-1]
+        targets.extend(np.array(target).flatten().tolist())
+    return targets
+
+#%%
+def get_dataset(df_unique):
+    X = get_sequences(df_unique)
+    y = get_targets(df_unique)
+    return X, y
+
+#%%
+X, y = get_dataset(get_example_pairs(df))
+
+#%%
+def get_model(n_layers, n_neurons, learning_rate, epochs, batch_size):
+    model = Sequential()
+    model.add(Dense(units=n_neurons, activation='relu'))
+    for _ in range(n_layers - 1):
+        model.add(Dense(units=n_neurons, activation='relu'))
+    model.add(Dense(units=1, activation='sigmoid'))
+    optimizer = Adam(learning_rate=learning_rate)
+    model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+    history = model.fit(X, y, validation_split=.25, epochs=epochs, verbose=1, shuffle=True, batch_size=batch_size)
+    return model, history
+
+#%%
+def evaluate_model(model, X, y, batch_size):
+    score = model.evaluate(X, y, batch_size=batch_size, verbose=0)
+    print(score)
+
+#%%
+def predict_model(model, X, batch_size):
+    predictions = model.predict(X, batch_size=batch_size)
+    return predictions
+
+#%%
+def save_results(prediction, id):
+    prediction = prediction.round().astype(str)
+    prediction = prediction.replace('.', '', regex=True)
+    prediction = prediction.replace(',', '.', regex=True)
+    prediction = prediction.replace(' ', '', regex=True)
+    prediction = prediction.replace('\n', '', regex=True)
+    prediction = prediction.replace('\r', '', regex=True)
+    prediction = prediction.replace('\t', '', regex=True)
+    prediction = prediction.replace('\'', '', regex=True)
+    prediction = prediction.replace('/', '', regex=True)
+    prediction = prediction.replace('\\', '', regex=True)
+    prediction = prediction.replace(';', '', regex=True)
+    prediction = prediction.replace('?', '', regex=True)
+    prediction = prediction.replace('&', '', regex=True)
+    prediction = prediction.replace('<', '', regex=True)
+    prediction = prediction.replace('>', '', regex=True)
+    prediction = prediction.replace('|', '', regex=True)
+    prediction = prediction.replace('~', '', regex=True)
+    prediction = prediction.replace('`', '', regex=True)
+    prediction = prediction.replace('^', '', regex=True)
+    prediction = prediction.replace('{', '', regex=True)
+    prediction = prediction.replace('}', '', regex=True)
+    prediction = prediction.replace('(', '', regex=True)
+    prediction = prediction.replace(')', '', regex=True)
+    prediction = prediction.replace('*', '', regex=True)
+    prediction = prediction.replace('+', '', regex=True)
+    prediction = prediction.replace('-', '', regex=True)
+    prediction = prediction.replace('%', '', regex=True)
+    prediction = prediction.replace('#', '', regex=True)
+    prediction = prediction.replace('$', '', regex=True)
+    prediction = prediction.replace('@', '', regex=True)
+    prediction = prediction.replace('!', '', regex=True)
+    prediction = prediction.replace('"', '', regex=True)
+    prediction = prediction.replace(':', '', regex=True)
+    prediction = prediction.replace(';', '', regex=True)
+    prediction = prediction.replace('[', '', regex=True)
+    prediction = prediction.replace(']', '', regex=True)
+    prediction = prediction.replace('=', '', regex=True)
+    prediction = prediction.replace('\\', '', regex=True)
+    prediction = prediction.replace('_', '', regex=True)
+    prediction = prediction.replace('&', '', regex=True)
+    prediction = prediction.replace('(', '', regex=True)
+    prediction = prediction.replace(')', '', regex=True)
+    prediction = prediction.replace('{', '', regex=True)
+    prediction = prediction.replace('}', '', regex=True)
+    prediction = prediction.replace('[', '', regex=True)
+    prediction = prediction.replace(']', '', regex=True)
+    prediction = prediction.replace('<', '', regex=True)
+    prediction = prediction.replace('>', '', regex=True)
+    prediction = prediction.replace('+', '', regex=True)
+    prediction = prediction.replace('-', '', regex=True)
+    prediction = prediction.replace('*', '', regex=True)
+    prediction = prediction.replace('%', '', regex=True)
+    prediction = prediction.replace('$', '', regex=True)
+    prediction = prediction.replace('@', '', regex=True)
+    prediction = prediction.replace('!', '', regex=True)
+    prediction = prediction.replace('"', '', regex=True)
+    prediction = prediction.replace(':', '', regex=True)
+    prediction = prediction.replace(';', '', regex=True)
+    prediction = prediction.replace('&', '', regex=True)
+    prediction = prediction.replace('(', '', regex=True)
+    prediction = prediction.replace(')', '', regex=True)
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.20297029702970298
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.5
+

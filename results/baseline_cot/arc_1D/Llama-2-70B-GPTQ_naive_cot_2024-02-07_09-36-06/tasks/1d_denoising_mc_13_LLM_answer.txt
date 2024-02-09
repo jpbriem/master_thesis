@@ -1,0 +1,157 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 0, 0, 4, 4, 4, 9, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 8, 8, 8, 8, 8, 8, 8, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 7, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 5, 8, 8, 8, 9, 8, 8, 0, 0, 0, 0]
+output: [0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0]
+'''
+
+import pandas as pd
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import math
+import random
+import os
+import sys
+sys.path.append(os.getcwd())
+import utilities
+
+def get_data():
+    '''
+    This function returns the data set used in this challenge.
+    
+    Returns:
+        - df (pandas dataframe): Dataframe containing the training data.
+            Column names: ['input', 'output']
+                - input: Input sequence of integers.
+                - output: Output sequence of integers.
+        
+        - X_train (numpy array): Training inputs.
+        - y_train (numpy array): Training outputs.
+    '''
+    # Load data
+    df = pd.read_csv('../data/task_data.csv')
+    df['input'].replace({'[','(', ')',']','{','}','\'','"'}, '', regex=True)
+    df['output'].replace({'[','(', ')',']','{','}','\'','"'}, '', regex=True)
+    df['input'] = df['input'].apply(lambda x: eval(x))
+    df['output'] = df['output'].apply(lambda x: eval(x))
+    df = df.dropna()
+    df = df.sample(frac=1).reset_index(drop=True)
+    df = df.sort_values(['input'])
+    df = df.iloc[:int(len(df)*0.6)]
+    df = df.reset_index(drop=True)
+    df = df.rename(columns={'input':'X', 'output':'y'})
+    df = df.astype({'X':np.float64,'y':np.float64})
+    df = df.to_numpy().tolist()
+    return df
+
+# Get data
+df = get_data()
+
+# Split data into train and test sets
+n_samples = len(df)
+split_point = int(math.floor((1-0.2)/2*n_samples))
+X_train, y_train = [], []
+for i in range(n_samples):
+    if i < split_point:
+        X_train.extend([df[i][0]])
+        y_train.extend([df[i][1]])
+    else:
+        pass
+X_train = np.array(X_train)
+y_train = np.array(y_train)
+
+# Normalize data
+scaler = preprocessing.StandardScaler()
+X_train = scaler.fit_transform(X_train)
+
+# Visualization
+plt.figure(figsize=(10, 10), dpi=100)
+sns.heatmap(pd.DataFrame(X_train), annot=False, cbar=False, vmin=-1, vmax=1, linewidths=.5, square=True, cmap='RdBu_r')
+plt.show()
+
+# Define model
+model = tf.keras.Sequential([tf.keras.layers.Dense(units=100, activation="relu", kernel_initializer="glorot_uniform"),
+                             tf.keras.layers.Dropout(.2),
+                             tf.keras.layers.Dense(units=100, activation="relu", kernel_initializer="glorot_uniform"),
+                             tf.keras.layers.Dropout(.2),
+                             tf.keras.layers.Dense(units=100, activation="relu", kernel_initializer="glorot_uniform"),
+                             tf.keras.layers.Dropout(.2),
+                             tf.keras.layers.Dense(units=100, activation="relu", kernel_initializer="glorot_uniform")])
+model.compile("adam", loss="mean_squared_error")
+history = model.fit(X_train, y_train, epochs=100, batch_size=100, verbose=1)
+
+# Evaluate model performance
+losses = history.history["loss"]
+epochs = range(1, len(losses)+1)
+plt.figure(figsize=(10, 10), dpi=100)
+plt.plot(epochs, losses, label="Training Loss")
+plt.legend()
+plt.title("Learning Curve")
+plt.xlabel("Epoch")
+plt.ylabel("Mean Squared Error")
+plt.grid(b=True, which="major", axis="both")
+plt.grid(b=True, which="minor", axis="both")
+plt.show()
+
+# Save model
+model.save("./models/model.h5")
+
+# Test case
+test_case = [[0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0]]
+prediction = model.predict(test_case)[0].round().tolist()
+print(prediction)
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.05357142857142857
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.16666666666666666
+

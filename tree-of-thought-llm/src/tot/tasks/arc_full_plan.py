@@ -33,6 +33,8 @@ class ARCTask(Task):
         self.success = {} # saves success rates for each task
         self.full_success = 0 # counts completely solved tasks
         self.cat_success, self.cat_failures = {}, {} # saves success rates for each category
+        self.too_long_prompts_no_output = {}
+        self.too_long_prompts_all = {'sampling': [], 'value': [], 'vote': []}
         self.solved_tasks = []
         self.solved_tasks_str_comparison = []
         self.value_cache = {}
@@ -50,6 +52,9 @@ class ARCTask(Task):
     
     def get_input(self, idx: int) -> str:
         task_json = self.data[idx]
+        # The above code is a comment in Python. It is not doing anything in terms of code execution.
+        # It is simply providing a description or explanation of what the code below it is intended to
+        # do.
         
         # transform all grids into desired representation, e.g. numbers or letters
         if CHANGE_REPRESENTATION:
@@ -81,6 +86,15 @@ class ARCTask(Task):
        
         _, solutions = get_tasks(task_json, DELIMITER[dataset])
         solution = solutions[0] # TODO: currently just check first test case 
+        
+        if len(outputs) == 0:
+            # No outputs to test
+            if category not in self.too_long_prompts_no_output:
+                self.too_long_prompts_no_output[category] = [task_name]
+            else:
+                self.too_long_prompts_no_output[category].append(task_name)
+            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': True, 'tries': None, 'success_rate': self.full_success / (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) if (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+            return info
         
         try_cnt = 0
         str_comparison = False
@@ -126,7 +140,7 @@ class ARCTask(Task):
             if self.success[task_name] > 0:
                 self.solved_tasks.append((task_name, self.success[task_name]))
             # print('------------')
-            info = {'solution': str(solution), 'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]), 'solved_tasks_str_comparison': str_comparison}
+            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': False, 'tries': try_cnt, 'success_rate': self.full_success / (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) if (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
         
         return info
     
@@ -145,6 +159,15 @@ class ARCTask(Task):
             
         _, solutions = get_tasks(task_json, DELIMITER[dataset])
         solution = solutions[0] # TODO: currently just check first test case 
+
+        if len(outputs) == 0:
+            # No outputs to test
+            if category not in self.too_long_prompts_no_output:
+                self.too_long_prompts_no_output[category] = [task_name]
+            else:
+                self.too_long_prompts_no_output[category].append(task_name)
+            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': True, 'tries': None, 'success_rate': self.full_success / (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) if (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+            return info
 
         try_cnt = 0
         for output in outputs:
@@ -180,7 +203,7 @@ class ARCTask(Task):
             
         if self.success[task_name] > 0:
             self.solved_tasks.append((task_name, self.success[task_name]))
-        info = {'solution': str(solution), 'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+        info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': False, 'tries': try_cnt, 'success_rate': self.full_success / (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) if (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
         return info
     
     def update_prompt_modules(self, type: str="naive", p: dict=prompt_modules_naive):

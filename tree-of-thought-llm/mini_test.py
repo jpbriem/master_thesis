@@ -47,10 +47,10 @@ from tot.models import gpt_usage
 ########## ARC ##########
 args = argparse.Namespace(
     # backend='gpt-3.5-turbo-1106',   # TODO: Set model!
-    backend='gpt-4-1106-preview', 
+    # backend='gpt-4-1106-preview', 
     # backend='NousResearch/Llama-2-7b-chat-hf',
-    # backend='TheBloke/Llama-2-70b-Chat-GPTQ',
-    # model_revision='main',
+    backend='Qwen/Qwen-72B-Chat',
+    model_revision='main',
     use_api=True,                       # TODO: Use API?!
     temperature=0.7, 
     # task='arc',                       # TODO: Set task!
@@ -143,10 +143,10 @@ def run(args):
         print(f"Solved: {task.full_success} / {idx+1}")    
             
     # save all task log as json file: Add overall information to log
-    summary = {'date': current_datetime.strftime("%Y-%m-%d_%H-%M-%S"), 'model': args.backend, 'usage_total': gpt_usage(args.backend), 'dataset': args.task, 'num_tasks': len(task)} 
+    summary = {'date': current_datetime.strftime("%Y-%m-%d_%H-%M-%S"), 'model': args.backend, 'usage_total': gpt_usage(args.backend), 'dataset': args.task, 'num_tasks': len(task), 'num_tasks_with_too_long_prompts': sum([len(v) for k, v in task.too_long_prompts_no_output.items()])} 
     if task_infos:
         summary.update(task_infos)
-    summary.update({'success_cnt': task.full_success, 'success_rate': task.full_success / len(task), 'cat_success_cnt': task.cat_success, 'cat_success_rate': {k: v/(v+v2) if v+v2 > 0 else 0 for (k, v), (k2, v2) in zip(task.cat_success.items(), task.cat_failures.items())}, 'solved_tasks': task.solved_tasks, 'solved_tasks_str_comparison': task.solved_tasks_str_comparison, 'args:': vars(args), 'failure_log': failure_log})
+    summary.update({'success_cnt': task.full_success, 'success_rate': task.full_success / (len(task)-sum([len(v) for k, v in task.too_long_prompts_no_output.items()])), 'cat_success_cnt': task.cat_success, 'cat_success_rate': {k: v/(v+v2) if v+v2 > 0 else 0 for (k, v), (k2, v2) in zip(task.cat_success.items(), task.cat_failures.items())}, 'solved_tasks': task.solved_tasks, 'solved_tasks_str_comparison': task.solved_tasks_str_comparison, 'tasks_with_too_long_prompts': task.too_long_prompts_no_output , 'args:': vars(args), 'failure_log': failure_log})
     log = [summary] + log
     print(summary)
     try:

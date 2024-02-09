@@ -1,0 +1,274 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 3, 3, 3, 0, 0, 8]
+output: [0, 3, 3, 3, 3, 3, 8]
+
+Example_2:
+input: [2, 2, 2, 0, 0, 0, 8]
+output: [2, 2, 2, 2, 2, 2, 8]
+
+Example_3:
+input: [3, 3, 3, 0, 0, 0, 8]
+output: [3, 3, 3, 3, 3, 3, 8]
+
+
+
+Test case:
+input: [4, 4, 4, 0, 0, 0, 8]
+
+###########################################################
+Sample Outputs:
+output: [4, 4, 4, 4, 4, 4, 8]
+
+
+'''
+#%%
+import pandas as pd
+from skimage import io
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import sys
+import time
+import random
+import math
+import pickle
+import glob
+import shutil
+import argparse
+import subprocess
+import multiprocessing
+import itertools
+import pathlib
+import tqdm
+import warnings
+warnings.filterwarnings("ignore")
+
+def get_args():
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--data_dir', type=str)
+    args = parser.parse_args()
+    return args
+
+if __name__ == '__main__':
+    args = get_args()
+    
+    data_path = args.data_dir + '/'
+    if not os.path.exists(data_path):
+        raise Exception('Data directory does not exist.')
+        
+    #%%
+    def load_dataset(file_path):
+        df = pd.read_csv(file_path, sep="\t", header=None).to_numpy().astype(int)
+        df[df==0] = -1
+        return df
+    
+    def save_dataset(df, file_path):
+        df[df<0]=0
+        df = df.tolist()
+        df = '\n'.join([str(x) for x in df])
+        with open(file_path,'w+') as fp:
+            fp.write(df)
+            
+    def create_folder(folder_path):
+        folder_path = str(folder_path)
+        if not os.path.isdir(folder_path):
+            os.makedirs(folder_path)
+                
+    def delete_folder(folder_path):
+        folder_path = str(folder_path)
+        if os.path.isdir(folder_path):
+            shutil.rmtree(folder_path)
+            
+    def get_files(directory):
+        files = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                files.append(os.path.join(path, filename))
+        return files
+    
+    def get_folders(directory):
+        folders = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for dirname in dirnames:
+                folders.append(dirname)
+        return folders
+    
+    def get_subdirectories(directory):
+        directories = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for dirname in dirnames:
+                directories.append(dirname)
+        return directories
+    
+    def get_filenames(directory):
+        filenames = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                filenames.append(filename)
+        return filenames
+    
+    def get_paths(directory):
+        paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                paths.append(os.path.join(path, filename))
+        return paths
+    
+    def get_images(directory):
+        images = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                image = io.imread(os.path.join(path, filename), as_grey=True)
+                images.append(image)
+        return images
+    
+    def get_labels(directory):
+        labels = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                label = int(filename[:-5].split('.')[0][:-1])
+                labels.append(label)
+        return labels
+    
+    def get_images_and_labels(directory):
+        images = []
+        labels = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                image = io.imread(os.path.join(path, filename), as_grey=True)
+                images.append(image)
+                label = int(filename[:-5].split('.')[0][:-1])
+                labels.append(label)
+        return images, labels
+    
+    def get_image_size(image):
+        return len(image),len(image[0]),len(image[0][0])
+    
+    def get_image_shape(image):
+        return len(image),len(image[0],len(image[0][0]))
+    
+    def get_image_dimensions(image):
+        return len(image),len(image[0]),len(image[0][0])
+    
+    def get_image_height(image):
+        return len(image)
+    
+    def get_image_width(image):
+        return len(image[0])
+    
+    def get_image_depth(image):
+        return len(image[0][0])
+    
+    def get_image_channels(image):
+        return len(image[0][0])
+    
+    def get_image_channel(image):
+        return len(image[0][0])
+    
+    def get_image_value(image, index):
+        return image[index[0]][index[1]]
+    
+    def get_image_values(image, indices):
+        values = []
+        for i in range(len(indices)):
+            value = image[indices[i][0]][indices[i][1]]
+            values.append(value)
+        return values
+    
+    def get_image_values_at_positions(image, positions):
+        values = []
+        for p in range(len(positions)):
+            value = image[positions[p][0]][positions[p][1]]
+            values.append(value)
+        return values
+    
+    def get_image_position(image, value):
+        for i in range(len(image)):
+            for j in range(len(image[0])):
+                if image[i][j] == value:
+                    return i,j
+    
+    def get_image_positions(image, values):
+        positions = []
+        for v in range(len(values)):
+            for i in range(len(image)):
+                for j in range(len(image[0])):
+                    if image[i][j] == values[v]:
+                        positions.append((i,j))
+        return positions
+    
+    def get_image_positions_of_different_colors(image, colors):
+        positions = []
+        for c in range(len(colors)):
+            for i in range(len(image)):
+                for j in range(len(image[0])):
+                    if image[i][j]!= colors[c]:
+                        positions.append((i,j))
+        return positions
+    
+    def get_image_positions_of_same_color(image, colors):
+        positions = []
+        for c in range(len(colors)):
+            for i in range(len(image)):
+                for j in range(len(image[0])):
+                    if image[i][j] == colors[c]:
+                        positions.append((i,j))
+        return positions
+    
+    def get_image_positions_of_same_color_within_range(image, colors, min_distance, max_distance):
+        positions = []
+        for c in range(len(colors)):
+            for i in range(len(image)):
+                for j in range(len(image[0])):
+                    if image[i][j] == colors[c]:
+                        positions.append((i,j))
+        distances = []
+        for p in range(len(positions)-1):
+            for q in range(p+1,len(positions)):
+                d = abs(positions[p][0]-positions[q][0]) + abs(positions[p][1]-positions[q][1])
+                if d > min_distance and d < max_distance:
+                    distances.append(d)
+        return distances
+    
+    def get_image_positions_of_same_color_within_range_sorted(image, colors, min_distance, max_distance):
+        positions = []
+        for c in range(len(colors)):
+            for i in range(len
+
+
+###########################################################
+Result:
+solution: [4, 4, 4, 4, 4, 4, 8]
+
+
+success: 1
+
+tries: 1
+
+success_rate: 0.13681868743047831
+
+cat_success_cnt: 14
+
+cat_success_rate: 0.2857142857142857
+

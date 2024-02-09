@@ -1,0 +1,148 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [3, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 0, 5, 0, 0, 0, 0, 5, 0]
+output: [0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 0]
+
+Example_3:
+input: [3, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0]
+output: [3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+
+'''
+#%%
+import pandas as pd
+from skimage import io
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import sys
+import time
+import random
+import math
+import pickle
+import glob
+import shutil
+import argparse
+import subprocess
+import multiprocessing
+import itertools
+import pathlib
+import tqdm
+import warnings
+warnings.filterwarnings("ignore")
+
+def get_args():
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--data_dir', type=str)
+    args = parser.parse_args()
+    return args
+
+if __name__ == '__main__':
+    args = get_args()
+    
+    data_path = args.data_dir + '/'
+    if not os.path.exists(data_path):
+        raise FileNotFoundError(f"Data directory does not exist.")
+        
+    #%%
+    def load_dataset(data_path):
+        '''Load dataset.'''
+        df = pd.read_csv(os.path.join(data_path,'train.csv'))
+        train_df = df[['input','output']].values
+        train_df = np.array([np.array(x).astype(int) for x in train_df])
+        train_df = [(x[:,:-1],x[-1][::-1]) for x in train_df]
+        train_df = [(x[::-1],y[::-1]) for x, y in train_df]
+        train_df = [(x,y) for x, y in train_df]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) > 1 and len(set(y)) > 1]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) < 6 and len(set(y)) < 6]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if set(x)!= set(y)]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= 8 and len(set(y)) <= 8]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= 7 and len(set(y)) <= 7]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= 6 and len(set(y)) <= 6]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= 5 and len(set(y)) <= 5]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= 4 and len(set(y)) <= 4]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= 3 and len(set(y)) <= 3]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= 2 and len(set(y)) <= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= 1 and len(set(y)) <= 1]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= 0 and len(set(y)) <= 0]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= -1 and len(set(y)) <= -1]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= -2 and len(set(y)) <= -2]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= -3 and len(set(y)) <= -3]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) <= -4 and len(set(y)) <= -4]
+        train_df = [(x,y) for x, y in train_df if len(set(x))!= len(set(y))]
+        train_df = [(x,y) for x, y in train_df if len(set(x)) >= 2 and len(set(y)) >= 2]
+        train_df = [(x,y) for x, y in train_df
+
+
+###########################################################
+Result:
+solution: [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.17857142857142858
+
+cat_success_cnt: 5
+
+cat_success_rate: 0.4166666666666667
+

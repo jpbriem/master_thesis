@@ -1,0 +1,253 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [7, 7, 7, 0, 0, 0, 0]
+output: [0, 0, 0, 7, 7, 7, 0]
+
+Example_2:
+input: [3, 3, 3, 0, 0, 0, 0]
+output: [0, 0, 0, 3, 3, 3, 0]
+
+Example_3:
+input: [8, 8, 8, 0, 0, 0, 0]
+output: [0, 0, 0, 8, 8, 8, 0]
+
+
+
+Test case:
+input: [5, 5, 5, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+
+'''
+#%%
+import pandas as pd
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def get_data():
+    '''
+    This function loads the data set and returns it as a dataframe.
+    
+    Returns:
+        df (pandas DataFrame): A dataframe containing the data set.
+        
+    '''
+    # Load the dataset
+    df = pd.read_csv('../data/task_1.csv')
+    return df
+
+def plot_examples(df, n=None):
+    '''
+    This function plots the examples given in the task description.
+    
+    Parameters:
+        df (pandas DataFrame): A dataframe containing the data set.
+        n (int, optional): Number of rows to display. Defaults to None.
+        
+    Returns:
+        None
+        
+    '''
+    if n == None:
+        n = len(df)
+    else:
+        n = min(n,len(df))
+    fig, ax = plt.subplots()
+    sns.heatmap(df[['Input','Output']].iloc[:n], annot=True, cbar=False, fmt='d', ax=ax)
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.tick_params(axis="both", which="major", labelsize=6)
+    ax.grid(b=True, axis='y', linestyle='--', alpha=.5)
+    ax.set_title("Examples")
+    plt.show()
+
+def plot_example_distribution(df, n=None):
+    '''
+    This function plots the distribution of the examples given in the task description.
+    
+    Parameters:
+        df (pandas DataFrame): A dataframe containing the data set.
+        n (int, optional): Number of rows to display. Defaults to None.
+        
+    Returns:
+        None
+        
+    '''
+    if n == None:
+        n = len(df)
+    else:
+        n = min(n,len(df))
+    fig, ax = plt.subplots()
+    sns.histplot(df["Input"].iloc[:n], bins=range(min(df),max(df)+1), kde=False, statistic='count', ax=ax)
+    ax.set_xlabel("Input")
+    ax.set_ylabel("Count")
+    ax.set_title("Distribution of Input Examples")
+    plt.show()
+
+def plot_target_distribution(df, n=None):
+    '''
+    This function plots the distribution of the target variable given in the task description.
+    
+    Parameters:
+        df (pandas DataFrame): A dataframe containing the data set.
+        n (int, optional): Number of rows to display. Defaults to None.
+        
+    Returns:
+        None
+        
+    '''
+    if n == None:
+        n = len(df)
+    else:
+        n = min(n,len(df))
+    fig, ax = plt.subplots()
+    sns.histplot(df["Target"].iloc[:n], bins=range(min(df),max(df)+1), kde=False, statistic='count', ax=ax)
+    ax.set_xlabel("Target")
+    ax.set_ylabel("Count")
+    ax.set_title("Distribution of Target Variable")
+    plt.show()
+
+def plot_feature_distribution(df, feature, n=None):
+    '''
+    This function plots the distribution of a single feature given in the task description.
+    
+    Parameters:
+        df (pandas DataFrame): A dataframe containing the data set.
+        feature (str): Name of the feature to plot.
+        n (int, optional): Number of rows to display. Defaults to None.
+        
+    Returns:
+        None
+        
+    '''
+    if n == None:
+        n = len(df)
+    else:
+        n = min(n,len(df))
+    fig, ax = plt.subplots()
+    sns.distplot(df[feature].iloc[:n], kde=False, hist=True, rug=False, fit=False, norm_hist=False, ax=ax)
+    ax.set_xlabel(f"{feature}")
+    ax.set_ylabel("Count")
+    ax.set_title(f"Distribution of Feature {feature}")
+    plt.show()
+
+def plot_correlation_matrix(df, n=None):
+    '''
+    This function plots the correlation matrix of the features given in the task description.
+    
+    Parameters:
+        df (pandas DataFrame): A dataframe containing the data set.
+        n (int, optional): Number of rows to display. Defaults to None.
+        
+    Returns:
+        None
+        
+    '''
+    if n == None:
+        n = len(df)
+    else:
+        n = min(n,len(df))
+    fig, ax = plt.subplots()
+    corr = df.corr().sort_values(['Input'], ascending=[False]).dropna(how='any').round(decimals=2).reset_index()
+    corr.columns = ['Feature','Correlation']
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Correlation'] = 1
+    corr.loc['Target','Correlation'] = 1
+    corr.loc['Input','Feature'] = 'Input'
+    corr.loc['Target','Feature'] = 'Target'
+    corr.loc['Input','Cor
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 5, 5, 5, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.16122448979591836
+
+cat_success_cnt: 3
+
+cat_success_rate: 0.075
+

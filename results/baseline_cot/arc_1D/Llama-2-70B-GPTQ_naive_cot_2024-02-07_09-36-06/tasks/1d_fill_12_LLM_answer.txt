@@ -1,0 +1,118 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 7, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+
+'''
+
+import pandas as pd
+from sklearn import preprocessing
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+def get_data():
+    df = pd.read_csv('../input/pixel_sequence_to_pixel_sequence/train.csv')
+    X = df['input'].values
+    y = df['output'].values
+    return (X,y)
+
+def get_labels(df):
+    labels = []
+    for i in range(len(df)):
+        if len(set(df[i])) == 1:
+            labels.append([0])
+        else:
+            labels.append(list(sorted(set(df[i]), reverse=True)))
+    return labels
+
+def get_features(df):
+    features = []
+    for i in range(len(df)):
+        features.append((np.array(df[i]).astype(int)).tolist())
+    return features
+
+def get_test_case():
+    df = pd.read_csv('../input/pixel_sequence_to_pixel_sequence/sample_submission.csv')
+    X = df['input'].values
+    return X
+
+if __name__=='__main__':
+    X, y = get_data()
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    # Feature scaling
+    scaler = StandardScaler().fit(X_train)
+    X_scaled_train = scaler.transform(X_train)
+    X_scaled_val = scaler.transform(X_val)
+    X_scaled_test = scaler.transform(get_test_case())
+
+    # Label encoding
+    le = preprocessing.LabelEncoder()
+    y_encoded_train = le.fit_transform(y_train)
+    y_encoded_val = le.transform(y_val)
+    y_encoded_test = le.transform(get_labels(get_test_case()))
+
+    # One hot encoding
+    encoder = preprocessing.OneHotEncoder(handle_unknown='ignore').fit(le.classes_)
+    y_onehot_train = encoder.transform(y_encoded_train).toarray()
+    y_onehot_val = encoder.transform(y_encoded_val).toarray()
+    y_onehot_test = encoder.transform(y_encoded_test).toarray()
+
+    # Visualize data
+    fig, ax = plt.subplots(figsize=(8,6))
+    sns.heatmap(X_scaled_train[:, :, None], cbar=False, vmin=-1, vmax=1, ax=ax)
+    plt.show()
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.1619047619047619
+
+cat_success_cnt: 2
+
+cat_success_rate: 0.4
+

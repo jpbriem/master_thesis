@@ -1,0 +1,256 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0]
+output: [7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0]
+
+
+'''
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def get_image():
+    image = Image.open('./images/task_5.png')
+    return image
+
+def get_dataframe():
+    df = pd.read_csv("./dataframes/task_5.csv")
+    return df
+
+def get_labels():
+    labels = ['background','red','green']
+    return labels
+
+def get_label_map():
+    label_map = {0:'background',1:'red',2:'green'}
+    return label_map
+
+def get_masks(df):
+    masks = []
+    for i in range(len(df)):
+        if len(df[i]['mask']) > 0:
+            masks.append([int(x) for x in df[i]['mask'].split(',')])
+        else:
+            masks.append([])
+    return masks
+
+def get_sequences(df, masks):
+    sequences = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        sequences.append(seq)
+    return sequences
+
+def get_test_case(df, masks):
+    test_case = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_case.append(seq)
+    return test_case
+
+def get_test_cases(df, masks):
+    test_cases = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_cases.append(seq)
+    return test_cases
+
+def get_test_sequence(df, masks):
+    test_sequence = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_sequence.append(seq)
+    return test_sequence
+
+def get_test_sequences(df, masks):
+    test_sequences = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_sequences.append(seq)
+    return test_sequences
+
+def get_test_output(df, masks):
+    test_output = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output.append(seq)
+    return test_output
+
+def get_test_outputs(df, masks):
+    test_outputs = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_outputs.append(seq)
+    return test_outputs
+
+def get_test_output_sequence(df, masks):
+    test_output_sequence = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output_sequence.append(seq)
+    return test_output_sequence
+
+def get_test_output_sequences(df, masks):
+    test_output_sequences = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output_sequences.append(seq)
+    return test_output_sequences
+
+def get_test_output_array(df, masks):
+    test_output_array = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output_array.append(seq)
+    return test_output_array
+
+def get_test_output_arrays(df, masks):
+    test_output_arrays = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output_arrays.append(seq)
+    return test_output_arrays
+
+def get_test_output_numpy_array(df, masks):
+    test_output_numpy_array = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output_numpy_array.append(np.asarray(seq))
+    return test_output_numpy_array
+
+def get_test_output_numpy_arrays(df, masks):
+    test_output_numpy_arrays = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output_numpy_arrays.append(np.asarray(seq))
+    return test_output_numpy_arrays
+
+def get_test_output_list(df, masks):
+    test_output_list = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output_list.append(seq)
+    return test_output_list
+
+def get_test_output_lists(df, masks):
+    test_output_lists = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output_lists.append(seq)
+    return test_output_lists
+
+def get_test_output_string(df, masks):
+    test_output_string = ''
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output_string += str(seq)+'\n'
+    return test_output_string
+
+def get_test_output_strings(df, masks):
+    test_output_strings = []
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output_strings.append(str(seq)+'\n')
+    return test_output_strings
+
+def get_test_output_json(df, masks):
+    test_output_json = {}
+    for i in range(len(df)):
+        seq = []
+        for j in range(len(masks[i])):
+            seq.extend([masks[i][j], df['color'][i]])
+        test_output_json[i+1] = seq
+    return test_output
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.2019704433497537
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.3333333333333333
+

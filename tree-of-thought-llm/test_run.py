@@ -27,7 +27,7 @@ args = argparse.Namespace(
     # task = 'arc_h_v',
     input_representation = None,    # TODO: set input representation
     # input_representation = 'objects',
-    naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
+    naive_run=False,                    # TODO: Naive run? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
     prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
@@ -35,7 +35,7 @@ args = argparse.Namespace(
     method_evaluate='value', 
     method_select='greedy',
     revision=False,                     # TODO: Revision?
-    n_generate_sample=1,                # TODO: Set tree search parameters!
+    n_generate_sample=2,                # TODO: Set tree search parameters!
     n_evaluate_sample=1, 
     n_select_sample=1)
 
@@ -114,10 +114,10 @@ def run(args):
     search_utils.model = None
             
     # save all task log as json file: Add overall information to log
-    summary = {'date': current_datetime.strftime("%Y-%m-%d_%H-%M-%S"), 'model': args.backend, 'usage_total': gpt_usage(args.backend), 'dataset': args.task, 'num_tasks': len(task)} 
+    summary = {'date': current_datetime.strftime("%Y-%m-%d_%H-%M-%S"), 'model': args.backend, 'usage_total': gpt_usage(args.backend), 'dataset': args.task, 'num_tasks': len(task), 'num_tasks_with_too_long_prompts': sum([len(v) for k, v in task.too_long_prompts_no_output.items()])} 
     if task_infos:
         summary.update(task_infos)
-    summary.update({'success_cnt': task.full_success, 'success_rate': task.full_success / len(task), 'cat_success_cnt': task.cat_success, 'cat_success_rate': {k: v/(v+v2) if v+v2 > 0 else 0 for (k, v), (k2, v2) in zip(task.cat_success.items(), task.cat_failures.items())}, 'solved_tasks': task.solved_tasks, 'solved_tasks_str_comparison': task.solved_tasks_str_comparison, 'args:': vars(args), 'failure_log': failure_log})
+    summary.update({'success_cnt': task.full_success, 'success_rate': task.full_success / (len(task)-sum([len(v) for k, v in task.too_long_prompts_no_output.items()])), 'cat_success_cnt': task.cat_success, 'cat_success_rate': {k: v/(v+v2) if v+v2 > 0 else 0 for (k, v), (k2, v2) in zip(task.cat_success.items(), task.cat_failures.items())}, 'solved_tasks': task.solved_tasks, 'solved_tasks_str_comparison': task.solved_tasks_str_comparison, 'tasks_with_too_long_prompts': task.too_long_prompts_no_output , 'args:': vars(args), 'failure_log': failure_log})
     log = [summary] + log
     print(summary)
     try:

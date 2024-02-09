@@ -1,0 +1,257 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 5, 5, 5, 5, 0, 9, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 5, 5, 5, 5, 0]
+
+Example_2:
+input: [0, 1, 1, 1, 1, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 9, 0, 1, 1, 1, 1, 0, 0, 0, 0]
+
+Example_3:
+input: [3, 3, 3, 3, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 9, 0, 3, 3, 3, 3, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 7, 7, 7, 7, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 0, 0, 0, 9, 0, 7, 7, 7, 7, 0, 0, 0, 0]
+
+
+'''
+#%%
+import pandas as pd
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def get_data():
+    '''
+    This function loads the data set and returns it.
+    
+    Returns:
+        df (pandas dataframe): Dataframe containing the training data.
+        
+    '''
+    # Load data
+    df = pd.read_csv('../input/task_1_training_set.csv')
+    return df
+
+def get_labels(df):
+    '''
+    This function extracts the labels from the data frame and returns them.
+    
+    Parameters:
+        df (pandas dataframe): Dataframe containing the training data.
+    
+    Returns:
+        y (list): List containing the labels.
+        
+    '''
+    # Extract labels
+    y = df['label'].values.tolist()
+    return y
+
+def get_features(df):
+    '''
+    This function extracts the features from the data frame and returns them.
+    
+    Parameters:
+        df (pandas dataframe): Dataframe containing the training data.
+    
+    Returns:
+        X (numpy array): Numpy array containing the features.
+        
+    '''
+    # Extract features
+    X = df[['input','output']].to_numpy().astype(np.int)
+    return X
+
+def get_train_val_split(X,y,seed=None):
+    '''
+    This function splits the given dataset into train and validation sets.
+    
+    Parameters:
+        X (numpy array): Numpy array containing the features.
+        y (list): List containing the labels.
+        seed (integer): Random state used for splitting. Default value None.
+    
+    Returns:
+        X_train (numpy array): Numpy array containing the features of the training set.
+        y_train (list): List containing the labels of the training set.
+        X_valid (numpy array): Numpy array containing the features of the validation set.
+        y_valid (list): List containing the labels of the validation set.
+        
+    '''
+    if seed!= None:
+        np.random.seed(seed)
+    # Split data into train and val
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=seed)
+    return X_train, X_valid, y_train, y_valid
+
+def get_test_split(X,y,seed=None):
+    '''
+    This function splits the given dataset into test set.
+    
+    Parameters:
+        X (numpy array): Numpy array containing the features.
+        y (list): List containing the labels.
+        seed (integer): Random state used for splitting. Default value None.
+    
+    Returns:
+        X_test (numpy array): Numpy array containing the features of the test set.
+        y_test (list): List containing the labels of the test set.
+        
+    '''
+    if seed!= None:
+        np.random.seed(seed)
+    # Split data into test
+    X_test, _, y_test, _ = train_test_split(X, y, test_size=0.8, random_state=seed)
+    return X_test, y_test
+
+def get_model(n_layers, n_neurons, learning_rate, batch_size, epochs, activation='relu'):
+    '''
+    This function creates an artificial neural network model.
+    
+    Parameters:
+        n_layers (integer): Number of layers.
+        n_neurons (list): List containing number of neurons per layer.
+        learning_rate (float): Learning rate.
+        batch_size (integer): Batch size.
+        epochs (integer): Number of epochs.
+        activation (string): Activation function. Default value relu.
+    
+    Returns:
+        model (keras sequential model): Artificial neural network model.
+        
+    '''
+    # Create model
+    model = Sequential([Dense(units=n_neurons[i], kernel_initializer="normal", activation=activation, input_shape=(len(X),)) for i in range(n_layers)] + [Dense(units=len(y[0]), kernel_initializer="normal")])
+    model.compile(loss='mean_squared_error', optimizer=Adam(learning_rate=learning_rate), metrics=['accuracy'])
+    return model
+
+def fit_model(model, X_train, y_train, X_valid, y_valid, batch_size, epochs, verbose=False):
+    '''
+    This function fits the given model to the given training data.
+    
+    Parameters:
+        model (keras sequential model): Artificial neural network model.
+        X_train (numpy array): Numpy array containing the features of the training set.
+        y_train (list): List containing the labels of the training set.
+        X_valid (numpy array): Numpy array containing the features of the validation set.
+        y_valid (list): List containing the labels of the validation set.
+        batch_size (integer): Batch size.
+        epochs (integer): Number of epochs.
+        verbose (boolean): If True, prints information about the fitting process. Default value False.
+    
+    Returns:
+        history (dict): Dictionary containing the loss and accuracy values during each epoch.
+        
+    '''
+    # Fit model
+    history = model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, validation_data=(X_valid, y_valid), verbose=verbose)
+    return history
+
+def evaluate_model(model, X_test, y_test, batch_size):
+    '''
+    This function evaluates the given model using the given test data.
+    
+    Parameters:
+        model (keras sequential model): Artificial neural network model.
+        X_test (numpy array): Numpy array containing the features of the test set.
+        y_test (list): List containing the labels of the test set.
+        batch_size (integer): Batch size.
+    
+    Returns:
+        score (float): Accuracy score.
+        
+    '''
+    # Evaluate model
+    score = model.evaluate(X_test, y_test, batch_size=batch_size)[1]*100
+    return score
+
+def predict_model(model, X_test, batch_size):
+    '''
+    This function uses the given model to make predictions using the given test data.
+    
+    Parameters:
+        model (keras sequential model): Artificial neural network model.
+        X_test (numpy array): Numpy array containing the features of the test set.
+        batch_size (integer): Batch size.
+    
+    Returns:
+        preds (numpy array): Numpy array containing the predicted labels.
+        
+    '''
+    # Make predictions
+    preds = model.predict(X_test, batch_size=batch_size)
+    return preds
+
+if __name__ == '__main__':
+    # Get data
+    df = get_data()
+    print("Data shape: ", df.shape)
+    y = get_labels(df)
+    X = get_features(df)
+    print("Features shape: ", X.shape)
+    # Split data into train and valid
+    X_train, X_valid, y_train, y_valid = get_train_val_split(X,y,seed=42)
+    print("Train data shape: ", X_train.shape)
+    print("Valid data shape: ", X_valid.shape)
+    # Split data into test
+    X_test, y_test = get_test_split(X,y,seed=42)
+    print("Test data shape: ", X_test.shape)
+    # Define parameters
+    n_layers = 6
+    n_neurons = [100, 100, 100, 100, 100, 100]
+    learning_rate = 0.001
+    batch_size = 100
+    epochs = 100
+    activation = 'tanh'
+    # Create model
+    model = get_model(n_layers, n_neurons, learning_rate, batch_size
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 0, 0, 9, 0, 7, 7, 7, 7, 0, 0, 0, 0]
+
+
+success: 1
+
+tries: 1
+
+success_rate: 0.16917293233082706
+
+cat_success_cnt: 3
+
+cat_success_rate: 0.1875
+

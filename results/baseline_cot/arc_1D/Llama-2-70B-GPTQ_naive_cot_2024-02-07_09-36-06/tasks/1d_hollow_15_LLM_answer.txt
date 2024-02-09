@@ -1,0 +1,209 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 7, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0]
+output: [0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0]
+output: [0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0]
+"""
+import numpy as np
+from typing import List
+
+def get_task():
+    return Task()
+
+class Task(object):
+    def __init__(self) -> None:
+        self._examples = []
+        self._example_count = 5
+        self._noise_probability = 0.8
+        self._max_size = 6
+        self._min_size = 2
+        self._max_distance = 10
+        self._max_scale = 2
+        self._max_hollowness = 2
+        self._max_recolor = 2
+        self._max_remove = 2
+        self._max_copy = 2
+        self._max_move = 2
+        self._max_containment = 2
+        self._max_alignment = 2
+        self._max_overlap = 2
+        self._max_conditional = 2
+        
+        self._generate_examples()
+    
+    @property
+    def examples(self) -> List[List]:
+        """
+        Returns the examples used for training.
+        :return: A list containing two lists each, one for the input and one for the output.
+        """
+        return self._examples
+    
+    @staticmethod
+    def _get_random_int(low: int, high: int) -> int:
+        """
+        Generates a random integer between low and high (inclusively).
+        :param low: Lower bound of the range.
+        :param high: Upper bound of the range.
+        :return: Randomly generated integer.
+        """
+        return np.random.randint(low=low, high=high+1)
+    
+    @staticmethod
+    def _get_random_float(low: float, high: float) -> float:
+        """
+        Generates a random floating point number between low and high (inclusively).
+        :param low: Lower bound of the range.
+        :param high: Upper bound of the range.
+        :return: Randomly generated floating point number.
+        """
+        return np.random.uniform(low=low, high=high)
+    
+    @staticmethod
+    def _is_valid_sequence(seq: List[int]) -> bool:
+        """
+        Checks if the given sequence contains no invalid elements.
+        :param seq: Sequence to check.
+        :return: True if valid, False otherwise.
+        """
+        return all([x == 0 or x > 1 for x in seq])
+    
+    @staticmethod
+    def _get_random_sequence(length: int, noise_probability: float) -> List[int]:
+        """
+        Generate a random sequence of integers.
+        :param length: Length of the sequence.
+        :param noise_probability: Probability of generating a non-zero element.
+        :return: Randomly generated sequence.
+        """
+        seq = [Task._get_random_int(1, 9) for i in range(length)]
+        for i in range(len(seq)):
+            if np.random.binomial(n=1, p=noise_probability):
+                seq[i] = 0
+        return seq
+    
+    @staticmethod
+    def _get_random_object(start_idx: int, end_idx: int, max_size: int, min_size: int, max_distance: int, max_scale: int, max_hollowness: int, max_recolor: int, max_remove: int, max_copy: int, max_move: int, max_containment: int, max_alignment: int, max_overlap: int, max_conditional: int) -> dict:
+        """
+        Generates a random object.
+        :param start_idx: Start index of the object.
+        :param end_idx: End index of the object.
+        :param max_size: Maximum size of an object.
+        :param min_size: Minimum size of an object.
+        :param max_distance: Maximum distance between objects.
+        :param max_scale: Maximum scaling factor.
+        :param max_hollowness: Maximum hollowness.
+        :param max_recolor: Maximum recolor value.
+        :param max_remove: Maximum removal value.
+        :param max_copy: Maximum copying value.
+        :param max_move: Maximum moving value.
+        :param max_containment: Maximum containment value.
+        :param max_alignment: Maximum alignment value.
+        :param max_overlap: Maximum overlapping value.
+        :param max_conditional: Maximum conditionality value.
+        :return: Dictionary describing the randomly generated object.
+        """
+        obj = {}
+        obj['color'] = Task._get_random_int(1, 9)
+        obj['start_index'] = start_idx + Task._get_random_int(-max_distance, max_distance)
+        obj['end_index'] = obj['start_index'] + Task._get_random_int(min_size, max_size)
+        obj['size'] = obj['end_index'] - obj['start_index'] + 1
+        obj['scale'] = Task._get_random_float(1, max_scale)
+        obj['hollowness'] = Task._get_random_float(0, max_hollowness)
+        obj['recolor'] = Task._get_random_int(0, max_recolor)
+        obj['remove'] = Task._get_random_int(0, max_remove)
+        obj['copy'] = Task._get_random_int(0, max_copy)
+        obj['move'] = Task._get_random_int(0, max_move)
+        obj['containment'] = Task._get_random_int(0, max_containment)
+        obj['alignment'] = Task._get_random_int(0, max_alignment)
+        obj['overlap'] = Task._get_random_int(0, max_overlap)
+        obj['conditional'] = Task._get_random_int(0, max_conditional)
+        return obj
+    
+    @staticmethod
+    def _get_random_objects(length: int, max_size: int, min_size: int, max_distance: int, max_scale: int, max_hollowness: int, max_recolor: int, max_remove: int, max_copy: int, max_move: int, max_containment: int, max_alignment: int, max_overlap: int, max_conditional: int) -> List[dict]:
+        """
+        Generates a list of random objects.
+        :param length: Length of the sequence.
+        :param max_size: Maximum size of an object.
+        :param min_size: Minimum size of an object.
+        :param max_distance: Maximum distance between objects.
+        :param max_scale: Maximum scaling factor.
+        :param max_hollowness: Maximum hollowness.
+        :param max_recolor: Maximum recolor value.
+        :param max_remove: Maximum removal value.
+        :param max_copy: Maximum copying value.
+        :param max_move: Maximum moving value.
+        :param max_containment: Maximum containment value.
+        :param max_alignment: Maximum alignment value.
+        :param max_overlap: Maximum overlapping value.
+        :param max_conditional: Maximum conditionality value.
+        :return: List of dictionaries describing the randomly generated objects.
+        """
+        objs = []
+        while len(objs) < length:
+            obj = Task._get_random_object(0, length, max_size, min_size, max_distance, max_scale, max_hollowness, max_recolor, max_remove, max_copy, max_move, max_containment, max_alignment, max_overlap, max_conditional)
+            if obj['start_index'] <= obj['end_index'] <= length:
+                objs.append(obj)
+        return objs
+    
+    @staticmethod
+    def _get_random_conditionals(length: int, max_conditional: int) -> List[str]:
+        """
+        Generates a list of random conditions.
+        :param length: Length of the sequence.
+        :param max_conditional: Maximum conditionality value.
+        :return: List of strings describing the randomly
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.1971153846153846
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.125
+

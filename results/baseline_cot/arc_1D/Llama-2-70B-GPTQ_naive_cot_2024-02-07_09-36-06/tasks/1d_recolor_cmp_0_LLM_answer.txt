@@ -1,0 +1,247 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 2, 0, 2, 2, 0, 2, 2, 2, 2, 0, 0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 0, 2, 0]
+output: [0, 2, 0, 2, 2, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 2, 2, 2, 0, 2, 0]
+
+Example_2:
+input: [0, 2, 2, 2, 2, 0, 0, 2, 0, 2, 2, 0, 0, 2, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2]
+output: [0, 2, 2, 2, 2, 0, 0, 2, 0, 2, 2, 0, 0, 2, 2, 2, 0, 0, 0, 1, 1, 1, 1, 1]
+
+Example_3:
+input: [0, 2, 2, 2, 2, 2, 2, 0, 0, 0, 2, 2, 2, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0]
+output: [0, 2, 2, 2, 2, 2, 2, 0, 0, 0, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 2, 2, 2, 2, 2, 0, 1, 1, 1, 1, 1, 1, 0, 0]
+"""
+import numpy as np
+from skimage import io
+import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def get_data():
+    """
+    This function loads the data set and returns it.
+    
+    Returns:
+        - data (dict): dictionary containing the data set.
+            - data['train'] (list): list of training inputs.
+            - data['target'] (list): list of target outputs.
+            - data['test'] (list): list of testing inputs.
+    """
+    # Load data
+    df = pd.read_csv('../input/task_5_data.csv')
+    train = []
+    target = []
+    test = []
+    for i in range(len(df)):
+        if df[i]['example'] == 'Examples':
+            continue
+        
+        train.append([int(x) for x in df[i][0].split(',')])
+        target.append([int(x) for x in df[i][1].split(',')])
+        test.append([int(x) for x in df[i][2].split(',')])
+            
+    return {'train': train, 'target': target, 'test': test}
+
+# Get data
+data = get_data()
+
+# Define functions
+def create_test_case(size=None):
+    """
+    Creates an artificial test case.
+    
+    Keyword arguments:
+        - size (int): number of elements in the test case. Default: None.
+    
+    Returns:
+        - test_case (numpy.ndarray): test case.
+    """
+    if size is None:
+        size = len(data['train'][0])
+    test_case = np.zeros((size), dtype='uint8') + 0
+    return test_case
+
+def create_noise(size=None):
+    """
+    Adds noise to the given test case.
+    
+    Keyword arguments:
+        - size (int): number of elements in the test case. Default: None.
+    
+    Returns:
+        - noisy_test_case (numpy.ndarray): test case with added noise.
+    """
+    if size is None:
+        size = len(data['train'][0])
+    noisy_test_case = np.random.randint(low=0, high=2, size=(size))
+    return noisy_test_case
+
+def add_objects(test_case, object_start, object_end, object_color, size=None):
+    """
+    Adds objects to the given test case.
+    
+    Keyword arguments:
+        - test_case (numpy.ndarray): test case.
+        - object_start (int): starting index of the object.
+        - object_end (int): ending index of the object.
+        - object_color (int): color of the object.
+        - size (int): number of elements in the test case. Default: None.
+    
+    Returns:
+        - test_case (numpy.ndarray): test case with added objects.
+    """
+    if size is None:
+        size = len(test_case)
+    test_case[object_start:object_end+1] = object_color
+    return test_case
+
+def create_test_cases(n=100):
+    """
+    Creates n test cases.
+    
+    Keyword arguments:
+        - n (int): number of test cases to generate. Default: 100.
+    
+    Returns:
+        - test_cases (list): list of test cases.
+    """
+    test_cases = []
+    for _ in range(n):
+        test_case = create_test_case()
+        test_cases.append(test_case)
+    return test_cases
+
+def create_training_set(n=100):
+    """
+    Creates a training set consisting of n test cases.
+    
+    Keyword arguments:
+        - n (int): number of test cases to generate. Default: 100.
+    
+    Returns:
+        - training_set (tuple): tuple containing the training set.
+            - training_set[0] (list): list of training inputs.
+            - training_set[1] (list): list of training targets.
+    """
+    test_cases = create_test_cases(n)
+    training_set = ([], [])
+    for i in range(len(test_cases)):
+        training_set[0].append(test_cases[i])
+        training_set[1].append(np.roll(test_cases[i], 1))
+    return training_set
+
+def create_testing_set(n=100):
+    """
+    Creates a testing set consisting of n test cases.
+    
+    Keyword arguments:
+        - n (int): number of test cases to generate. Default: 100.
+    
+    Returns:
+        - testing_set (tuple): tuple containing the testing set.
+            - testing_set[0] (list): list of testing inputs.
+            - testing_set[1] (list): list of testing targets.
+    """
+    test_cases = create_test_cases(n)
+    testing_set = ([], [])
+    for i in range(len(test_cases)):
+        testing_set[0].append(test_cases[i])
+        testing_set[1].append(np.roll(test_cases[i], 1))
+    return testing_set
+
+def create_dataset(training_set, testing_set):
+    """
+    Creates a dataset consisting of the given training and testing sets.
+    
+    Keyword arguments:
+        - training_set (tuple): tuple containing the training set.
+            - training_set[0] (list): list of training inputs.
+            - training_set[1] (list): list of training targets.
+        - testing_set (tuple): tuple containing the testing set.
+            - testing_set[0] (list): list of testing inputs.
+            - testing_set[1] (list): list of testing targets.
+    
+    Returns:
+        - dataset (tuple): tuple containing the dataset.
+            - dataset[0] (list): list of training inputs.
+            - dataset[1] (list): list of training targets.
+            - dataset[2] (list): list of testing inputs.
+            - dataset[3] (list): list of testing targets.
+    """
+    dataset = ([], [], [], [])
+    dataset[0] = training_set[0]
+    dataset[1] = training_set[1]
+    dataset[2] = testing_set[0]
+    dataset[3] = testing_set[1]
+    return dataset
+
+def create_model(hidden_layer_sizes=[64, 64], learning_rate=0.001, epochs=1000, batch_size=100, verbose=False):
+    """
+    Creates a model using Keras.
+    
+    Keyword arguments:
+        - hidden_layer_sizes (list): list of sizes of the hidden layers. Default: [64, 64].
+        - learning_rate (float): learning rate. Default: 0.001.
+        - epochs (int): number of epochs. Default: 1000.
+        - batch_size (int): batch size. Default: 100.
+        - verbose (bool): whether to print information about the training process. Default: False.
+    
+    Returns:
+        - model (keras.Sequential): neural network model.
+    """
+    model = keras.Sequential([
+                              keras.layers.Dense(units=hidden_layer_sizes[0], activation="relu", kernel_initializer="he_normal"),
+                              keras.layers.Dropout(0.2),
+                              keras.layers.Dense(units=hidden_layer_sizes[-1], activation="softmax")
+                              ])
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=learning_rate), loss="binary_crossentropy", metrics=["accuracy"])
+    history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size, verbose=
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 2, 2, 2, 2, 2, 0, 1, 1, 1, 1, 1, 1, 0, 0]
+
+
+success: 1
+
+tries: 1
+
+success_rate: 0.12981455064194009
+
+cat_success_cnt: 1
+
+cat_success_rate: 1.0
+

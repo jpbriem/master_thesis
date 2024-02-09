@@ -4,7 +4,7 @@ import openai
 import backoff 
 import datetime
 import json
-from tot.methods.arc_config import MAX_TOKEN, MODEL_CONFIG_LLAMA, MODEL_CONFIG_FALCON, GPU
+from tot.methods.arc_config import MODEL_CONFIGS, GPU
 from tot.methods.credentials import OPENAI_KEY, HF_TOKEN
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
 os.environ['CUDA_DEVICE_ORDER']='PCI_BUS_ID'
@@ -21,6 +21,7 @@ naive_run = False
 responses = [] # TODO: Delete
 idx = 0 # TODO: Delete
 date = datetime.datetime.now() # TODO: Delete
+
 
 def initialize_model(args):
     global model, tokenizer, llm, backend, naive_run, prompt_sample
@@ -53,8 +54,10 @@ def initialize_model(args):
         if backend in ["TheBloke/Falcon-7B-Instruct-GPTQ", "TheBloke/Falcon-40B-Instruct-GPTQ"]:
             model, tokenizer = load_falcon(backend, args.model_revision)
             llm = run_falcon
+        elif backend in ["Qwen/Qwen-14B-Chat", "Qwen/Qwen-7B-Chat", "Qwen/Qwen-72B-Chat"]:
+            llm, tokenizer = load_qwen(backend, MODEL_CONFIGS[backend]["model_config"])
         else:
-            tokenizer, model, llm = load_llama(backend, args.model_revision, MAX_TOKEN, MODEL_CONFIG_LLAMA)
+            tokenizer, model, llm = load_llama(backend, args.model_revision, MODEL_CONFIGS[backend]["max_token"], MODEL_CONFIGS[backend]["model_config"])
         return call_model
     except Exception as e:
         print(e)
@@ -103,12 +106,26 @@ def prompt_preprocessing_for_model(prompt):
                 return "[INST] " + prompt["system"] + "\n" + prompt["user"] + "\n[/INST]"
             else:
                 return "[INST] " + prompt["user"] + "\n[/INST]"
+        elif "Qwen" in backend:
+            if "system" not in prompt:
+                prompt["system"] = ""
+            return prompt 
+            
     # use naive prompting template, instead 
     if "system" in prompt:
         return prompt["system"] + "\n" + prompt["user"]
     else:
         return prompt["user"]
 
+def check_prompt_size(prompt):
+    global backend, tokenizer
+    if isinstance(prompt, dict):
+        prompt = "\n".join(prompt.values())
+    num_tokens, token_limit = count_tokens(prompt, backend, tokenizer)
+    if num_tokens > token_limit:
+        return False, num_tokens, token_limit
+    return True, num_tokens, token_limit
+   
 
 def call_model(prompt, max_tokens=2000, n=1, stop=None):
     global model, tokenizer, llm, completion_tokens, prompt_tokens, backend, naive_run
@@ -119,8 +136,15 @@ def call_model(prompt, max_tokens=2000, n=1, stop=None):
     elif backend in ["TheBloke/Falcon-7B-Instruct-GPTQ", "TheBloke/Falcon-40B-Instruct-GPTQ"]:
         outputs = []
         for i in range(n):
-            output = llm(tokenizer, model, prompt, **MODEL_CONFIG_FALCON)
+            output = llm(tokenizer, model, prompt, **MODEL_CONFIGS[backend]["model_config"])
             prompt_tokens += count_tokens(prompt, backend, tokenizer)[0]
+            completion_tokens += count_tokens(output, backend, tokenizer)[0]
+            outputs.append(output)
+    elif backend in ["Qwen/Qwen-14B-Chat", "Qwen/Qwen-7B-Chat", "Qwen/Qwen-72B-Chat"]:
+        outputs = []
+        for i in range(n):
+            output, _ = llm(tokenizer, prompt["user"], history=None, system=prompt["system"])
+            prompt_tokens += count_tokens("\n".join(prompt), backend, tokenizer)[0]
             completion_tokens += count_tokens(output, backend, tokenizer)[0]
             outputs.append(output)
     else:
@@ -201,7 +225,7 @@ def gpt_usage(backend="gpt-4", input_tokens=None, output_tokens=None):
 
 
 #################### Open-Source #############
-# LLama Models
+# LLama Models and Llama-like models
 def load_llama(model_name, revision, max_token, model_config):
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
     if tokenizer.model_max_length is None or tokenizer.model_max_length > 9999999999:
@@ -259,6 +283,22 @@ def run_falcon(tokenizer, model, prompt, max_new_tokens, temperature):
     return [tokenizer.decode(output[0])]
 
 
+# Qwen Models
+def load_qwen(model_name, model_config):
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, use_fast=True)
+    model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", trust_remote_code=True, bf16=True).eval()
+    # model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", trust_remote_code=True).eval()
+    # Docs for config: https://huggingface.co/docs/transformers/v4.33.3/en/main_classes/configuration#transformers.PretrainedConfig
+    # https://www.promptingguide.ai/introduction/settings
+    generation_config = GenerationConfig.from_pretrained(model_name)
+    generation_config.max_new_tokens = model_config["max_new_tokens"]
+    generation_config.temperature = model_config["temperature"]
+    #generation_config.top_p = 0.9 #  If set to float < 1, only the most probable tokens with probabilities that add up to top_p or higher are kept for generation.
+    generation_config.do_sample = True # Whether or not to use sampling ; use greedy decoding otherwise.
+    generation_config.repetition_penalty = model_config["repetition_penalty"] # 1.0 means no penalty.
+    model.generation_config = generation_config
+    return model.chat, tokenizer
+
 #################### Utils #####################
 
 def count_tokens(prompt, model_name, tokenizer):
@@ -278,15 +318,7 @@ def count_tokens(prompt, model_name, tokenizer):
                 if key == "name":
                     num_tokens += tokens_per_name
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
-        if "gpt-3.5" in model_name:
-            token_limit = 4096
-        elif "gpt-4" in model_name:
-            token_limit = 8192
-        elif "gpt-4-1106-preview" in model_name:
-            token_limit = 128000
-        elif "gpt-3.5-turbo-1106" in model_name:
-            token_limit = 8192
     else: 
         num_tokens = len(tokenizer.encode(prompt, add_special_tokens=True))
-        token_limit = tokenizer.model_max_length
+    token_limit = MODEL_CONFIGS[backend]["max_token"]
     return num_tokens, token_limit

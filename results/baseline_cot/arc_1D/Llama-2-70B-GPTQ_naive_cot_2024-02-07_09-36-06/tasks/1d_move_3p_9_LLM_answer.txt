@@ -1,0 +1,180 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0]
+
+Example_3:
+input: [0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+"""
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+def get_image(img):
+    img = Image.open(img)
+    return img
+
+def get_array(img):
+    arr = np.asarray(img)
+    return arr
+
+def get_pixels(arr):
+    pixels = []
+    for i in range(len(arr)):
+        for j in range(len(arr[i])):
+            if arr[i][j]:
+                pixels.append([i,j])
+    return pixels
+
+def get_colors(pixels):
+    colors = {}
+    for px in pixels:
+        if px[0] not in colors:
+            colors[px[0]] = set()
+        if px[1] not in colors[px[0]]:
+            colors[px[0]].add(px[1])
+    return colors
+
+def get_objects(colors):
+    objects = []
+    for y in sorted(list(set(list(map(lambda x: x[0], colors))))):
+        for c in sorted(list(set(list(map(lambda x: x[1], colors[y]))))):
+            obj = {"start": [], "end": [], "size": 0}
+            for px in colors[y]:
+                if px == c:
+                    obj["start"].append(c)
+                    obj["end"].append(c+obj["size"])
+                    obj["size"] += 1
+            objects.append({"color": y, "start": min(obj["start"]), "end": max(obj["end"]), "size": len(obj["start"])})
+    return objects
+
+def get_noises(objects):
+    noises = []
+    for o in objects:
+        if o['size'] < 6:
+            noises.append((o['color'], (o['start'], o['end'])) )
+    return noises
+
+def get_relationships(objects):
+    relationships = []
+    for o1 in objects[:-1]:
+        for o2 in objects[1:]:
+            if o1['color']!= o2['color']:
+                if o1['start'] <= o2['start'] <= o1['end'] or o1['start'] >= o2['start'] >= o1['end']:
+                    relationships.append("Overlap")
+                elif o1['start'] > o2['start'] and o1['end'] < o2['end']:
+                    relationships.append("Containment")
+                else:
+                    pass
+    return relationships
+
+def get_distance(objects):
+    distances = []
+    for o1 in objects[:-1]:
+        for o2 in objects[1:]:
+            if o1['color']!= o2['color']:
+                if o1['start'] <= o2['start'] <= o1['end'] or o1['start'] >= o2['start'] >= o1['end']:
+                    distances.append(-1)
+                elif o1['start'] > o2['start'] and o1['end'] < o2['end']:
+                    distances.append(-1)
+                else:
+                    distances.append(abs(o1['start'] - o2['start']) + abs(o1['end'] - o2['end']))
+    return distances
+
+def get_count(objects):
+    counts = []
+    for o in objects:
+        counts.append(o['size'])
+    return counts
+
+def get_sort(objects):
+    sortings = []
+    for o in objects:
+        sortings.append(o['color'])
+    return sortings
+
+def get_conditional(objects):
+    conditions = []
+    for o in objects:
+        conditions.append(o['color'])
+    return conditions
+
+def get_actions(objects):
+    actions = []
+    for o in objects:
+        actions.append(f'{o["color"]}:{o["start"]}-{o["end"]}')
+    return actions
+
+def get_result(objects):
+    result = []
+    for o in objects:
+        result.extend([o['color']]*o['size'])
+    return result
+
+if __name__ == "__main__":
+    img = get_image('./images/task_1.png')
+    arr = get_array(img)
+    pixels = get_pixels(arr)
+    colors = get_colors(pixels)
+    objects = get_objects(colors)
+    noises = get_noises(objects)
+    relationships = get_relationships(objects)
+    distances = get_distance(objects)
+    counts = get_count(objects)
+    sortings = get_sort(objects)
+    conditions = get_conditional(objects)
+    actions = get_actions(objects)
+    result = get_result(objects)
+    
+    print(f'Description: \n\tObjects: {objects}\n\tNoise: {noises}\n\tRelationship: {relationships}\n\tDistance: {distances}\n\tCount: {counts}\n\tSort: {sortings}\n\tConditional: {conditions}\n\tActions: {actions}')
+    print(f'\nResult:\n\tInput: {result}')
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.162
+
+cat_success_cnt: 5
+
+cat_success_rate: 0.1
+

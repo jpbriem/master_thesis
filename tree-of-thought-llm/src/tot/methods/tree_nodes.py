@@ -3,9 +3,10 @@ import copy
 class Node:
     nodeID = 0
     nodes = []
-    def __init__(self, level, x, phase="abstraction", LLM_answer="", thought="", value=0, parent=None, n_generate_children=1, children=[], leaf=False):
+    def __init__(self, task_name, level, x, phase="abstraction", LLM_answer="", thought="", value=0, parent=None, n_generate_children=1, children=[], leaf=False):
         self.nodeID = Node.nodeID
         Node.nodeID += 1
+        self.task_name = task_name
         self.x = x
         self.level = level # level in the tree
         self.phase = phase # phase: Abstraction of a Pattern vs. Application of pattern to test case
@@ -27,11 +28,11 @@ class Node:
         Node.nodes.append(self)
 
     def __repr__(self) -> str:
-        return f"Node_{self.nodeID}(Level: {self.level}, Phase: {self.phase}, Thought: {self.thought}, Value: {self.value}, Parent_ID: {self.parent.nodeID if not self.isRoot else None}, Spread: {True if self.n_generate_children>1 else False}, Children_ID: {[child.nodeID for child in self.children]}, is_root: {self.isRoot}, is_leaf: {self.isLeaf})"
+        return f"{self.task_name}-Node_{self.nodeID}(Level: {self.level}, Phase: {self.phase}, Thought: {self.thought}, Value: {self.value}, Parent_ID: {self.parent.nodeID if not self.isRoot else None}, Spread: {True if self.n_generate_children>1 else False}, Children_ID: {[child.nodeID for child in self.children]}, is_root: {self.isRoot}, is_leaf: {self.isLeaf})"
     
     def copy(self):
-        copied_childre = copy.deepcopy(self.children)
-        return Node(self.level, self.x, self.phase, self.LLM_answer, self.thought, self.value, self.parent, self.n_generate_children, copied_childre, self.isLeaf)
+        copied_children = copy.deepcopy(self.children)
+        return Node(self.task_name, self.level, self.x, self.phase, self.LLM_answer, self.thought, self.value, self.parent, self.n_generate_children, copied_children, self.isLeaf)
     
     def reset_tree():
         Node.nodeID = 0

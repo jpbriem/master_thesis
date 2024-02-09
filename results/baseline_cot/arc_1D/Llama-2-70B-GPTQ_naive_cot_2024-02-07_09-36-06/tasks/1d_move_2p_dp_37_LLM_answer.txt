@@ -1,0 +1,204 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 3, 3, 3, 3, 0, 0, 8, 0]
+output: [0, 0, 0, 3, 3, 3, 3, 8, 0]
+
+Example_2:
+input: [6, 6, 6, 6, 6, 0, 0, 8, 0]
+output: [0, 0, 6, 6, 6, 6, 6, 8, 0]
+
+Example_3:
+input: [0, 1, 1, 1, 1, 0, 0, 8, 0]
+output: [0, 0, 0, 1, 1, 1, 1, 8, 0]
+
+
+
+Test case:
+input: [7, 7, 7, 7, 0, 0, 8, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 7, 7, 7, 7, 8, 0, 0]
+
+
+'''
+#%%
+import pandas as pd
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def main():
+    '''
+    Main function
+    
+    Returns:
+        None
+    '''
+    #%%
+    df = pd.read_csv('data/train.csv')
+    X = df['input'].values
+    y = df['output'].values
+    print("Shape of training data:\n",X.shape)
+    print("\n")
+    print("Shape of testing data:\n",y.shape)
+    print("\n")
+    print("Training data shape:\n",df.shape)
+    print("\n")
+    print("Number of unique classes (labels):\n",len(np.unique(y)))
+    print("\n")
+    print("Number of unique inputs:\n",len(np.unique(X)))
+    print("\n")
+    print("Number of unique outputs:\n",len(np.unique(y)))
+    print("\n")
+    print("Number of samples per class:\n",pd.Series(np.bincount(y)).sort_values().to_frame().T)
+    print("\n")
+    print("Distribution of labels:\n",pd.Series(np.bincount(y)/float(sum(y))).sort_values().to_frame().T)
+    print("\n")
+    print("Distribution of inputs:\n",pd.Series(np.bincount(X)/float(sum(X))).sort_values().to_frame().T)
+    print("\n")
+    print("Distribution of outputs:\n",pd.Series(np.bincount(y)/float(sum(y))).sort_values().to_frame().T)
+    print("\n")
+    print("Input distribution histogram:\n",plt.hist(X[~np.isnan(X)]))
+    print("\n")
+    print("Output distribution histogram:\n",plt.hist(y[~np.isnan(y)]))
+    print("\n")
+    print("Correlation matrix:\n",df.corr())
+    print("\n")
+    print("Heatmap:\n",sns.heatmap(df.corr(), annot=True))
+    print("\n")
+    print("Pearson correlation coefficients:\n",df.corr()["input"].abs().sort_values().to_frame().T)
+    print("\n")
+    print("Spearman correlation coefficients:\n",df.corr()["input"].sort_values().to_frame().T)
+    print("\n")
+    print("Kendall correlation coefficients:\n",df.corr()["input"].sort_values().to_frame().T)
+    print("\n")
+    print("Euclidean distances:\n",pairwise_distances(X))
+    print("\n")
+    print("Manhattan distances:\n",pairwise_distances(X, metric='cityblock'))
+    print("\n")
+    print("Chebyshev distances:\n",pairwise_distances(X, metric='chebyshev'))
+    print("\n")
+    print("Minkowski distances:\n",pairwise_distances(X, metric='minkowski', p=2))
+    print("\n")
+    print("Canberra distances:\n",pairwise_distances(X, metric='canberra'))
+    print("\n")
+    print("Bray Curtis distances:\n",pairwise_distances(X, metric='braycurtis'))
+    print("\n")
+    print("Jaccard distances:\n",pairwise_distances(X, metric='jaccard'))
+    print("\n")
+    print("Hamming distances:\n",pairwise_distances(X, metric='hamming'))
+    print("\n")
+    print("Rogers Tanimoto distances:\n",pairwise_distances(X, metric='rogerstanimoto'))
+    print("\n")
+    print("Russell Rao distances:\n",pairwise_distances(X, metric='russellrao'))
+    print("\n")
+    print("Sokal Michener distances:\n",pairwise_distances(X, metric='sokalmichener'))
+    print("\n")
+    print("Dice distances:\n",pairwise_distances(X, metric='dice'))
+    print("\n")
+    print("Yule distances:\n",pairwise_distances(X, metric='yule'))
+    print("\n")
+    print("Kulsinski distances:\n",pairwise_distances(X, metric='kulsinski'))
+    print("\n")
+    print("Complete linkage clustering dendrogram:\n",complete_linkage_clustering(X))
+    print("\n")
+    print("Average linkage clustering dendrogram:\n",average_linkage_clustering(X))
+    print("\n")
+    print("Single linkage clustering dendrogram:\n",single_linkage_clustering(X))
+    print("\n")
+    print("Ward's method clustering dendrogram:\n",ward_method_clustering(X))
+    print("\n")
+    print("Centroid clustering dendrogram:\n",centroid_clustering(X))
+    print("\n")
+    print("Median clustering dendrogram:\n",median_clustering(X))
+    print("\n")
+    print("McQuitty clustering dendrogram:\n",mcquitty_clustering(X))
+    print("\n")
+    print("Agglomerative clustering dendrogram:\n",agglomerative_clustering(X))
+    print("\n")
+    print("DBSCAN clustering dendrogram:\n",dbscan_clustering(X))
+    print("\n")
+    print("Mean shift clustering dendrogram:\n",meanshift_clustering(X))
+    print("\n")
+    print("Gaussian mixture model clustering dendrogram:\n",gmm_clustering(X))
+    print("\n")
+    print("Affinity propagation clustering dendrogram:\n",affprop_clustering(X))
+    print("\n")
+    print("Fuzzy c-means clustering dendrogram:\n",fcm_clustering(X))
+    print("\n")
+    print("Self organizing maps clustering dendrogram:\n",som_clustering(X))
+    print("\n")
+    print("Expectation maximization clustering dendrogram:\n",em_clustering(X))
+    print("\n")
+    print("Hierarchical density estimation clustering dendrogram:\n",hde_clustering(X))
+    print("\n")
+    print("Optimal transport clustering dendrogram:\n",ot_clustering(X))
+    print("\n")
+    print("Cluster analysis using k-means algorithm:\n",kmeans_analysis(X))
+    print("\n")
+    print("Cluster analysis using mean shift algorithm:\n",meanshift_analysis(X))
+    print("\n")
+    print("Cluster analysis using affinity propagation algorithm:\n",affprop_analysis(X))
+    print("\n")
+    print("Cluster analysis using fuzzy c-means algorithm:\n",fcm_analysis(X))
+    print("\n")
+    print("Cluster analysis using self organizing map algorithm:\n",som_analysis(X))
+    print("\n")
+    print("Cluster analysis using expectation maximization algorithm:\n",em_analysis(X))
+    print("\n")
+    print("Cluster analysis using hierarchical density estimation algorithm:\n",hde_analysis(X))
+    print("\n")
+    print("Cluster analysis using optimal transport algorithm:\n",ot_analysis(X))
+    print("\n")
+    print("Cluster analysis using Gaussian mixture model algorithm:\n",gmm_analysis(X))
+    print("\n")
+    print("Cluster analysis using DBSCAN algorithm:\n",dbscan_analysis(X))
+    print("\n")
+    print("Cluster analysis using agglomerative algorithm:\n",agglomerative_analysis(X))
+    print("\n")
+    print("Cluster analysis using McQuitty algorithm:\n",mcquitty_analysis(X))
+    print("\n")
+    print("Cluster
+
+
+###########################################################
+Result:
+solution: [0, 0, 7, 7, 7, 7, 8, 0, 0]
+
+
+success: 1
+
+tries: 1
+
+success_rate: 0.16898148148148148
+
+cat_success_cnt: 4
+
+cat_success_rate: 0.125
+

@@ -1,0 +1,206 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 8, 8, 8, 2, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]
+output: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 8, 8, 8, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 3, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 0, 0, 0, 5, 5, 5, 4, 5, 5, 9, 5, 5, 5, 5, 4, 5, 5, 5, 6, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0]
+'''
+
+import pandas as pd
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import math
+import random
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def get_data():
+    df = pd.read_csv('../data/task_1_train.csv')
+    return df
+
+def get_labels(df):
+    labels = []
+    for i in range(len(df)):
+        if len(df['input'][i]) == 0:
+            continue
+        else:
+            labels.append([int(x) for x in df['input'][i]])
+    return labels
+
+def get_label_lengths(labels):
+    label_lengths = []
+    for i in range(len(labels)):
+        label_lengths.append(len(labels[i]))
+    return label_lengths
+
+def get_max_label_length(label_lengths):
+    max_label_length = max(label_lengths)
+    return max_label_length
+
+def get_min_label_length(label_lengths):
+    min_label_length = min(label_lengths)
+    return min_label_length
+
+def get_mean_label_length(label_lengths):
+    mean_label_length = sum(label_lengths)/float(len(label_lengths))
+    return mean_label_length
+
+def get_median_label_length(label_lengths):
+    median_label_length = sorted(label_lengths)[round((len(label_lengths)-1)/2)]
+    return median_label_length
+
+def get_mode_label_length(label_lengths):
+    mode_label_length = max(set(label_lengths), key=label_lengths.count)
+    return mode_label_length
+
+def get_stddev_label_length(label_lengths):
+    stddev_label_length = round(math.sqrt(sum((x - mean_label_length) ** 2 for x in label_lengths)), 2)
+    return stddev_label_length
+
+def get_quantiles_label_length(label_lengths):
+    quantile_values = [0.25, 0.5, 0.75]
+    quantile_label_lengths = []
+    for q in quantile_values:
+        quantile_label_lengths.append(sorted(label_lengths)[int(q*len(label_lengths))])
+    return quantile_label_lengths
+
+def get_percentiles_label_length(label_lengths):
+    percentile_values = [1, 5, 10, 25, 50, 75, 90, 95, 99]
+    percentile_label_lengths = []
+    for p in percentile_values:
+        percentile_label_lengths.append(sorted(label_lengths)[int(p*len(label_lengths))])
+    return percentile_label_lengths
+
+def get_histogram_bins(label_lengths):
+    histogram_bin_width = int(np.ceil(np.log(max(label_lengths))) / np.log(2)) + 1
+    histogram_bins = [int(pow(2, x)) for x in range(histogram_bin_width)]
+    return histogram_bins
+
+def get_histogram_frequencies(label_lengths, bins):
+    histogram_frequencies = []
+    for bin in bins:
+        histogram_frequency = sum([1 for l in label_lengths if l <= bin])
+        histogram_frequencies.append(histogram_frequency)
+    return histogram_frequencies
+
+def get_histogram_relative_frequencies(label_lengths, bins):
+    histogram_relative_frequencies = []
+    for frequency in get_histogram_frequencies(label_lengths, bins):
+        histogram_relative_frequency = float(frequency) / float(len(label_lengths))
+        histogram_relative_frequencies.append(histogram_relative_frequency)
+    return histogram_relative_frequencies
+
+def get_histogram_absolute_frequencies(label_lengths, bins):
+    histogram_absolute_frequencies = []
+    for frequency in get_histogram_frequencies(label_lengths, bins):
+        histogram_absolute_frequency = frequency / float(len(label_lengths))
+        histogram_absolute_frequencies.append(histogram_absolute_frequency)
+    return histogram_absolute_frequencies
+
+def get_histogram_density(label_lengths, bins):
+    histogram_density = []
+    for relative_freq in get_histogram_relative_frequencies(label_lengths, bins):
+        histogram_density.append(relative_freq)
+    return histogram_density
+
+def get_histogram_pdf(label_lengths, bins):
+    histogram_pdf = []
+    for absolute_freq in get_histogram_absolute_frequencies(label_lengths, bins):
+        histogram_pdf.append(absolute_freq)
+    return histogram_pdf
+
+def get_histogram_cdf(label_lengths, bins):
+    histogram_cdf = []
+    cdf = 0
+    for pdf in get_histogram_pdf(label_lengths, bins):
+        cdf += pdf
+        histogram_cdf.append(cdf)
+    return histogram_cdf
+
+def plot_histogram(label_lengths, bins):
+    fig, ax = plt.subplots()
+    ax.bar(bins[:-1], get_histogram_frequencies(label_lengths, bins), align='edge', width=1)
+    ax.grid(True)
+    ax.set_title("Histogram")
+    ax.set_ylim(-0.5, None)
+    ax.set_yticks(range(0, len(get_histogram_frequencies(label_lengths, bins))))
+    ax.set_xticklabels(['{:d}'.format(l) for l in bins[:-1]], rotation=-90)
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.tick_params(axis="both", which="major", labelsize=12)
+    plt.show()
+
+def plot_histogram_density(label_lengths, bins):
+    fig, ax = plt.subplots()
+    ax.step(bins[:-1], get_histogram_density(label_lengths, bins), where='post')
+    ax.fill_between(bins[:-1], get_histogram_density(label_lengths, bins), alpha=.2)
+    ax.grid(True)
+    ax.set_title("Density Histogram")
+    ax.set_ylim(-0.05, 1.05)
+    ax.set_yticks([0,.25,.5,.75, 1])
+    ax.set_xticklabels(['{:d}'.format(l) for l in bins[:-1]], rotation=-90)
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.tick_params(axis="both", which="major", labelsize=12)
+    plt.show()
+
+def plot_histogram_pdf(label_lengths, bins):
+    fig, ax = plt.subplots()
+    ax.step(bins[:-1], get_histogram_pdf(label_lengths, bins), where='pre')
+    ax.fill_between(bins[:-1], get_
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0]
+
+
+success: 1
+
+tries: 1
+
+success_rate: 0.13402061855670103
+
+cat_success_cnt: 11
+
+cat_success_rate: 0.23404255319148937
+

@@ -1,0 +1,165 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 3, 3, 3, 0, 0, 9]
+output: [0, 0, 0, 3, 3, 3, 9]
+
+Example_2:
+input: [2, 2, 2, 0, 0, 9, 0]
+output: [0, 0, 2, 2, 2, 9, 0]
+
+Example_3:
+input: [3, 3, 3, 0, 0, 9, 0]
+output: [0, 0, 3, 3, 3, 9, 0]
+
+
+
+Test case:
+input: [4, 4, 4, 0, 0, 9, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 4, 4, 4, 9, 0]
+
+
+'''
+import numpy as np
+from skimage import io
+import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import sys
+import time
+import random
+import math
+import pickle
+import argparse
+import itertools
+import scipy.stats
+import glob
+import shutil
+import warnings
+warnings.filterwarnings("ignore")
+
+#%%
+def get_args():
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--data_dir', type=str)
+    args = parser.parse_args()
+    return args
+
+if __name__ == '__main__':
+    args = get_args()
+    
+    data_path = args.data_dir + '/'
+    if not os.path.exists(data_path):
+        raise Exception('Data path does not exist!')
+        
+    #%%
+    def load_data(file_path):
+        df = pd.read_csv(file_path, sep="\t", header=None).to_numpy().astype(int)
+        df[df==0]=-1
+        return df
+
+    def save_data(file_path, df):
+        df[df<0]=0
+        df[df>9]=9
+        df = df.tolist()
+        with open(file_path,'w+') as fp:
+            fp.write('\n'.join([str(x) for x in df]))
+            
+    def create_folder(folder_path):
+        if not os.path.isdir(folder_path):
+            os.makedirs(folder_path)
+                
+    def delete_folder(folder_path):
+        if os.path.isdir(folder_path):
+            shutil.rmtree(folder_path)
+            
+    def get_files(directory):
+        files = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                file_path = os.path.abspath(os.path.join(path,filename))
+                files.append(file_path)
+        return files
+
+    def get_random_seed(seed=None):
+        seed = seed if seed else int(time.time())
+        random.seed(a=seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        return seed
+
+    def get_dataset(file_paths, train_ratio=.85, val_ratio=.1, test_ratio=.05, seed=None):
+        dataset = []
+        for file_path in file_paths:
+            df = load_data(file_path)
+            n = len(df)
+            idx = list(range(n))
+            random.shuffle(idx)
+            split_point = int(np.floor((train_ratio+val_ratio)*n)+1)
+            train_idx = idx[:split_point]
+            val_idx = idx[split_point:(split_point+int(np.ceil(val_ratio*n)))+1]
+            test_idx = idx[(split_point+int(np.ceil(val_ratio*n)))+1:]
+            dataset += [(df[train_idx], df[val_idx]), (df[val_idx], df[test_idx])]
+        return dataset
+
+    def get_model(num_classes=10, num_layers=6, hidden_dim=768, dropout=0.1, lr=1e-3, weight_decay=1e-5, seed=None):
+        model = Transformer(num_classes=num_classes, num_layers=num_layers, hidden_dim=hidden_dim, dropout=dropout, lr=lr, weight_decay=weight_decay, seed=seed)
+        return model
+
+    def get_optimizer(model, learning_rate=1e-3, weight_decay=1e-5, seed=None):
+        optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+        return optimizer
+
+    def get_losses(model, criterion=torch.nn.CrossEntropyLoss(), reduction='mean'):
+        losses = Losses(model, criterion=criterion, reduction=reduction)
+        return losses
+
+    def get_dataloader(dataset, batch_size=16, shuffle=True, num_workers=0, pin_memory=False):
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, collate_fn=collate_fn, pin_memory=pin_memory)
+        return dataloader
+
+    def get_scheduler(optimizer, milestones=[], gamma=0.1, last_epoch=-1):
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=gamma, patience=10, verbose=True, threshold=1e-4, threshold_mode='rel', cooldown=0, min_lr=1e-7, eps=1e-8, last_epoch=last_epoch)
+        return scheduler
+
+    def get_callbacks(model, optimizer, scheduler, epochs=100, early_stopping=False, patience=10, monitor='val_loss', min_delta=1e-4, verbose=True, save_best=False, save_weights_only=False, save_checkpoints=False, checkpoint_interval=1, save_top_k=5, save_weights_path=None, save_results_path=None, save_history_path=None, save_history_format='pickle', save_history_compression='gzip', save_history_compression_level=9, save_history_extension='hist', save_history_version=1, save_history_save_kwargs=False, save_history_save_metrics=False, save_history_save_predictions=False, save_history_save_images=False, save_history_save_models=False, save_history_save_datasets=False, save_history_save_seeds=False, save_history_save_times=False, save_history_save_loggers=False, save_history_save_callbacks=False, save_history_save_states=False, save_history_save_configurations=False, save_history_save_hyperparameter_searches=False, save_history_save_experiments=False, save_history_save_logs=False, save_history_save_plots=False, save_history_save_debugging=False, save_history_save_profiler=False, save_history_save_tracebacks=False, save_history_save_versions=False, save_history_save_dates=False, save_history_save_times=False, save_history_save_seeds=False, save_history_save_datasets=False, save_history_save_models=False, save_history_save_optimizers=False, save_history_save_schedulers=False, save_history_save_losses=False, save_history_save_metrics=False, save_history_save_dataloaders=False, save_history_save_augmentations=False, save_history_save_transforms=False, save_history_save_loaders=False, save_history_save_visualizations=False, save_history_save_figures=False, save_history_save_tables=False, save_history_save_texts=False, save_history_save_markdowns=False, save_history_save_htmls=False, save_history_save_commands=False, save_history_save_environments=False, save_history_save_packages=False, save_history_save_dependencies=False, save_history_save_requirements=False, save_history_save_notebooks=False, save_history_save_cells=False, save_history_save_code=False, save_history_save_source_codes=False, save_history_save_preprocessors=False, save_history_save_postprocessors=False, save_history_save_augmentators=False, save_history_save_normalizers=False, save_history_save_standardizers=False, save_history_save_scalers
+
+
+###########################################################
+Result:
+solution: [0, 0, 4, 4, 4, 9, 0]
+
+
+success: 1
+
+tries: 1
+
+success_rate: 0.16741071428571427
+
+cat_success_cnt: 6
+
+cat_success_rate: 0.125
+

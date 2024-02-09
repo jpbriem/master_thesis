@@ -1,0 +1,280 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 5, 5, 5, 0, 0, 0, 5, 0, 5, 5]
+output: [0, 0, 1, 1, 1, 0, 0, 0, 9, 0, 3, 3]
+
+Example_2:
+input: [0, 5, 5, 0, 5, 0, 0, 5, 5, 5, 0, 0]
+output: [0, 3, 3, 0, 9, 0, 0, 1, 1, 1, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 5, 5, 5, 0, 0, 5, 0, 0, 0]
+output: [0, 0, 0, 1, 1, 1, 0, 0, 9, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 5, 0, 5, 5, 5, 0, 5, 5, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 1, 0, 9, 9, 9, 0, 3, 3, 0]
+'''
+import numpy as np
+from skimage import io
+import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import sys
+import time
+import random
+import math
+import pickle
+import argparse
+import itertools
+import scipy.stats
+import multiprocessing
+import shutil
+import glob
+import subprocess
+import warnings
+warnings.filterwarnings("ignore")
+
+# -------------------------------------------------------------------------------- #
+#                               Global variables                                    #
+# -------------------------------------------------------------------------------- #
+
+# Path to data folder
+data_path = ''
+
+# Path to results folder
+results_path = ''
+
+# Number of cores used for parallelization
+num_cores = 8
+
+# Maximum number of iterations
+max_iterations = 1000000
+
+# Minimum number of training samples per class
+min_samples_per_class = 100
+
+# Minimum number of validation samples per class
+min_validation_samples_per_class = 10
+
+# Minimum number of test samples per class
+min_test_samples_per_class = 10
+
+# Seeds for reproducibility
+seed = 7654321
+random.seed(seed)
+np.random.seed(seed)
+
+# -------------------------------------------------------------------------------- #
+#                                Function definitions                              #
+# -------------------------------------------------------------------------------- #
+def get_parser():
+    '''
+    Returns an argument parser object.
+    
+    :return: ArgumentParser object
+    '''
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data_path', type=str, default='./data/')
+    parser.add_argument('--results_path', type=str, default='./results/')
+    return parser
+
+
+def load_dataset(data_path):
+    '''
+    Loads the dataset from the given path.
+    
+    :param data_path: Path to the dataset
+    :type data_path: str
+    :return: Dataframe containing the dataset
+    :rtype: Pandas dataframe
+    '''
+    df = pd.read_csv(os.path.join(data_path,'train.csv'))
+    df['label'] = df['label'].apply(lambda x: int(x))
+    df['input'] = df['input'].apply(lambda x: eval(x))
+    df['output'] = df['output'].apply(lambda x: eval(x))
+    df['test_input'] = df['test_input'].apply(lambda x: eval(x))
+    df['test_output'] = df['test_output'].apply(lambda x: eval(x))
+    return df
+
+
+def save_model(df, model, model_name, results_path):
+    '''
+    Saves the trained model to disk.
+    
+    :param df: Dataset
+    :type df: Pandas dataframe
+    :param model: Trained model
+    :type model: Keras model
+    :param model_name: Name of the model
+    :type model_name: str
+    :param results_path: Path to the results directory
+    :type results_path: str
+    '''
+    if not os.path.exists(results_path):
+        os.makedirs(results_path)
+        
+    model_file = open(os.path.join(results_path,f'{model_name}_model.h5'), 'wb+')
+    model.save(model_file)
+    model_file.close()
+
+
+def load_model(model_name, results_path):
+    '''
+    Loads a previously saved model from disk.
+    
+    :param model_name: Name of the model
+    :type model_name: str
+    :param results_path: Path to the results directory
+    :type results_path: str
+    :return: Model
+    :rtype: Keras model
+    '''
+    model_file = open(os.path.join(results_path, f'{model_name}_model.h5'), 'rb')
+    model = tf.keras.models.load_model(model_file)
+    model_file.close()
+    return model
+
+
+def train_and_evaluate_model(df, model, model_name, results_path, epochs, batch_size, verbose=False):
+    '''
+    Trains and evaluates the given model using the given dataset.
+    
+    :param df: Dataset
+    :type df: Pandas dataframe
+    :param model: Model
+    :type model: Keras model
+    :param model_name: Name of the model
+    :type model_name: str
+    :param results_path: Path to the results directory
+    :type results_path: str
+    :param epochs: Number of epochs
+    :type epochs: int
+    :param batch_size: Batch size
+    :type batch_size: int
+    :param verbose: Whether to print information about the training process (default: False)
+    :type verbose: bool
+    '''
+    history = model.fit(df[['input','output']], epochs=epochs, batch_size=batch_size, verbose=verbose)
+    score = model.evaluate(df[['input','output']])
+    if verbose:
+        print(score)
+    return history, score
+
+
+def predict(df, model, model_name, results_path, verbose=True):
+    '''
+    Predicts the labels for each sample in the given dataset.
+    
+    :param df: Dataset
+    :type df: Pandas dataframe
+    :param model: Model
+    :type model: Keras model
+    :param model_name: Name of the model
+    :type model_name: str
+    :param results_path: Path to the results directory
+    :type results_path: str
+    :param verbose: Whether to print information about the prediction process (default: True)
+    :type verbose: bool
+    '''
+    predictions = []
+    for i in range(len(df)):
+        pred = model.predict([df.iloc[i]['input']])
+        predictions.append({'id': df.iloc[i]['id'], 'prediction': pred})
+        if verbose:
+            print(f'\nPredicted label for id {df.iloc[i]['id']}: {pred}')
+    return predictions
+
+
+def evaluate_model(df, model, model_name, results_path, verbose=True):
+    '''
+    Evaluates the performance of the given model on the given dataset.
+    
+    :param df: Dataset
+    :type df: Pandas dataframe
+    :param model: Model
+    :type model: Keras model
+    :param model_name: Name of the model
+    :type model_name: str
+    :param results_path: Path to the results directory
+    :type results_path: str
+    :param verbose: Whether to print information about the evaluation process (default: True)
+    :type verbose: bool
+    '''
+    score = model.evaluate(df[['input','output']])
+    if verbose:
+        print(score)
+    return score
+
+
+def create_submission(df, model, model_name, results_path, verbose=True):
+    '''
+    Creates a submission file for the competition.
+    
+    :param df: Dataset
+    :type df: Pandas dataframe
+    :param model: Model
+    :type model: Keras model
+    :param model_name: Name of the model
+    :type model_name: str
+    :param results_path: Path to the results directory
+    :type results_path: str
+    :param verbose: Whether to print information about the creation process (default: True)
+    :type verbose: bool
+    '''
+    submission = {}
+    submission['description'] = {}
+    submission['overall_pattern'] = {}
+    submission['instructions'] = {}
+    submission['transformation']['input'] = df['test_input'].values.tolist()
+    submission['transformation']['object_description'] = []
+    submission['transformation']['transformed_objects'] = []
+    submission['transformation']['output'] = []
+    for i in range(len(df)):
+        pred = model.predict([df.iloc[i]['test_input']])
+        submission['transformation']['output'].extend(pred)
+        submission['transformation']['object_description'].append(df.iloc[i]['test_input'])
+        submission['transformation']['transformed_objects'].append(pred)
+    submission['transformation']['output'] = submission['transformation']['output
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 9, 0, 1, 1, 1, 0, 3, 3, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.12265331664580725
+
+cat_success_cnt: 3
+
+cat_success_rate: 0.061224489795918366
+

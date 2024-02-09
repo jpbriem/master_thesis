@@ -1,0 +1,177 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 6, 3, 3, 3, 3, 3, 3, 4, 3, 3, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 6, 6, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 2, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 5, 3, 3, 3, 3, 3, 3, 3, 7, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 4, 2, 2, 2, 3, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+"""
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def get_image():
+    return Image.open('./images/task_18.png')
+
+def get_mask():
+    return Image.open('./images/task_18_mask.png').convert("L")
+
+def get_data():
+    image = get_image()
+    mask = get_mask()
+    data = []
+    for y in range(len(image)):
+        row = []
+        for x in range(len(image[y])):
+            if image[y][x] == 0:
+                continue
+            elif mask[y][x]!= 0:
+                row.append((int(image[y][x]), int(mask[y][x]) - 1))
+            else:
+                row.append((int(image[y][x]), 0))
+        data.append(row)
+    return data
+
+def get_labels():
+    labels = {}
+    for i in range(len(data)):
+        for j in range(len(data[i])):
+            if (data[i][j][0], data[i][j][1]) not in labels:
+                labels[(data[i][j][0], data[i][j][1])] = len(labels) + 1
+    return labels
+
+def get_labelled_data():
+    labelled_data = []
+    for i in range(len(data)):
+        row = []
+        for j in range(len(data[i])):
+            row.append(labels[(data[i][j][0], data[i][j)[1]])])
+        labelled_data.append(row)
+    return labelled_data
+
+def get_sequences():
+    sequences = []
+    for i in range(len(labelled_data)):
+        seq = []
+        for j in range(len(labelled_data[i])):
+            seq.append(labelled_data[i][j])
+        sequences.append(seq)
+    return sequences
+
+def get_sequenced_data():
+    sequenced_data = []
+    for i in range(len(sequences)):
+        row = []
+        for j in range(len(sequences[i])):
+            row.append([sequences[i][j], 0])
+        sequenced_data.append(row)
+    return sequenced_data
+
+def get_sequenced_and_labeled_data():
+    sequenced_and_labeled_data = []
+    for i in range(len(sequenced_data)):
+        row = []
+        for j in range(len(sequenced_data[i])):
+            row.append([sequences[i][j], labels[(sequences[i][j], 0)]])
+        sequenced_and_labeled_data.append(row)
+    return sequenced_and_labeled_data
+
+def get_sequenced_and_labeled_and_counted_data():
+    sequenced_and_labeled_and_counted_data = []
+    for i in range(len(sequenced_and_labeled_data)):
+        row = []
+        for j in range(len(sequenced_and_labeled_data[i])):
+            row.append([sequences[i][j], labels[(sequences[i][j], 0)], count_occurrences(sequences[i][j], 0)])
+        sequenced_and_labeled_and_counted_data.append(row)
+    return sequenced_and_labeled_and_counted_data
+
+def get_sequenced_and_labeled_and_counted_and_sorted_data():
+    sequenced_and_labeled_and_counted_and_sorted_data = []
+    for i in range(len(sequenced_and_labeled_and_counted_data)):
+        row = []
+        for j in range(len(sequenced_and_labeled_and_counted_data[i])):
+            row.append([sequences[i][j], labels[(sequences[i][j], 0)], count_occurrences(sequences[i][j], 0), sort_by_size(sequences[i][j], 0)])
+        sequenced_and_labeled_and_counted_and_sorted_data.append(row)
+    return sequenced_and_labeled_and_counted_and_sorted_data
+
+def get_sequenced_and_labeled_and_counted_and_sorted_and_filtered_data():
+    sequenced_and_labeled_and_counted_and_sorted_and_filtered_data = []
+    for i in range(len(sequenced_and_labeled_and_counted_and_sorted_data)):
+        row = []
+        for j in range(len(sequenced_and_labeled_and_counted_and_sorted_data[i])):
+            row.append([sequences[i][j], labels[(sequences[i][j], 0)], count_occurrences(sequences[i][j], 0), sort_by_size(sequences[i][j], 0), filter_by_size(sequences[i][j], 0)])
+        sequenced_and_labeled_and_counted_and_sorted_and_filtered_data.append(row)
+    return sequenced_and_labeled_and_counted_and_sorted_and_filtered_data
+
+def get_sequenced_and_labeled_and_counted_and_sorted_and_filtered_and_reordered_data():
+    sequenced_and_labeled_and_counted_and_sorted_and_filtered_and_reordered_data = []
+    for i in range(len(sequenced_and_labeled_and_counted_and_sorted_and_filtered_data)):
+        row = []
+        for j in range(len(sequenced_and_labeled_and_counted_and_sorted_and_filtered_data[i])):
+            row.append([sequences[i][j], labels[(sequences[i][j], 0)], count_occurrences(sequences[i][j], 0), sort_by_size(sequences[i][j], 0), filter_by_size(sequences[i][j], 0), reorder_by_position(sequences[i][j], 0)])
+        sequenced_and_labeled_and_counted_and_sorted_and_filtered_and_reordered_data.append(row)
+    return sequenced_and_labeled_and_counted_and_sorted_and_filtered_and_reordered_data
+
+def get_sequenced_and_labeled_and_counted_and_sorted_and_filtered_and_reordered_and_copied_data():
+    sequenced_and_labeled_and_counted_and_sorted_and_filtered_and_reordered_and_copied_data = []
+    for i in range(len(sequenced_and_labeled_and_counted_and_sorted_and_filtered_and_reordered_data)):
+        row = []
+        for j in range(len(sequenced_and_labeled_and_counted_and_sorted_and_filtered_and_reordered_data[i])):
+            row.append([sequences[i][j], labels[(sequences[i][j], 0)], count_occurrences(sequences[i][j], 0), sort_by_size(sequences[i][j], 0), filter_by_size(sequences[i][j], 0), reorder_by_position(sequences[i][j], 0), copy_to_new_sequence(sequences[i][j], 0)])
+        sequenced_and_labeled_and_counted_and_sorted_and_filtered_and_reordered_and_copied_data.append(row)
+    return sequenced_and_l
+
+
+###########################################################
+Result:
+solution: [0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.07142857142857142
+
+cat_success_cnt: 4
+
+cat_success_rate: 0.11764705882352941
+

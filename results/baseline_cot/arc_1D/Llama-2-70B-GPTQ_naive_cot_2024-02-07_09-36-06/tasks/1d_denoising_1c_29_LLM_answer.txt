@@ -1,0 +1,228 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 8, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 6, 0, 0, 6, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 6, 0, 0, 0, 0, 6, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 3, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0]
+
+###########################################################
+Sample Outputs:
+
+'''
+
+import numpy as np
+from skimage import io
+import matplotlib.pyplot as plt
+
+def get_pixel(img):
+    return img[0][0]
+
+def get_size(img):
+    return len(img) * len(img[0])
+
+def get_noise(img):
+    noise = []
+    for i in range(len(img)):
+        for j in range(len(img[i])):
+            if img[i][j] == 0:
+                noise.append([i, j])
+    return noise
+
+def get_objects(img):
+    objects = {}
+    for i in range(len(img)):
+        for j in range(len(img[i])):
+            if img[i][j]!= 0:
+                object_start = (i, j)
+                while True:
+                    if img[i+1][j] == 0:
+                        break
+                    elif img[i+1][j]!= 0:
+                        i += 1
+                    else:
+                        break
+                while True:
+                    if img[i][j+1] == 0:
+                        break
+                    elif img[i][j+1]!= 0:
+                        j += 1
+                    else:
+                        break
+                objects[(i, j)] = {"end": (i, j), "size": abs((i - object_start[0]), (j - object_start[1]))}
+    return objects
+
+def get_distance(obj1, obj2):
+    dist = max(abs(obj1["end"][0], obj2["end"][0]), abs(obj1["end"][1], obj2["end"][1])) + min(abs(obj1["end"][0], obj2["end"][0]), abs(obj1["end"][1], obj2["end"][1]))
+    return dist
+
+def get_alignment(obj1, obj2):
+    align = False
+    if obj1["end"][0] > obj2["end"][0]:
+        if obj1["end"][1] < obj2["end"][1]:
+            align = True
+    elif obj1["end"][0] < obj2["end"][0]:
+        if obj1["end"][1] > obj2["end"][1]:
+            align = True
+    return align
+
+def get_containment(obj1, obj2):
+    cont = False
+    if obj1["end"][0] >= obj2["end"][0] and obj1["end"][1] <= obj2["end"][1]:
+        cont = True
+    elif obj1["end"][0] <= obj2["end"][0] and obj1["end"][1] >= obj2["end"][1]:
+        cont = True
+    return cont
+
+def get_relocation(obj1, obj2):
+    rel = False
+    if obj1["end"][0] == obj2["end"][0] and obj1["end"][1] == obj2["end"][1]:
+        rel = True
+    return rel
+
+def get_hollow(obj1, obj2):
+    hol = False
+    if obj1["end"][0] == obj2["end"][0] and obj1["end"][1] == obj2["end"][1]:
+        hol = True
+    return hol
+
+def get_scale(obj1, obj2):
+    sca = False
+    if obj1["size"] == obj2["size"]:
+        sca = True
+    return sca
+
+def get_remove(obj1, obj2):
+    rem = False
+    if obj1["size"] > obj2["size"]:
+        rem = True
+    return rem
+
+def get_copy(obj1, obj2):
+    cop = False
+    if obj1["size"] < obj2["size"]:
+        cop = True
+    return cop
+
+def get_rec(obj1, obj2):
+    rec = False
+    if obj1["size"] == obj2["size"]:
+        rec = True
+    return rec
+
+def get_relationship(obj1, obj2):
+    relat = ""
+    if get_distance(obj1, obj2) == 1:
+        relat += "Distance"
+    if get_alignment(obj1, obj2):
+        relat += ", Alignment"
+    if get_containment(obj1, obj2):
+        relat += ", Containment"
+    if get_relocation(obj1, obj2):
+        relat += ", Relocation"
+    if get_hollow(obj1, obj2):
+        relat += ", Hollow"
+    if get_scale(obj1, obj2):
+        relat += ", Scale"
+    if get_remove(obj1, obj2):
+        relat += ", Remove"
+    if get_copy(obj1, obj2):
+        relat += ", Copy"
+    if get_rec(obj1, obj2):
+        relat += ", Recolor"
+    return relat
+
+def get_relation(objs):
+    relats = []
+    for key in objs:
+        for key2 in objs:
+            if key!= key2:
+                relats.append({key:get_relationship(objs[key], objs[key2])})
+    return relats
+
+def get_conditional(objs):
+    condis = []
+    for key in objs:
+        for key2 in objs:
+            if key!= key2:
+                condis.append("if " + str(key) + " then " + str(key2))
+    return condis
+
+def get_result():
+    result = {"description": {}, "overall_pattern": "", "instructions": "", "transformation": {"input": [], "object_description": [], "transformed_objects": [], "output": []}}
+    result["description"]['Example_1'] = "In this example, the first object is moved one space downwards."
+    result["description"]['Example_2'] = "In this example, the second object is removed."
+    result["description"]['Example_3'] = "In this example, the third object is copied once."
+    result["overall_pattern"] = "Objects are either moved, removed, copied or recolored depending on their relationships."
+    result["instructions"] = "Start at the top left corner of the image and go through each object. If an object has a specific relationship to another object, it will be transformed accordingly. Otherwise, it stays unchanged."
+    result["transformation"]["input"] = [0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0]
+    result["transformation"]["object_description"] = ["Object_1", "Object_2", "Object_3", "Object_4"]
+    result["transformation"]["transformed_objects"] = ["Object_1", "Object_2", "Object_3", "Object_4"]
+    result["transformation"]["output"] = [0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0, 0, 5, 0]
+    return result
+
+def main():
+    # Read image
+    img = io.imread('./data/task_17/test_case.png')
+    print(f'Pixel: {get_pixel(img)}')
+    print(f'Size: {get_size(img)}')
+    print(f'Noise: {get_noise(img)}')
+    print(f'Objects: {get_objects(img)}')
+    
+    # Get relations
+    relats = get_relation(get_objects(img))
+    print(f'Relationships: {relats}')
+    condis = get_conditional(get_objects(img))
+    print(f'Conditions: {condis}')
+
+    # Transform image
+    trans_img = np.zeros(shape=(len(img), len(img[0])))
+    for i in range(len(img)):
+        for
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.043478260869565216
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.043478260869565216
+

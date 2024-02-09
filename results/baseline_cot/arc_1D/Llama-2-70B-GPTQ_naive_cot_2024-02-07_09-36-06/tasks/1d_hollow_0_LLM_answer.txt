@@ -1,0 +1,202 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0]
+output: [0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0]
+output: [0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0]
+
+Example_3:
+input: [0, 0, 0, 0, 0, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 5, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0]
+"""
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+
+def get_image(img):
+    img = Image.open(img)
+    return np.array(img).astype('int')
+
+def get_pixels(img):
+    return img[0][0].tolist()
+
+def get_size(img):
+    return len(get_pixels(img))
+
+def get_noise(img):
+    noise = []
+    for i in range(len(img)):
+        if img[i] == 0:
+            noise.append([])
+        else:
+            noise[-1].append(i)
+    return noise
+
+def get_objects(img):
+    objects = {}
+    noise = get_noise(img)
+    for i in range(len(noise)):
+        if len(noise[i]) > 0:
+            objects['Object_{}'.format(i+1)] = {
+               'start_index' : noise[i][0],
+                'end_index'   : noise[i][-1]+1,
+               'size'        : len(noise[i]),
+                'color'       : img[noise[i][0]]
+            }
+    return objects
+
+def get_distance(obj1, obj2):
+    return abs(obj1['start_index'] - obj2['start_index']) + \
+           abs(obj1['end_index'] - obj2['end_index'])
+
+def get_alignment(obj1, obj2):
+    return (abs(obj1['start_index'] - obj2['start_index']) < 1) and \
+           (abs(obj1['end_index'] - obj2['end_index']) < 1)
+
+def get_containment(obj1, obj2):
+    return ((obj1['start_index'] >= obj2['start_index']) and \
+             (obj1['end_index'] <= obj2['end_index'])) or \
+           ((obj2['start_index'] >= obj1['start_index']) and \
+             (obj2['end_index'] <= obj1['end_index']))
+
+def get_reversal(obj1, obj2):
+    return ((obj1['start_index'] >= obj2['start_index']) and \
+             (obj1['end_index'] <= obj2['end_index'])) and \
+           ((obj2['start_index'] >= obj1['start_index']) and \
+             (obj2['end_index'] <= obj1['end_index']))
+
+def get_count(objects):
+    count = 0
+    for key in objects:
+        count += 1
+    return count
+
+def get_sort(objects):
+    sorted_keys = sorted(list(objects), key=lambda x: objects[x]['start_index'], reverse=True)
+    return sorted_keys
+
+def get_hull(objects):
+    hull = []
+    for key in objects:
+        hull.extend(range(objects[key]['start_index'], objects[key]['end_index']+1))
+    return hull
+
+def get_intersection(a, b):
+    intersection = set(a).intersection(b)
+    return list(intersection)
+
+def get_difference(a, b):
+    difference = set(a)-set(b)
+    return list(difference)
+
+def get_union(a, b):
+    union = set(a).union(b)
+    return list(union)
+
+def get_complementary(a, b):
+    complementary = set(a).symmetric_difference(b)
+    return list(complementary)
+
+def get_inverse(a, b):
+    inverse = set(a).difference(b)
+    return list(inverse)
+
+def get_result(input_, objects, instructions):
+    result = []
+    for i in range(len(input_)):
+        if input_[i]!= 0:
+            result.append(input_[i])
+        elif instructions['conditional'] == True:
+            if instructions['condition']['type'] == 'equal':
+                if instructions['condition']['value'] == objects[instructions['condition']['name']]['color']:
+                    result.append(input_[i])
+            elif instructions['condition']['type'] == 'greater than':
+                if objects[instructions['condition']['name']]['color'] > instructions['condition']['value']:
+                    result.append(input_[i])
+            elif instructions['condition']['type'] == 'lesser than':
+                if objects[instructions['condition']['name']]['color'] < instructions['condition']['value']:
+                    result.append(input_[i])
+            elif instructions['condition']['type'] == 'not equal':
+                if objects[instructions['condition']['name']]['color']!= instructions['condition']['value']:
+                    result.append(input_[i])
+        else:
+            result.append(input_[i])
+    return result
+
+def get_solution():
+    # Input
+    img = get_image("./images/task_16/example_1.png")
+    input_ = get_pixels(img)
+    print('\nInput:\n{}'.format(input_))
+    
+    # Output
+    img = get_image("./images/task_16/example_2.png")
+    output = get_pixels(img)
+    print('\nOutput:\n{}'.format(output))
+    
+    # Transformations
+    img = get_image("./images/task_16/example_3.png")
+    test_case = get_pixels(img)
+    print('\nTest Case:\n{}'.format(test_case))
+    
+    # Get objects
+    objects = get_objects(img)
+    print('\nObjects:\n{}'.format(objects))
+    
+    # Describe objects
+    description = ''
+    for key in objects:
+        description += '\t{}: {{start_index: {}, end_index: {}, size: {}}}\n'.format(key, objects[key]['start_index'], objects[key]['end_index'], objects[key]['size'])
+    print('\nDescription:\n{}'.format(description))
+    
+    # Overall pattern
+    overall_pattern = ''
+    overall_pattern += '\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0]
+
+
+success: 1
+
+tries: 1
+
+success_rate: 0.20398009950248755
+
+cat_success_cnt: 1
+
+cat_success_rate: 1.0
+

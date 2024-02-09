@@ -1,0 +1,266 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 3, 0, 0, 3, 0, 0]
+output: [0, 0, 0, 3, 3, 3, 3, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 0, 3, 0, 0, 3, 0]
+output: [0, 0, 0, 0, 3, 3, 3, 3, 0]
+
+Example_3:
+input: [0, 0, 8, 0, 0, 0, 8, 0, 0]
+output: [0, 0, 8, 8, 8, 8, 8, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 5, 0, 0, 5, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 5, 5, 5, 5, 0, 0]
+"""
+
+import numpy as np
+from typing import List, Dict, Any
+
+def get_test_case(task):
+    """
+    Returns the test case data as specified in the task description.
+    :param task: Task object
+    :return: Test case data
+    """
+    return task['data']['test_case']
+
+def get_test_cases(task):
+    """
+    Returns the test cases data as specified in the task description.
+    :param task: Task object
+    :return: Test cases data
+    """
+    return task['data']['test_cases']
+
+def get_test_case_id(task):
+    """
+    Returns the id of the test case.
+    :param task: Task object
+    :return: Id of the test case
+    """
+    return task['data']['test_case']['id']
+
+def get_test_case_name(task):
+    """
+    Returns the name of the test case.
+    :param task: Task object
+    :return: Name of the test case
+    """
+    return task['data']['test_case']['name']
+
+def get_test_case_description(task):
+    """
+    Returns the description of the test case.
+    :param task: Task object
+    :return: Description of the test case
+    """
+    return task['data']['test_case']['description']
+
+def get_test_case_examples(task):
+    """
+    Returns the examples of the test case.
+    :param task: Task object
+    :return: Examples of the test case
+    """
+    return task['data']['test_case']['examples']
+
+def get_test_case_example_ids(task):
+    """
+    Returns the ids of the examples of the test case.
+    :param task: Task object
+    :return: Ids of the examples of the test case
+    """
+    return [get_test_case_example_id(task) for _ in range(len(get_test_case_examples(task)))]
+
+def get_test_case_example_id(task):
+    """
+    Returns the id of an example of the test case.
+    :param task: Task object
+    :return: Id of an example of the test case
+    """
+    return get_test_case_example('id', task)[0]
+
+def get_test_case_example_name(task):
+    """
+    Returns the name of an example of the test case.
+    :param task: Task object
+    :return: Name of an example of the test case
+    """
+    return get_test_case_example('name', task)[0]
+
+def get_test_case_example_description(task):
+    """
+    Returns the description of an example of the test case.
+    :param task: Task object
+    :return: Description of an example of the test case
+    """
+    return get_test_case_example('description', task)[0]
+
+def get_test_case_example_input(task):
+    """
+    Returns the input of an example of the test case.
+    :param task: Task object
+    :return: Input of an example of the test case
+    """
+    return get_test_case_example('input', task)[0]
+
+def get_test_case_example_output(task):
+    """
+    Returns the output of an example of the test case.
+    :param task: Task object
+    :return: Output of an example of the test case
+    """
+    return get_test_case_example('output', task)[0]
+
+def get_test_case_example_expected_output(task):
+    """
+    Returns the expected output of an example of the test case.
+    :param task: Task object
+    :return: Expected output of an example of the test case
+    """
+    return get_test_case_example('expected_output', task)[0]
+
+def get_test_case_example_is_correct(task):
+    """
+    Returns whether an example of the test case is correct.
+    :param task: Task object
+    :return: Whether an example of the test case is correct
+    """
+    return get_test_case_example('is_correct', task)[0]
+
+def get_test_case_example_score(task):
+    """
+    Returns the score of an example of the test case.
+    :param task: Task object
+    :return: Score of an example of the test case
+    """
+    return get_test_case_example('score', task)[0]
+
+def get_test_case_example_evaluated(task):
+    """
+    Returns whether an example of the test case has been evaluated yet.
+    :param task: Task object
+    :return: Whether an example of the test case has been evaluated yet
+    """
+    return get_test_case_example('evaluated', task)[0]
+
+def get_test_case_example_evaluator(task):
+    """
+    Returns the evaluator who evaluated an example of the test case.
+    :param task: Task object
+    :return: Evaluator who evaluated an example of the test case
+    """
+    return get_test_case_example('evaluator', task)[0]
+
+def get_test_case_example_evaluation_time(task):
+    """
+    Returns the time when an example of the test case was evaluated.
+    :param task: Task object
+    :return: Time when an example of the test case was evaluated
+    """
+    return get_test_case_example('evaluation_time', task)[0]
+
+def get_test_case_example_evaluation_result(task):
+    """
+    Returns the result of evaluation of an example of the test case.
+    :param task: Task object
+    :return: Result of evaluation of an example of the test case
+    """
+    return get_test_case_example('evaluation_result', task)[0]
+
+def get_test_case_example_evaluation_comments(task):
+    """
+    Returns the comments of evaluation of an example of the test case.
+    :param task: Task object
+    :return: Comments of evaluation of an example of the test case
+    """
+    return get_test_case_example('evaluation_comments', task)[0]
+
+def get_test_case_example_evaluation_scores(task):
+    """
+    Returns the scores of evaluation of an example of the test case.
+    :param task: Task object
+    :return: Scores of evaluation of an example of the test case
+    """
+    return get_test_case_example('evaluation_scores', task)[0]
+
+def get_test_case_example_evaluation_scores_by_evaluator(task):
+    """
+    Returns the scores of evaluation of an example of the test case per evaluator.
+    :param task: Task object
+    :return: Scores of evaluation of an example of the test case per evaluator
+    """
+    return get_test_case_example('evaluation_scores_by_evaluator', task)[0]
+
+def get_test_case_example_evaluation_scores_by_evaluator_average(task):
+    """
+    Returns the average scores of evaluation of an example of the test case per evaluator.
+    :param task: Task object
+    :return: Average scores of evaluation of an example of the test case per evaluator
+    """
+    return get_test_case_example('evaluation_scores_by_evaluator_average', task)[0]
+
+def get_test_case_example_evaluation_scores_by_evaluator_stddev(task):
+    """
+    Returns the standard deviation of the scores of evaluation of an example of the test case per evaluator.
+    :param task: Task object
+    :return: Standard deviation of the scores of evaluation of an example of the test case per evaluator
+    """
+    return get_test_case_example('evaluation_scores_by_evaluator_stddev', task)[0]
+
+def get_test_case_example_evaluation_scores_by_evaluator_min(task):
+    """
+    Returns the minimum scores of evaluation of an example of the test case per evaluator.
+    :param task: Task object
+    :return: Minimum scores of evaluation of an example of the test case per evaluator
+    """
+    return get_test_case_example('evaluation_scores_by_evaluator_min', task)[0]
+
+def get_test_case_example_evaluation_scores_by_evaluator_max(task):
+    """
+    Returns the maximum scores of evaluation of an example of the test
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 5, 5, 5, 5, 0, 0]
+
+
+success: 1
+
+tries: 1
+
+success_rate: 0.06993006993006994
+
+cat_success_cnt: 6
+
+cat_success_rate: 0.13953488372093023
+

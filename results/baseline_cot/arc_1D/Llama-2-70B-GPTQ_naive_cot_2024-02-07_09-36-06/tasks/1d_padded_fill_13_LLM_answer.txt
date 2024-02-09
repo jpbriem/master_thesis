@@ -1,0 +1,239 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 7, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 0]
+
+Example_2:
+input: [0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0]
+output: [0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [8, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+'''
+
+#%%
+import pandas as pd
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def get_data():
+    df = pd.read_csv('../data/task_5_train.csv')
+    return df
+
+def get_labels(df):
+    labels = []
+    for i in range(len(df)):
+        if len(df['Input'][i].split(',')) == 6:
+            labels.append([])
+            labels[-1].extend(['Description'])
+            labels[-1].extend(['Overall Pattern']))
+            labels[-1].extend(['Instruction']))
+            labels[-1].extend(['Transformation'])
+            labels[-1].extend(['Output']))
+        else:
+            labels.append(list(map(lambda x: '', df['Label'][i][:-1].split('\n'))))
+    return labels
+
+def get_features(df):
+    features = []
+    for i in range(len(df)):
+        if len(df['Input'][i].split(',')) == 6:
+            features.append({'Description': [], 'Overall Pattern': [], 'Instruction': [], 'Transformation': [], 'Output': []})
+        else:
+            features.append(dict(zip(df['Label'][i], df['Feature'][i].split(','))))
+    return features
+
+def get_dataset(df, labels, features):
+    dataset = []
+    for i in range(len(df)):
+        if len(df['Input'][i].split(',')) == 6:
+            dataset.append(({'Description': [], 'Overall Pattern': [], 'Instruction': [], 'Transformation': [], 'Output': []}))
+        else:
+            dataset.append((df['Input'][i], dict(zip(labels[i], features[i]))))
+    return dataset
+
+if __name__ == '__main__':
+    df = get_data()
+    labels = get_labels(df)
+    features = get_features(df)
+    dataset = get_dataset(df, labels, features)
+    
+    #%%
+    def get_label_length(labels):
+        label_length = {}
+        for i in range(len(labels)):
+            label_length[i] = len(labels[i]['Description']) + \
+                              len(labels[i]['Overall Pattern']) + \
+                              len(labels[i]['Instruction']) + \
+                              len(labels[i]['Transformation']) + \
+                              len(labels[i]['Output'])
+        
+        return label_length
+
+    def get_feature_length(features):
+        feature_length = {}
+        for i in range(len(features)):
+            feature_length[i] = len(features[i]['Description']) + \
+                                len(features[i]['Overall Pattern']) + \
+                                len(features[i]['Instruction']) + \
+                                len(features[i]['Transformation']) + \
+                                len(features[i]['Output'])
+            
+        return feature_length
+
+    def get_max_length(label_length, feature_length):
+        max_length = {}
+        for key in label_length.keys():
+            max_length[key] = max(label_length[key], feature_length[key])
+        return max_length
+
+    def pad_sequence(seq, max_length=None):
+        seq += ['']*(max_length - len(seq))
+        return seq
+
+    def pad_sequences(sequences, max_length=None):
+        padded_sequences = []
+        for seq in sequences:
+            padded_sequences.append(pad_sequence(seq, max_length))
+        return padded_sequences
+
+    def pad_tokens(tokenized_sentence, max_length=None):
+        tokenized_sentence += ['']*(max_length - len(tokenized_sentence))
+        return tokenized_sentence
+
+    def pad_tokens_in_batches(tokenized_sentences, max_length=None):
+        padded_tokenized_sentences = []
+        for sentence in tokenized_sentences:
+            padded_tokenized_sentences.append(pad_tokens(sentence, max_length))
+        return padded_tokenized_sentences
+
+    def pad_words(word_ids, max_length=None):
+        word_ids += [-1]*(max_length - len(word_ids))
+        return word_ids
+
+    def pad_words_in_batches(word_id_batches, max_length=None):
+        padded_word_id_batches = []
+        for batch in word_id_batches:
+            padded_word_id_batches.append(pad_words(batch, max_length))
+        return padded_word_id_batches
+
+    def pad_characters(character_ids, max_length=None):
+        character_ids += [-1]*(max_length - len(character_ids))
+        return character_ids
+
+    def pad_characters_in_batches(character_id_batches, max_length=None):
+        padded_character_id_batches = []
+        for batch in character_id_batches:
+            padded_character_id_batches.append(pad_characters(batch, max_length))
+        return padded_character_id_batches
+
+    def pad_labels(labels, max_length=None):
+        padded_labels = []
+        for label in labels:
+            padded_labels.append(pad_sequence(label, max_length))
+        return padded_labels
+
+    def pad_features(features, max_length=None):
+        padded_features = []
+        for feature in features:
+            padded_features.append(pad_sequence(feature, max_length))
+        return padded_features
+
+    def pad_dataset(dataset, max_length=None):
+        padded_dataset = []
+        for item in dataset:
+            padded_dataset.append((item[0], pad_sequences(item[1], max_length)))
+        return padded_dataset
+
+    def pad_dataset_with_labels(dataset, labels, max_length=None):
+        padded_dataset = []
+        for i in range(len(dataset)):
+            padded_dataset.append((dataset[i][0], pad_sequences(labels[i], max_length)))
+        return padded_dataset
+
+    def pad_dataset_with_features(dataset, features, max_length=None):
+        padded_dataset = []
+        for i in range(len(dataset)):
+            padded_dataset.append((dataset[i][0], pad_sequences(features[i], max_length)))
+        return padded_dataset
+
+    def pad_dataset_with_both(dataset, labels, features, max_length=None):
+        padded_dataset = []
+        for i in range(len(dataset)):
+            padded_dataset.append((dataset[i][0], pad_sequences(labels[i], max_length), pad_sequences(features[i], max_length)))
+        return padded_dataset
+
+    def pad_dataset_with_none(dataset, max_length=None):
+        padded_dataset = []
+        for i in range(len(dataset)):
+            padded_dataset.append((dataset[i][0], pad_sequences(dataset[i][1], max_length)))
+        return padded_dataset
+
+    def pad_dataset_with_one(dataset, max_length=None):
+        padded_dataset = []
+        for i in range(len(dataset)):
+            padded_dataset.append((dataset[i][0], pad_sequences(dataset[i][1], max_length)[0]), pad_sequences(dataset[i][1], max_length)[1])
+        return padded_dataset
+
+    def pad_dataset_with_two(dataset, max_length=None):
+        padded_dataset = []
+        for i in range(len(dataset)):
+            padded_dataset.append((dataset[i][0], pad_sequences(dataset[i][1], max_length)[0]), pad_sequences(dataset[i][1], max_length)[1])
+        return padded_dataset
+
+    def pad_dataset_with_three(dataset, max_length=None):
+        padded_dataset = []
+        for i in range(len(dataset)):
+            padded_dataset.append((dataset[i][
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.1528776978417266
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

@@ -1,0 +1,303 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0]
+output: [0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 0, 0]
+
+Example_3:
+input: [4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0]
+output: [0, 0, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0]
+'''
+import numpy as np
+from skimage import io
+import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import sys
+import time
+import random
+import math
+import pickle
+import argparse
+import itertools
+import scipy.stats
+import multiprocessing
+import shutil
+import glob
+import subprocess
+import warnings
+warnings.filterwarnings("ignore")
+
+# -------------------------------------------------------------------------------- #
+#                               Global variables                                    #
+# -------------------------------------------------------------------------------- #
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--data_dir', type=str)
+args = parser.parse_args()
+
+if args.data_dir == None:
+    data_dir = '/home/ubuntu/workspace/datasets'
+else:
+    data_dir = args.data_dir
+
+print(f"Data directory: {data_dir}")
+
+# -------------------------------------------------------------------------------- #
+#                                Function definitions                              #
+# -------------------------------------------------------------------------------- #
+def get_files():
+    '''
+    Returns a list of files in the dataset folder.
+    
+    Parameters
+    ----------
+        None
+        
+    Returns
+    -------
+        filelist : list
+            List containing the names of all files in the dataset folder.
+            
+    '''
+    filelist = []
+    for root, dirnames, filenames in os.walk(os.path.join(data_dir,'train')):
+        for filename in filenames:
+            if '.npy' in filename:
+                filelist.append(filename)
+    return filelist
+
+def load_file(filename):
+    '''
+    Loads a file from the dataset folder.
+    
+    Parameters
+    ----------
+        filename : str
+            Name of the file to be loaded.
+        
+    Returns
+    -------
+        X : numpy.ndarray
+            Input sequence.
+        Y : numpy.ndarray
+            Output sequence.
+    '''
+    X = np.load(os.path.join(data_dir,'train',filename))[0][0]
+    Y = np.load(os.path.join(data_dir,'train',filename))[0][1]
+    return X,Y
+
+def save_results(X,Y,result):
+    '''
+    Saves results to a file.
+    
+    Parameters
+    ----------
+        X : numpy.ndarray
+            Input sequence.
+        Y : numpy.ndarray
+            Output sequence.
+        result : dict
+            Dictionary containing the results.
+    '''
+    fname = os.path.splitext(os.path.basename(X.tobytes()))[0]+'.json'
+    with open(os.path.join(data_dir,'submissions',fname),'w') as outfile:
+        json.dump(result,outfile)
+
+def get_example_sequences():
+    '''
+    Returns a list of example input and output sequences.
+    
+    Parameters
+    ----------
+        None
+        
+    Returns
+    -------
+        ex_seq_inp : list
+            List containing example input sequences.
+        ex_seq_out : list
+            List containing example output sequences.
+    '''
+    ex_seq_inp = ['[0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0]','[0, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0]','[4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0]']
+    ex_seq_out = ['[0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0]','[0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 0, 0]','[0, 0, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0]']
+    return ex_seq_inp,ex_seq_out
+
+def get_test_sequence():
+    '''
+    Returns a test input and output sequence.
+    
+    Parameters
+    ----------
+        None
+        
+    Returns
+    -------
+        seq_inp : numpy.ndarray
+            Test input sequence.
+        seq_out : numpy.ndarray
+            Test output sequence.
+    '''
+    seq_inp = np.zeros((18,))
+    seq_inp[:7] = 6
+    seq_inp[-7:] = 6
+    seq_out = np.zeros((18,))
+    seq_out[1:-7] = 6
+    return seq_inp,seq_out
+
+def get_test_case_sequences():
+    '''
+    Returns a list of test cases.
+    
+    Parameters
+    ----------
+        None
+        
+    Returns
+    -------
+        test_cases : list
+            List containing test cases.
+    '''
+    test_cases = [(np.ones((18,)),np.zeros((18,))),(np.zeros((18,)),np.ones((18,)))]
+    return test_cases
+
+def get_noisy_sequences(X,Y,sigma):
+    '''
+    Adds noise to an input and output sequence.
+    
+    Parameters
+    ----------
+        X : numpy.ndarray
+            Input sequence.
+        Y : numpy.ndarray
+            Output sequence.
+        sigma : float
+            Standard deviation of the added gaussian noise.
+        
+    Returns
+    -------
+        noisy_X : numpy.ndarray
+            Noisy version of the input sequence.
+        noisy_Y : numpy.ndarray
+            Noisy version of the output sequence.
+    '''
+    noisy_X = (X + np.random.normal(scale=sigma,size=(len(X),)))
+    noisy_Y = (Y + np.random.normal(scale=sigma,size=(len(Y),)))
+    return noisy_X,noisy_Y
+
+def get_shifted_sequences(X,Y,offset):
+    '''
+    Shifts an input and output sequence.
+    
+    Parameters
+    ----------
+        X : numpy.ndarray
+            Input sequence.
+        Y : numpy.ndarray
+            Output sequence.
+        offset : int
+            Amount of shift.
+        
+    Returns
+    -------
+        shifted_X : numpy.ndarray
+            Shifted version of the input sequence.
+        shifted_Y : numpy.ndarray
+            Shifted version of the output sequence.
+    '''
+    shifted_X = np.roll(X,-offset)
+    shifted_Y = np.roll(Y,-offset)
+    return shifted_X,shifted_Y
+
+def get_flipped_sequences(X,Y):
+    '''
+    Flips an input and output sequence horizontally.
+    
+    Parameters
+    ----------
+        X : numpy.ndarray
+            Input sequence.
+        Y : numpy.ndarray
+            Output sequence.
+        
+    Returns
+    -------
+        flipped_X : numpy.ndarray
+            Horizontal flip of the input sequence.
+        flipped_Y : numpy.ndarray
+            Horizontal flip of the output sequence.
+    '''
+    flipped_X = np.flipud(X)
+    flipped_Y = np.flipud(Y)
+    return flipped_X,flipped_Y
+
+def get_rotated_sequences(X,Y,angle):
+    '''
+    Rotates an input and output sequence clockwise.
+    
+    Parameters
+    ----------
+        X : numpy.ndarray
+            Input sequence.
+        Y : numpy.ndarray
+            Output sequence.
+        angle : float
+            Angle of rotation in degrees.
+        
+    Returns
+    -------
+        rotated_X : numpy.ndarray
+            Clockwise rotation of the input sequence.
+        rotated_Y : numpy.ndarray
+            Clockwise rotation of the output sequence.
+    '''
+    rotated_X = np.rot90(X,k=-int(math.ceil(-angle/90))))
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 6, 6, 6, 6, 0, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.17955801104972377
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.08333333333333333
+

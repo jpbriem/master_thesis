@@ -1,0 +1,225 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 4, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 5, 5, 5, 5, 5, 5, 5, 5, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 0, 0, 0, 0, 2, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 6, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+
+
+'''
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def get_image():
+    image = Image.open('./data/images/task_1.png')
+    return image
+
+def get_mask():
+    mask = Image.new("L", (IMAGE_SIZE[0], IMAGE_SIZE[1]))
+    draw = ImageDraw.Draw(mask)
+    for i in range(len(OBJECTS)):
+        xmin, ymin, xmax, ymax = OBJECTS[i]['bbox']
+        draw.rectangle((xmin, ymin, xmax, ymax), outline=1, width=1)
+    return mask
+
+def get_pixels(img):
+    img = np.array(img).reshape(-1, IMAGE_SIZE[1])
+    return img
+
+def get_labels(mask):
+    labels = np.zeros([IMAGE_SIZE[0], IMAGE_SIZE[1]])
+    for i in range(len(LABELS)):
+        xmin, ymin, xmax, ymax = LABELS[i]['bbox']
+        labels[ymin:ymax+1, xmin:xmax+1] = i + 1
+    return labels
+
+def get_label_map(labels):
+    label_map = {}
+    for i in range(np.amax(labels)+1):
+        if len(np.where(labels == i)[0]) > 0:
+            label_map[str(i)] = []
+            for j in range(len(np.where(labels == i)[0])):
+                label_map[str(i)].append({'start_index': np.where(labels == i)[0][j],
+                                           'end_index': np.where(labels == i)[0][j]+1})
+    return label_map
+
+def get_objects(label_map):
+    objects = []
+    for key in label_map.keys():
+        object_dict = {}
+        object_dict['size'] = len(label_map[key])
+        object_dict['start_index'] = min(label_map[key], key='start_index')[0]
+        object_dict['end_index'] = max(label_map[key], key='end_index')[0]
+        object_dict['color'] = int(key)
+        objects.append(object_dict)
+    return objects
+
+def get_relationships(objects):
+    relationships = []
+    for i in range(len(objects)-1):
+        for j in range(i+1, len(objects)):
+            if objects[i]['start_index'] < objects[j]['start_index'] \
+               and objects[i]['end_index'] >= objects[j]['start_index']:
+                relationships.append({'relation': 'containment',
+                                       'object_a': objects[i],
+                                       'object_b': objects[j]})
+            elif objects[i]['start_index'] <= objects[j]['start_index'] \
+               and objects[i]['end_index'] >= objects[j]['end_index']:
+                relationships.append({'relation': 'containment',
+                                       'object_a': objects[j],
+                                       'object_b': objects[i]})
+            elif objects[i]['start_index'] < objects[j]['start_index'] \
+               and objects[i]['end_index'] < objects[j]['end_index']:
+                relationships.append({'relation': 'adjacency',
+                                       'object_a': objects[i],
+                                       'object_b': objects[j]})
+            elif objects[i]['start_index'] > objects[j]['start_index'] \
+               and objects[i]['end_index'] > objects[j]['end_index']:
+                relationships.append({'relation': 'adjacency',
+                                       'object_a': objects[j],
+                                       'object_b': objects[i]})
+    return relationships
+
+def get_noise_pixel_count(pixels):
+    noise_pixel_count = sum(sum(pixels)) - sum(sum(pixels!= 0))
+    return noise_pixel_count
+
+def get_noise_pixels(pixels):
+    noise_pixels = []
+    for i in range(len(pixels)):
+        if pixels[i] == 0:
+            noise_pixels.extend(range(i, i+IMAGE_SIZE[1]))
+            break
+    return noise_pixels
+
+def get_noise_pixel_ratio(noise_pixel_count, total_number_of_pixels):
+    return round(float(noise_pixel_count)/total_number_of_pixels*100, 2)
+
+def get_conditional_statements(objects, relationships):
+    statements = []
+    for i in range(len(objects)):
+        statement_dict = {}
+        statement_dict['condition'] = 'if'
+        statement_dict['value'] = str(objects[i]['color'])
+        statement_dict['action'] ='move'
+        statement_dict['parameters'] = ['{}, {}, {}'.format(objects[i]['start_index'],
+                                                             objects[i]['end_index'],
+                                                             objects[i]['size'])]
+        statements.append(statement_dict)
+    for i in range(len(relationships)):
+        statement_dict = {}
+        statement_dict['condition'] = 'if'
+        statement_dict['value'] = '{} {} {}'.format(relationships[i]['relation'],
+                                                     str(relationships[i]['object_a']['color']),
+                                                     str(relationships[i]['object_b']['color']))
+        statement_dict['action'] = 'hollow'
+        statement_dict['parameters'] = ['{}, {}, {}'.format(relationships[i]['object_a']['start_index'],
+                                                              relationships[i]['object_a']['end_index'],
+                                                              relationships[i]['object_a']['size'])]
+        statements.append(statement_dict)
+    return statements
+
+def get_instruction_list(objects, relationships, statements):
+    instruction_list = []
+    for i in range(len(objects)):
+        instruction_dict = {}
+        instruction_dict['type'] = 'object'
+        instruction_dict['content'] = '{} {} {}'.format(objects[i]['color'],
+                                                         objects[i]['start_index'],
+                                                         objects[i]['end_index'])
+        instruction_list.append(instruction_dict)
+    for i in range(len(relationships)):
+        instruction_dict = {}
+        instruction_dict['type'] ='relation'
+        instruction_dict['content'] = '{}: {} {} {}'.format(relationships[i]['relation'],
+                                                            relationships[i]['object_a']['color'],
+                                                            relationships[i]['object_b']['color'])
+        instruction_list.append(instruction_dict)
+    for i in range(len(statements)):
+        instruction_dict = {}
+        instruction_dict['type'] ='statement'
+        instruction_dict['content'] = '{} {}'.format(statements[i]['condition'],
+                                                      statements[i]['value'])
+        instruction_list.append(instruction_dict)
+    return instruction_list
+
+def get_result(objects, relationships, statements, instructions):
+    result = []
+    for i in range(len(objects)):
+        result.append(objects[i]['color'])
+    for i in range(len(relationships)):
+        result.append(relationships[i]['relation'])
+    for i in range(len(statements)):
+        result.append(statements[i]['value'])
+    for i in range(len(instructions)):
+        result.append(instructions[i]['content'])
+    return result
+
+def get_example_results(examples):
+    results = []
+    for i in range(len(examples)):
+        results.append(get_result(examples[i]['objects'], examples[i]['relationships'],
+                                   examples[i]['statements'], examples[i]['instructions']))
+    return results
+
+def get_example_sequences(examples):
+    sequences = []
+    for i in range(len(examples)):
+        sequences.append(examples[i]['sequence'])
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 0, 0, 0, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.17791411042944785
+
+cat_success_cnt: 2
+
+cat_success_rate: 0.15384615384615385
+

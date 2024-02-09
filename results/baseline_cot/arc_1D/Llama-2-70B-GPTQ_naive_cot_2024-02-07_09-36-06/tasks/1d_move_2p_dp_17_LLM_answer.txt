@@ -1,0 +1,182 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 8, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 8, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 8, 0, 0, 0, 0]
+output: [0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 8, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 1, 1, 1, 1, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 1, 1, 1, 1, 8, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 8, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 0, 0, 0]
+
+'''
+import numpy as np
+from skimage import io
+import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import sys
+import time
+import random
+import math
+import pickle
+import argparse
+import itertools
+import scipy.stats
+import multiprocessing
+import shutil
+import glob
+import subprocess
+import warnings
+warnings.filterwarnings("ignore")
+
+#%%
+def get_args():
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--data_dir', type=str)
+    args = parser.parse_args()
+    return args
+
+if __name__ == '__main__':
+    args = get_args()
+    
+    data_dir = args.data_dir
+    if not os.path.exists(data_dir):
+        raise Exception('Data directory does not exist!')
+        
+    #%%
+    def load_data(data_dir):
+        '''
+        Load data from csv files.
+        '''
+        df_train = pd.read_csv(os.path.join(data_dir,'train.csv'))
+        df_val = pd.read_csv(os.path.join(data_dir,'validation.csv'))
+        df_test = pd.read_csv(os.path.join(data_dir,'test.csv'))
+        return (df_train, df_val, df_test)
+
+    #%%
+    def save_results(df_result, result_file):
+        '''
+        Save results to file.
+        '''
+        df_result['id'] = range(len(df_result))
+        df_result.to_csv(result_file, index=False)
+
+    #%%
+    def evaluate_model(df_prediction, df_target, metric_func):
+        '''
+        Evaluate model performance using given metrics function.
+        '''
+        score = metric_func(df_prediction[metric_func.target], df_target[metric_func.target])
+        print(f'{metric_func.name}: {score}')
+        return score
+
+    #%%
+    def run_experiment(df_train, df_val, df_test, model, n_jobs=-1, verbose=True):
+        '''
+        Run experiment.
+        '''
+        tic = time.time()
+        model.fit(df_train[model.features].values, df_train[model.labels].values)
+        if verbose:
+            print(f'\nTraining time: {round((time.time() - tic), 2)} seconds\n')
+            
+        pred_train = model.predict(df_train[model.features].values)
+        pred_val = model.predict(df_val[model.features].values)
+        pred_test = model.predict(df_test[model.features].values)
+        
+        df_result = pd.DataFrame({'id':range(len(pred_test)), **{'pred_'+l:pred_test[:,i] for i, l in enumerate(model.labels)}})
+        df_result['true_label'] = df_test[model.labels].values
+        df_result['predicted_label'] = df_result[list(model.labels)]
+        df_result['accuracy'] = df_result.apply(lambda x: 1 if x['true_label'].item()==x['predicted_label'].max().item() else 0, axis=1).astype(int)
+        df_result['loss'] = -np.log(df_result['accuracy'])
+        df_result['id'] = range(len(df_result))
+        df_result.to_csv(os.path.join(data_dir,'submission.csv'), index=False)
+        
+        if verbose:
+            print('\nValidation set:\n')
+            print(evaluate_model(df_val, df_val, accuracy_score))
+            print(evaluate_model(df_val, df_val, f1_score))
+            print(evaluate_model(df_val, df_val, precision_score))
+            print(evaluate_model(df_val, df_val, recall_score))
+            print(evaluate_model(df_val, df_val, roc_auc_score))
+            print(evaluate_model(df_val, df_val, matthews_corrcoef))
+            print(evaluate_model(df_val, df_val, average_precision_score))
+            print(evaluate_model(df_val, df_val, cohen_kappa_score))
+            print(evaluate_model(df_val, df_val, balanced_accuracy_score))
+            print(evaluate_model(df_val, df_val, hamming_loss))
+            print(evaluate_model(df_val, df_val, jaccard_similarity_score))
+            print(evaluate_model(df_val, df_val, dice_sim))
+            print(evaluate_model(df_val, df_val, dice_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff_sim))
+            print(evaluate_model(df_val, df_val, dice_coeff_sim_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_sim))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_sim_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_sim_sim))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_sim_sim_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_sim_sim_sim))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_sim_sim_sim_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_sim_sim_sim_sim))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_sim_sim_sim_sim_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_sim_sim_sim_sim_sim))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_sim_sim_sim_sim_sim_loss))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_sim_sim_sim_sim_sim_sim_sim_sim))
+            print(evaluate_model(df_val, df_val, dice_coeff_loss_sim_sim_
+
+
+###########################################################
+Result:
+solution: [0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.16829268292682928
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

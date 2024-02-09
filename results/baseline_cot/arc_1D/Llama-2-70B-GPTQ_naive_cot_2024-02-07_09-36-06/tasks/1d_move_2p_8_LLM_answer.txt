@@ -1,0 +1,250 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [0, 2, 2, 2, 2, 0, 0, 0, 0]
+output: [0, 0, 0, 2, 2, 2, 2, 0, 0]
+
+Example_2:
+input: [0, 0, 8, 8, 8, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 8, 8, 8, 0, 0]
+
+Example_3:
+input: [8, 8, 8, 8, 8, 0, 0, 0, 0]
+output: [0, 0, 8, 8, 8, 8, 8, 0, 0]
+
+
+
+Test case:
+input: [3, 3, 3, 3, 3, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 3, 3, 3, 3, 0, 0]
+
+
+'''
+#%%
+import pandas as pd
+from skimage import io
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import sys
+import time
+import random
+import math
+import pickle
+import glob
+import shutil
+import argparse
+import subprocess
+import multiprocessing
+import itertools
+import pathlib
+import tqdm
+import warnings
+warnings.filterwarnings("ignore")
+
+def get_args():
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--data_dir', type=str)
+    args = parser.parse_args()
+    return args
+
+if __name__ == '__main__':
+    args = get_args()
+    
+    data_path = args.data_dir + '/'
+    if not os.path.exists(data_path):
+        raise Exception('Data directory does not exist.')
+        
+    #%%
+    def load_dataset(file_path):
+        df = pd.read_csv(file_path, sep="\t", header=None).to_numpy().astype(int)
+        df[df==0] = -1
+        return df
+    
+    def save_dataset(df, file_path):
+        df[df<0]=0
+        df = df.tolist()
+        df = '\n'.join([str(x) for x in df])
+        with open(file_path,'w+') as fp:
+            fp.write(df)
+            
+    def create_folder(folder_path):
+        folder_path = str(folder_path)
+        if not os.path.isdir(folder_path):
+            os.makedirs(folder_path)
+                
+    def delete_folder(folder_path):
+        folder_path = str(folder_path)
+        if os.path.isdir(folder_path):
+            shutil.rmtree(folder_path)
+            
+    def get_files(directory):
+        files = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                files.append(os.path.join(path, filename))
+        return files
+    
+    def get_folders(directory):
+        folders = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for dirname in dirnames:
+                folders.append(dirname)
+        return folders
+    
+    def get_subdirectories(directory):
+        directories = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for dirname in dirnames:
+                directories.append(dirname)
+        return directories
+    
+    def get_filenames(directory):
+        filenames = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                filenames.append(filename)
+        return filenames
+    
+    def get_paths(directory):
+        paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                paths.append(os.path.join(path, filename))
+        return paths
+    
+    def get_full_paths(directory):
+        full_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                full_paths.append(os.path.abspath(os.path.join(path, filename)))
+        return full_paths
+    
+    def get_relative_paths(directory):
+        relative_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                relative_paths.append(os.path.relpath(os.path.join(path, filename), directory))
+        return relative_paths
+    
+    def get_absolute_paths(directory):
+        absolute_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                absolute_paths.append(os.path.normpath(os.path.join(path, filename)))
+        return absolute_paths
+    
+    def get_parent_paths(directory):
+        parent_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                parent_paths.append(os.path.split(os.path.join(path, filename))[0])
+        return parent_paths
+    
+    def get_basename_paths(directory):
+        basename_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                basename_paths.append(os.path.splitext(os.path.basename(os.path.join(path, filename))))
+        return basename_paths
+    
+    def get_extension_paths(directory):
+        extension_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                extension_paths.append(os.path.extsep.join(os.path.splitext(os.path.basename(os.path.join(path, filename)))))
+        return extension_paths
+    
+    def get_root_paths(directory):
+        root_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                root_paths.append(os.path.commonprefix((os.path.join(path, filename)).split('/'))[-1])
+        return root_paths
+    
+    def get_suffixes_paths(directory):
+        suffixes_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                suffixes_paths.append(os.path.splitext(os.path.basename(os.path.join(path, filename)))[1])
+        return suffixes_paths
+    
+    def get_extensions_paths(directory):
+        extensions_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                extensions_paths.append(os.path.splitext(os.path.basename(os.path.join(path, filename)))[0])
+        return extensions_paths
+    
+    def get_namestem_paths(directory):
+        namestem_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                namestem_paths.append(os.path.splitext(os.path.basename(os.path.join(path, filename)))[0].rsplit('.', maxsplit=-1)[0])
+        return namestem_paths
+    
+    def get_stems_paths(directory):
+        stems_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                stems_paths.append(os.path.splitext(os.path.basename(os.path.join(path, filename)))[0].rpartition(".")[0])
+        return stems_paths
+    
+    def get_parents_paths(directory):
+        parents_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                parents_paths.append(os.path.split(os.path.join(path, filename))[0])
+        return parents_paths
+    
+    def get_parts_paths(directory):
+        parts_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                parts_paths.append(os.path.split(os.path.join(path, filename))[1])
+        return parts_paths
+    
+    def get_heads_paths(directory):
+        heads_paths = []
+        for (path, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                heads_paths.append(os.path.split(os.path.join(path, filename))[1][:-len(os.path.splitext(
+
+
+###########################################################
+Result:
+solution: [0, 0, 3, 3, 3, 3, 3, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.17293233082706766
+
+cat_success_cnt: 5
+
+cat_success_rate: 0.10204081632653061
+

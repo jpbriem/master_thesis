@@ -1,0 +1,203 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: Object_1: {color: 2, start_index: 1, end_index: 2, size: 2}, Object_2: {color: 3, start_index: 4, end_index: 4, size: 1}, with zero-indexing for the position.
+
+The transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
+- Objects: 
+	- transformations, such as move, hollow, scale, remove, copy, recolor.
+	- relations between objects, such as distance, alignment, overlap, containment.
+- Noise pixels.
+- Arithmetics based on objects: Counting, sorting.
+- Conditions: rules might be conditional.
+This list is not exhaustive.
+
+
+You are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.
+You are to output only the following in json format, fill the values as described: {'description': {'Example_1': 'regarding the first example, describe the difference between the input and output sequence, be precise and say WHAT changed HOW!', 'Example_2': '...'}, 'overall_pattern': 'describe the input-output relationship for all input-output pairs', 'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 'transformation': {'input': 'copy the test case input sequence from the task. Mind the sequence length!', 'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color', 'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color', 'output': 'create the resulting test output sequence. Mind the sequence length!'}, 'test_output': 'Return the created test output sequence in numpy array format. Mind the sequence length!'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 5, 0]
+output: [0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 0]
+
+Example_2:
+input: [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 5, 0, 0]
+output: [0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 5, 0, 0]
+
+Example_3:
+input: [0, 0, 0, 0, 6, 6, 6, 6, 6, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 6, 6, 6, 6, 6, 5, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+
+Test case:
+input: [0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 5, 0, 0, 0, 0, 0, 0, 0, 0]
+"""
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import sys
+sys.path.append(os.getcwd())
+from utilities import *
+
+def get_data():
+    """
+    Loads data from csv file.
+    
+    Returns:
+        df (pandas DataFrame): loaded dataframe containing the training set.
+    """
+    df = pd.read_csv('../input/task_1_train.csv')
+    return df
+
+def preprocess_data(df):
+    """
+    Preprocessing of the raw data.
+    
+    Arguments:
+        - df (pandas DataFrame): loaded dataframe containing the training set.
+        
+    Returns:
+        - X_train (numpy array): contains the flattened image sequences of the training set.
+        - y_train (list): contains the labels of the training set.
+    """
+    # create empty lists for storing the processed data
+    X_train = []
+    y_train = []
+    # iterate over each row of the dataframe
+    for i in range(len(df)):
+        # extract the current image sequence
+        img = df['image'][i].split(',')[1][:-1]
+        # decode the base64 encoded string
+        decoded_img = bytes.decode(base64.b64decode(bytes(img,'utf-8')))
+        # convert the decoded bytearray into an image object
+        im = Image.open(io.BytesIO(decoded_img))
+        # resize the image to 1xN
+        resized_im = im.resize((1, len(np.asarray(im).flatten())))
+        # save the flattened image sequence as a numpy array
+        X_train.append(resized_im)
+        # add the label to the list
+        y_train.append(int(df['label'][i]))
+    # convert the lists into numpy arrays
+    X_train = np.stack(X_train)
+    y_train = np.array(y_train)
+    return X_train, y_train
+
+def train_model(X_train, y_train):
+    """
+    Trains the model using the training set.
+    
+    Arguments:
+        - X_train (numpy array): contains the flattened image sequences of the training set.
+        - y_train (list): contains the labels of the training set.
+        
+    Returns:
+        - model (keras Sequential class instance): trained neural network model.
+    """
+    # define the model architecture
+    model = tf.keras.Sequential([tf.keras.layers.Flatten(),
+                                  tf.keras.layers.Dense(units=128),
+                                  tf.keras.layers.Activation("relu"),
+                                  tf.keras.layers.Dropout(.2),
+                                  tf.keras.layers.Dense(units=128),
+                                  tf.keras.layers.Activation("relu"),
+                                  tf.keras.layers.Dropout(.2),
+                                  tf.keras.layers.Dense(units=128),
+                                  tf.keras.layers.Activation("softmax")])
+    # compile the model
+    model.compile(optimizer="adam", loss='binary_crossentropy', metrics=["accuracy"])
+    # fit the model
+    history = model.fit(X_train, y_train, epochs=10, batch_size=10, verbose=False)
+    return model
+
+def evaluate_model(model, X_val, y_val):
+    """
+    Evaluates the performance of the model on the validation set.
+    
+    Arguments:
+        - model (keras Sequential class instance): trained neural network model.
+        - X_val (numpy array): contains the flattened image sequences of the validation set.
+        - y_val (list): contains the labels of the validation set.
+        
+    Returns:
+        - score (float): accuracy score of the model on the validation set.
+    """
+    # predict the outputs of the validation set
+    preds = model.predict(X_val)
+    # calculate the accuracy score
+    score = accuracy_score(preds, y_val)
+    return score
+
+def make_submission(model, submission_file):
+    """
+    Creates the submission file.
+    
+    Arguments:
+        - model (keras Sequential class instance): trained neural network model.
+        - submission_file (string): path to the submission file.
+    """
+    # load the test set
+    df = pd.read_csv('../input/task_1_test.csv')
+    # initialize an empty dictionary
+    d = {}
+    # iterate over each row of the dataframe
+    for i in range(len(df)):
+        # extract the current image sequence
+        img = df['image'][i].split(',')[1][:-1]
+        # decode the base64 encoded string
+        decoded_img = bytes.decode(base64.b64decode(bytes(img,'utf-8')))
+        # convert the decoded bytearray into an image object
+        im = Image.open(io.BytesIO(decoded_img))
+        # resize the image to 1xN
+        resized_im = im.resize((1, len(np.asarray(im).flatten())))
+        # save the flattened image sequence as a numpy array
+        X_test = resized_im
+        # predict the output of the test sample
+        y_hat = model.predict(X_test)[0]
+        # append the prediction to the dictionary
+        d[str(i)] = int(y_hat)
+    # write the predictions to the submission file
+    with open(submission_file, 'w') as f:
+        f.write(json.dumps(d))
+
+if __name__ == '__main__':
+    print('\n\t*** Task 1 ***\n')
+    # load the training set
+    df = get_data()
+    # preprocess the data
+    X_train, y_train = preprocess_data(df)
+    # split the training set into training and validation sets
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=.2, random_state=42)
+    # train the model
+    model = train_model(X_train, y_train)
+    # evaluate the model
+    score = evaluate_model(model, X_val, y_val)
+    print(f'\nModel evaluation:\nAccuracy: {round(score*100, 2)}%\n')
+    # make the submission
+    make_submission(model, '../output/task_1_submission.csv')
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 5, 0, 0, 0, 0, 0, 0, 0]
+
+
+success: 0
+
+tries: 1
+
+success_rate: 0.16515837104072398
+
+cat_success_cnt: 4
+
+cat_success_rate: 0.09523809523809523
+
