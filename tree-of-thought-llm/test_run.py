@@ -73,7 +73,7 @@ def run(args):
     # random.shuffle(indices)
     # count = 0 # TODO: delete!!!
     for idx in indices:
-        print(f"Task {idx} of {len(task)}")
+        print(f"Task {idx+1} of {len(task)}")
         # if count == 1: # TODO: delete!!!
         #     break
         Node.reset_tree()
