@@ -223,7 +223,12 @@ def gpt_usage(backend="gpt-4", input_tokens=None, output_tokens=None):
         cost = None
     return {"completion_tokens": completion_tokens, "prompt_tokens": prompt_tokens, "cost": cost}
 
-
+def reset_usage(new_completion_tokens=0, new_prompt_tokens=0):
+    global completion_tokens, prompt_tokens
+    
+    completion_tokens = new_completion_tokens
+    prompt_tokens = new_prompt_tokens
+    
 #################### Open-Source #############
 # LLama Models and Llama-like models
 def load_llama(model_name, revision, max_token, model_config):

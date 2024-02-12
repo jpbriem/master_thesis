@@ -7,27 +7,23 @@ import pandas as pd
 from tot.methods import bfs, dfs, search_utils
 from tot.tasks import get_task
 from tot.methods.tree_nodes import Node
-from tot.models import gpt_usage
+from tot.models import gpt_usage, reset_usage
 from tot.methods.arc_config import MODEL_NAMES, REVISIONS
 from tot.methods.arc_utils import check_model_selection
 
 ########## ARC ##########
 args = argparse.Namespace(
-    # backend='gpt-3.5-turbo-1106',   # TODO: Set model!
-    # backend='gpt-4-1106-preview', 
-    # backend='NousResearch/Llama-2-7b-chat-hf',
-    # backend='TheBloke/Llama-2-70b-Chat-GPTQ',
-    # model_revision='main',
+    # continue_run="Mistral-7B-Instruct-v0.1_naive_cot_2024-02-11_03-31-13", # TODO: Set model!
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
     use_api=True,                       # TODO: Use API?!
     temperature=0.7, 
-    # task='arc',                       # TODO: Set task!
-    task='arc_1D',
+    task='arc',                       # TODO: Set task!
+    # task='arc_1D',
     # task = 'arc_h_v',
     input_representation = None,    # TODO: set input representation
     # input_representation = 'objects',
-    naive_run=False,                    # TODO: Naive run? TODO: chang in prompts
+    naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
     prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
@@ -35,7 +31,7 @@ args = argparse.Namespace(
     method_evaluate='value', 
     method_select='greedy',
     revision=False,                     # TODO: Revision?
-    n_generate_sample=2,                # TODO: Set tree search parameters!
+    n_generate_sample=1,                # TODO: Set tree search parameters!
     n_evaluate_sample=1, 
     n_select_sample=1)
 
@@ -49,7 +45,10 @@ args = argparse.Namespace(
 def run(args):   
     log, failure_log = [], ""
 
-    current_datetime = datetime.datetime.now()
+    if hasattr(args, 'continue_run'):
+        current_datetime = datetime.datetime.strptime("_".join(args.continue_run.split("_")[3:]), '%Y-%m-%d_%H-%M-%S')
+    else:
+        current_datetime = datetime.datetime.now()
 
     # Create directory for results 
     # directory = "results/"                # TODO: set result directory!
@@ -72,6 +71,28 @@ def run(args):
     # random.seed(42)
     # random.shuffle(indices)
     # count = 0 # TODO: delete!!!
+    if hasattr(args, 'continue_run'):
+        intermediate_state = json.load(open(directory+'/all_tasks_log.json'))
+        reset_usage(new_completion_tokens=intermediate_state[-1]["usage_so_far"]["completion_tokens"], new_prompt_tokens=intermediate_state[-1]["usage_so_far"]["prompt_tokens"])
+        log = intermediate_state.copy()
+        for t in intermediate_state:
+            if t["task"] not in task.success: # TODO: works currently only if we have just one try
+                task.success[t["task"]] = 0
+            if t["category"] not in task.cat_success:
+                task.cat_success[t["category"]] = 0
+                task.cat_failures[t["category"]] = 0
+            task.success[t["task"]] += int(t["result"]["success"]) 
+            if task.success[t["task"]] == 1:
+                task.full_success += 1
+                task.cat_success[t["category"]] += 1
+            else:
+                task.cat_failures[t["category"]] += 1
+
+            if task.success[t["task"]] > 0:
+                task.solved_tasks.append((t["task"], task.success[t["task"]]))
+        idx = intermediate_state[-1]["idx"]
+        indices = indices[idx+1:]
+    
     for idx in indices:
         print(f"Task {idx+1} of {len(task)}")
         # if count == 1: # TODO: delete!!!
