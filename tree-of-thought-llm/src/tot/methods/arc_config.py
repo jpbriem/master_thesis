@@ -14,38 +14,38 @@ REVISIONS = []
 # Llama Chat
 # MODEL_NAMES.append("meta-llama/Llama-2-7b")
 # fine-tuned by meta 
-MODEL_NAMES.append("TheBloke/Llama-2-70b-Chat-GPTQ")
-REVISIONS.append("main")
-MODEL_NAMES.append("TheBloke/Llama-2-13B-chat-GPTQ") # TODO: Run all tests)
-REVISIONS.append("main")
-MODEL_NAMES.append("NousResearch/Llama-2-7b-chat-hf") # TODO: TODO: Replace with Bloke's model & see if differences?!)
-REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-70b-Chat-GPTQ")
+# REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-13B-chat-GPTQ") # TODO: Run all tests)
+# REVISIONS.append("main")
+# MODEL_NAMES.append("NousResearch/Llama-2-7b-chat-hf") # TODO: TODO: Replace with Bloke's model & see if differences?!)
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Llama-2-7B-chat-GPTQ") # TODO: Run all tests)
 # fine-tuned by others
 # MODEL_NAMES.append("TheBloke/Llama-2-7B-32K-Instruct-GPTQ") # TODO: Run all tests)
 
 # Llama pre-trained
-MODEL_NAMES.append("TheBloke/Llama-2-70B-GPTQ") 
-REVISIONS.append("main")
-MODEL_NAMES.append("TheBloke/Llama-2-13B-GPTQ") 
-REVISIONS.append("main")
-MODEL_NAMES.append("TheBloke/Llama-2-7B-GPTQ") 
-REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-70B-GPTQ") 
+# REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-13B-GPTQ") 
+# REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Llama-2-7B-GPTQ") 
+# REVISIONS.append("main")
 
 # Platypus2 
 # MODEL_NAMES.append("garage-bAInd/Platypus2-70B") --> dauert lange und braucht tausend GPUs?! liegt vielleicht an dem 16float oder so)
-MODEL_NAMES.append("TheBloke/Platypus2-70B-GPTQ") 
-REVISIONS.append("main")
-MODEL_NAMES.append("TheBloke/Platypus2-13B-GPTQ") 
-REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Platypus2-70B-GPTQ") 
+# REVISIONS.append("main")
+# MODEL_NAMES.append("TheBloke/Platypus2-13B-GPTQ") 
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Camel-Platypus2-70B-GPTQ") 
 # REVISIONS.append("main")
 
 # Mistral
-MODEL_NAMES.append("mistralai/Mistral-7B-Instruct-v0.1")
-REVISIONS.append("main")
-MODEL_NAMES.append("mistralai/Mistral-7B-v0.1")
-REVISIONS.append("main")
+# MODEL_NAMES.append("mistralai/Mistral-7B-Instruct-v0.1")
+# REVISIONS.append("main")
+# MODEL_NAMES.append("mistralai/Mistral-7B-v0.1")
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
 # REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
@@ -87,7 +87,9 @@ REVISIONS.append("main")
 
 ##### Proprietary #####
 # MODEL_NAMES.append('gpt-4-1106-preview')
-# MODEL_NAMES.append('gpt-3.5-turbo-1106')
+# REVISIONS.append('')
+MODEL_NAMES.append('gpt-3.5-turbo-1106')
+REVISIONS.append('')
 
 
 #################### automatic completion of parameters ####################

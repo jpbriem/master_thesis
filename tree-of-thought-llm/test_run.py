@@ -13,17 +13,17 @@ from tot.methods.arc_utils import check_model_selection
 
 ########## ARC ##########
 args = argparse.Namespace(
-    # continue_run="Mistral-7B-Instruct-v0.1_naive_cot_2024-02-11_03-31-13", # TODO: Set model!
+    # continue_run="Llama-2-70b-Chat-GPTQ_naive_cot_2024-02-04_12-58-16", # TODO: Set model!
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
-    use_api=True,                       # TODO: Use API?!
+    use_api=False,                       # TODO: Use API?!
     temperature=0.7, 
-    task='arc',                       # TODO: Set task!
-    # task='arc_1D',
+    # task='arc',                       # TODO: Set task!
+    task='arc_1D',
     # task = 'arc_h_v',
     input_representation = None,    # TODO: set input representation
     # input_representation = 'objects',
-    naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
+    naive_run=False,                    # TODO: Naive run? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
     prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
@@ -68,9 +68,9 @@ def run(args):
 
     # solve the task
     indices = list(range(len(task)))
-    # random.seed(42)
-    # random.shuffle(indices)
-    # count = 0 # TODO: delete!!!
+    random.seed(42)
+    random.shuffle(indices)
+    count = 0 # TODO: delete!!!
     if hasattr(args, 'continue_run'):
         intermediate_state = json.load(open(directory+'/all_tasks_log.json'))
         reset_usage(new_completion_tokens=intermediate_state[-1]["usage_so_far"]["completion_tokens"], new_prompt_tokens=intermediate_state[-1]["usage_so_far"]["prompt_tokens"])
@@ -95,17 +95,17 @@ def run(args):
     
     for idx in indices:
         print(f"Task {idx+1} of {len(task)}")
-        # if count == 1: # TODO: delete!!!
-        #     break
+        if count == 50: # TODO: delete!!!
+            break
         Node.reset_tree()
         task_name = task.names[idx].split(".json")[0]
         task_category = task.categories[idx]
 
         # if 'pile_h' in task_name: # TODO: delete!!! 
-        # if "scale" in task_name or "move_1p" in task_name or "flip" in task_name: # TODO: delete!!!
-        #     count += 1 # TODO: delete!!!
-        # else:
-        #     continue
+        if "scale" in task_name or "move_1p" in task_name or "flip" in task_name: # TODO: delete!!!
+            count += 1 # TODO: delete!!!
+        else:
+            continue
         # if not task_name+".json" in solved_gpt3:#+multi_colour: # TODO delete!!!
         #     continue
         
@@ -206,3 +206,9 @@ if __name__ == '__main__':
         args.backend = model
         args.model_revision = revision
         run(args)
+
+'''
+{"value": 10}
+eee
+Task 305 of 901 <- diese nciht mehr! und bis hier 3 gelöst!
+'''
