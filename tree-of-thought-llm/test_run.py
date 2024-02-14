@@ -2,6 +2,7 @@ import os
 import random
 import datetime
 import json
+import numpy as np
 import argparse
 import pandas as pd
 from tot.methods import bfs, dfs, search_utils
@@ -18,8 +19,8 @@ args = argparse.Namespace(
     model_revision=REVISIONS,
     use_api=False,                       # TODO: Use API?!
     temperature=0.7, 
-    # task='arc',                       # TODO: Set task!
-    task='arc_1D',
+    task='arc',                       # TODO: Set task!
+    # task='arc_1D',
     # task = 'arc_h_v',
     input_representation = None,    # TODO: set input representation
     # input_representation = 'objects',
@@ -41,6 +42,7 @@ args = argparse.Namespace(
 # solved_gpt3 = ["25ff71a9.json", "6150a2bd.json", "74dd1130.json", "9dfd6313.json", "b1948b0a.json", "c8f0f002.json", "d037b0a7.json", "dc433765.json"]
 # solved_gpt3 = ['1d_move_1p_2.json', '1d_flip_30.json', '1d_move_1p_33.json', '1d_scale_dp_41.json', '1d_move_1p_27.json', '1d_flip_48.json', '1d_move_1p_12.json', '1d_scale_dp_20.json', '1d_move_1p_4.json', '1d_flip_8.json', '1d_scale_dp_12.json', '1d_flip_10.json', '1d_flip_36.json', '1d_move_1p_30.json', '1d_move_1p_20.json', '1d_scale_dp_11.json', '1d_move_1p_31.json', '1d_flip_33.json', '1d_move_1p_1.json', '1d_move_1p_25.json', '1d_scale_dp_44.json', '1d_flip_29.json', '1d_flip_0.json', '1d_scale_dp_39.json', '1d_move_1p_23.json', '1d_scale_dp_33.json', '1d_scale_dp_47.json', '1d_move_1p_16.json', '1d_scale_dp_22.json', '1d_flip_4.json', '1d_move_1p_39.json', '1d_flip_9.json', '1d_scale_dp_21.json', '1d_scale_dp_28.json', '1d_flip_40.json', '1d_move_1p_41.json', '1d_flip_3.json', '1d_scale_dp_50.json', '1d_move_1p_10.json', '1d_flip_43.json', '1d_flip_46.json', '1d_scale_dp_30.json', '1d_flip_47.json', '1d_move_1p_40.json', '1d_flip_34.json', '1d_scale_dp_10.json', '1d_move_1p_35.json', '1d_move_1p_19.json', '1d_scale_dp_49.json', '1d_move_1p_36.json']
 # multi_colour  = ["3c940459.json", "67a3c6ac.json", "88a10436.json", "6150a2bd.json", "74dd1130.json", "b2862040.json"]
+solved_gpt4 = ['d037b0a7.json', '6150a2bd.json', 'a79310a0.json', '74dd1130.json', '25ff71a9.json', 'ce22a75a.json', 'aabf363d.json', 'c8f0f002.json', 'dc433765.json', 'b1948b0a.json']
 
 def run(args):   
     log, failure_log = [], ""
@@ -95,19 +97,29 @@ def run(args):
     
     for idx in indices:
         print(f"Task {idx+1} of {len(task)}")
+        count += 1 # TODO: delete!!!       
         if count == 50: # TODO: delete!!!
             break
         Node.reset_tree()
         task_name = task.names[idx].split(".json")[0]
         task_category = task.categories[idx]
-
-        # if 'pile_h' in task_name: # TODO: delete!!! 
-        if "scale" in task_name or "move_1p" in task_name or "flip" in task_name: # TODO: delete!!!
-            count += 1 # TODO: delete!!!
-        else:
-            continue
-        # if not task_name+".json" in solved_gpt3:#+multi_colour: # TODO delete!!!
+ 
+        # t = task.data[idx]
+        # b = False
+        # for l in t["train"]:
+        #     if np.prod(np.array(l["input"]).shape) > 10:
+        #         b = True
+        # if b:
         #     continue
+        # if np.prod(np.array(t["test"][0]["input"]).shape) < 10:
+        #     print(len(t["test"][0]["input"]))
+        # if 'pile_h' in task_name: # TODO: delete!!! 
+        # if "scale" in task_name or "move_1p" in task_name or "flip" in task_name: # TODO: delete!!!
+        #     count += 1 # TODO: delete!!!
+        # else:
+        #     continue
+        if not task_name+".json" in solved_gpt4:#+multi_colour: # TODO delete!!!
+            continue
         
         if args.search_algo == "bfs":
             search_algo = bfs

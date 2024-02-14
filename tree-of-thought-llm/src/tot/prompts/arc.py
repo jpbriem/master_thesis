@@ -1,6 +1,6 @@
 ################## General Task Explanation ##################
 general_explanation = '''You are confronted with a task in which a 2-dimensional input grid of pixels should be transformed into a corresponding output grid. The input and output grids have values from 1 to 9 representing different pixel colors, and 0 representing the background color. The transformation can relate to the entire grid or individual objects in the grid. Objects are usually adjacent pixels of a single color. 
-Example: [[0, 2, 2, 0, 3], [0, 2, 0, 0, 0]] represents a pixel grid of dimension (2,5) with the following objects: [Object_1: {{color: '2', coordinates: [(0,1), (0,2), (1,1)], size: 3}}, Object_2: {{color: '3', coordinates: [(0,4)], size: 1}}], with zero-indexing for the coordinates.\n'''
+Example: [[0, 2, 2, 0, 3], [0, 2, 0, 0, 2]] represents a pixel grid of dimension [2,5] with the following objects: [Object_1: {{color: '2', coordinates: [[0,1], [0,2], [1,1]], size: 3}}, Object_2: {{color: '3', coordinates: [[0,4]], size: 1}}, Object_3: {{color: '2', coordinates: [[1,4]], size: 1}}], with zero-indexing for the coordinates.\n'''
 
 human_priors = '''\nThe logical pattern might refer to concepts as follows:
 - Geometry and topology:
@@ -91,16 +91,50 @@ score_prompt = '''
 # TODO: Test
 prompt_modules = {
 	"0": {
+		# # grid dimension
+		# 'spread': True,
+		# 'phase': 'abstraction',
+		# 'generation': {
+		# 	"instruct_task": f'\n\nYour task is to describe the objects in the given input and output grids.',
+		# 	"output_format": {
+		# 		'objects': {
+		# 			'Example_1': { 
+		# 				'input': 'regarding the first example, identify all objects (i.e. either ADJACENT pixels of same color or multicolor) in the input grid by following the format: [Object_ID: {color: \'object color\', coordinates: [[x_1,y_1], [x_2,y_2], ..], size: number of pixels}, ...]',
+		# 				'output': 'regarding the first example, identify all objects (i.e. either ADJACENT pixels of same color or multicolor) in the output grid by following the format: [Object_ID: {color: \'object color\', coordinates: [[x_1,y_1], [x_2,y_2], ..], size: number of pixels}, ...]',
+		# 			},
+		# 			'Example_2': {...},
+		# 		},
+   		#  	},
+		# },
+		# 'evaluation': {
+		# 	"instruct_previous_thoughts": f'\nYou are given example input-output pairs with descriptions about identified objects.',
+		# 	"instruct_task": f'\n\nEvaluate the given object descriptions and analyze if they correctly describe all objects. Be as critical as possible with all details!',
+		# 	"output_format": {
+        #         'Example_1': {
+        #             'input_analysis': 'Regarding the first example, analyze if the given object descriptions correctly cover all objects in the input grid.',
+        #             'output_analysis': 'Regarding the first example, analyze if the given object descriptions correctly cover all objects in the output grid',
+        #             'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the given object descriptions as integer.'
+        #             },
+        #         'Example_2': {...},
+        #         },
+     	# 	},
+		# },
 		# grid dimension
+		'spread': True,
+		'phase': 'abstraction',
 		'generation': {
 			"instruct_task": f'\n\nYour task is to describe the objects in the given input and output grids.',
 			"output_format": {
 				'objects': {
 					'Example_1': { 
-						'input': 'regarding the first example, identify all objects in the input grid by following the format: [Object_ID: {color: \'object color\', coordinates: [(x_1,y_1), (x_2,y_2), ..], size: number of pixels}, ...]',
-						'output': 'regarding the first example, identify all objects in the output grid by following the format: [Object_ID: {color: \'object color\', coordinates: [(x_1,y_1), (x_2,y_2), ..], size: number of pixels}, ...]',
+						'input': 'regarding the first example, describe all objects in the input sequence.',
+						'output': 'regarding the first example, describe all objects in the output sequence.',
 					},
 					'Example_2': {...},
+					'description': {
+	        			'input': 'summarize your findings to highlight commonalities within input grids.',
+	        			'output': 'summarize your findings to highlight commonalities within output grids.',
+						},
 				},
    		 	},
 		},
@@ -118,7 +152,9 @@ prompt_modules = {
      		},
 		},
  	"1": {
-		# pattern 
+		# pattern
+		'spread': True,
+		'phase': 'abstraction',
 		'generation': {
 			"instruct_task": f'\n\nImagine you want to explain how to transform a new input without knowing its output yet. Your task is to infer the overall pattern that describes the relation between all input-output pairs.',
 			"output_format": {
@@ -149,6 +185,8 @@ prompt_modules = {
    		 	}
      	},
 	"2": {
+		'spread': True,
+		'phase': 'abstraction',
 		'generation': {
 			"instruct_task": f'\n\nYour task is to give detailed transformation steps that are generally applicable to all examples to transform the input grid into its output grid.',
 			"output_format": {
@@ -173,10 +211,12 @@ prompt_modules = {
    		 	},
      	},
 	"3": {
+		'spread': True,
+		'phase': 'application',
 		'generation': {
         	"instruct_task": f'\n\nMoreover, you are given a new test case with a new input grid. Your task is to transform the test input grid into its test output grid.',
 			"output_format": {
-                'input_description': 'describe the test input and identify all objects in the input grid by following the format: [Object_ID: {color: \'object color\', coordinates: [(x_1,y_1), (x_2,y_2), ..], size: number of pixels}, ...]',
+                'input_description': 'describe the test input and identify all objects in the input grid by following the format: [Object_ID: {color: \'object color\', coordinates: [[x_1,y_1], [x_2,y_2], ..], size: number of pixels}, ...]',
                 'transformation': 'apply the transformation steps to the test input grid, detailing how each condition of the transformation pattern applies to the current task and respond to every step in detail.',
                 'output': 'return only the resulting test output grid as numpy array' 
                 }
