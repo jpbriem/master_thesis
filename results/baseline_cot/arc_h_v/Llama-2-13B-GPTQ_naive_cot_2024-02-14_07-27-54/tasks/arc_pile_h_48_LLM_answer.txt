@@ -1,0 +1,173 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 2-dimensional input grid of pixels should be transformed into a corresponding output grid. The input and output grids have values from 1 to 9 representing different pixel colors, and 0 representing the background color. The transformation can relate to the entire grid or individual objects in the grid. Objects are usually adjacent pixels of a single color. 
+Example: [[0, 2, 2, 0, 3], [0, 2, 0, 0, 0]] represents a pixel grid of dimension (2,5) with the following objects: [Object_1: {color: '2', coordinates: [(0,1), (0,2), (1,1)], size: 3}, Object_2: {color: '3', coordinates: [(0,4)], size: 1}], with zero-indexing for the coordinates.
+
+The logical pattern might refer to concepts as follows:
+- Geometry and topology:
+	- Lines, rectangular shapes.
+	- Connecting points, orthogonal projections.
+ 	- Symmetries, mirroring, rotations, translations.
+	- Shape upscaling or downscaling, elastic distortions.
+	- Containing / being contained / being inside or outside of a perimeter.
+	- Copying, repeating.
+	- Patterns or mosaic based on sections.
+- Objects:
+	- Objects are shapes based on similar colors or based on surroundings.
+	- Object transformations based on geometry and topology.
+	- Touching objects have at least one adjacent pixel.
+	- Noise pixels.
+-  Arithmetics based on objects or shapes:
+	- Counting.
+	- Sorting.
+
+The list is not exhaustive. Transformations can be conditional.
+
+
+You are to infer the relation between input and output. Then, your task is to transform the test input grid into its test output grid.
+You are to output only the following in json format: {'example_1_description': {'pixel_changes': 'regarding the first example, describe the changes between the input and output pixels, focusing on pattern changes', 'object_changes': 'regarding the first example, describe the changes between the input and output objects, focusing on color, size, coordinates, shape, and object number'}, 'example_2_description': {Ellipsis}, 'overall_pattern': 'describe the input-output relationship valid for all input-output pairs', 'instructions': 'describe the required transformation actions in detail step by step', 'test_case_input_copy': 'copy the test case input grid from the task', 'test_case_grid_view': 'regarding the test input, describe the pixels of the entire grid, focusing on patterns', 'test_case_object_view': 'regarding the test input, describe the objects, focusing on color, size, coordinates and movement, shape, and object number', 'test_case_transformation': 'describe how the grid or objects should be transformed', 'test_case_output': 'create the resulting output grid as numpy array.'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[0, 3, 0, 3, 3], [0, 0, 0, 0, 0], [0, 0, 0, 4, 4], [6, 0, 0, 0, 0], [0, 2, 0, 2, 0]]
+output: [[3, 3, 3, 0, 0], [0, 0, 0, 0, 0], [4, 4, 0, 0, 0], [6, 0, 0, 0, 0], [2, 2, 0, 0, 0]]
+
+Example_2:
+input: [[0, 1, 1, 1], [9, 0, 0, 9], [0, 4, 0, 0], [0, 2, 0, 0]]
+output: [[1, 1, 1, 0], [9, 9, 0, 0], [4, 0, 0, 0], [2, 0, 0, 0]]
+
+Example_3:
+input: [[3, 0, 3, 3], [6, 6, 0, 0], [8, 8, 0, 8], [0, 0, 4, 0]]
+output: [[3, 3, 3, 0], [6, 6, 0, 0], [8, 8, 8, 0], [4, 0, 0, 0]]
+
+
+
+Test case:
+input: [[0, 0, 0, 7, 7], [0, 0, 9, 0, 9], [0, 1, 0, 0, 0], [0, 5, 5, 0, 0], [0, 0, 8, 0, 8]]
+
+###########################################################
+Sample Outputs:
+output: [[0, 0, 0, 7, 7], [0, 0, 9, 0, 9], [0, 1, 0, 0, 0], [0, 5, 5, 0, 0], [0, 0, 8, 0, 8]]
+"""
+
+import os
+from typing import List, Dict, Tuple
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from src.utils import get_data_dir
+
+TEST_DATA_DIR = get_data_dir()
+
+
+def read_json(path):
+    """Reads JSON file."""
+    with open(os.path.join(TEST_DATA_DIR, path)) as f:
+        return json.load(f)
+
+
+@pytest.mark.parametrize("test_case", [read_json('test_cases/test_case_1.json'),
+                                         read_json('test_cases/test_case_2.json')])
+def test_task_1(test_case):
+    """Tests Task 1."""
+    assert len(test_case['test_case_input']) == 1
+    assert len(test_case['test_case_output']) == 1
+    assert len(test_case['test_case_objects']) == 1
+    assert len(test_case['test_case_grids']) == 1
+    assert len(test_case['test_case_transformations']) == 1
+    assert len(test_case['test_case_examples']) == 1
+    assert len(test_case['test_case_example_descriptions']) == 1
+    assert len(test_case['test_case_example_object_descriptions']) == 1
+    assert len(test_case['test_case_example_object_coordinates']) == 1
+    assert len(test_case['test_case_example_object_colors']) == 1
+    assert len(test_case['test_case_example_object_sizes']) == 1
+    assert len(test_case['test_case_example_object_shapes']) == 1
+    assert len(test_case['test_case_example_object_movements']) == 1
+    assert len(test_case['test_case_example_object_number']) == 1
+    assert len(test_case['test_case_example_object_connections']) == 1
+    assert len(test_case['test_case_example_object_neighbors']) == 1
+    assert len(test_case['test_case_example_object_parent_children']) == 1
+    assert len(test_case['test_case_example_object_child_parents']) == 1
+    assert len(test_case['test_case_example_object_ancestors']) == 1
+    assert len(test_case['test_case_example_object_descendants']) == 1
+    assert len(test_case['test_case_example_object_relatives']) == 1
+    assert len(test_case['test_case_example_object_similarities']) == 1
+    assert len(test_case['test_case_example_object_differences']) == 1
+    assert len(test_case['test_case_example_object_distances']) == 1
+    assert len(test_case['test_case_example_object_positions']) == 1
+    assert len(test_case['test_case_example_object_orientations']) == 1
+    assert len(test_case['test_case_example_object_rotations']) == 1
+    assert len(test_case['test_case_example_object_reflections']) == 1
+    assert len(test_case['test_case_example_object_symmetries']) == 1
+    assert len(test_case['test_case_example_object_asymmetries']) == 1
+    assert len(test_case['test_case_example_object_perimeters']) == 1
+    assert len(test_case['test_case_example_object_areas']) == 1
+    assert len(test_case['test_case_example_object_volumes']) == 1
+    assert len(test_case['test_case_example_object_surfaces']) == 1
+    assert len(test_case['test_case_example_object_curvatures']) == 1
+    assert len(test_case['test_case_example_object_convexity']) == 1
+    assert len(test_case['test_case_example_object_concavity']) == 1
+    assert len(test_case['test_case_example_object_flatnesses']) == 1
+    assert len(test_case['test_case_example_object_sharpnesses']) == 1
+    assert len(test_case['test_case_example_object_bluntnesses']) == 1
+    assert len(test_case['test_case_example_object_smoothnesses']) == 1
+    assert len(test_case['test_case_example_object_roughnesses']) == 1
+    assert len(test_case['test_case_example_object_textures']) == 1
+    assert len(test_case['test_case_example_object_gradients']) == 1
+    assert len(test_case['test_case_example_object_contrasts']) == 1
+    assert len(test_case['test_case_example_object_brightnesses']) == 1
+    assert len(test_case['test_case_example_object_darknesses']) == 1
+    assert len(test_case['test_case_example_object_lightnesses']) == 1
+    assert len(test_case['test_case_example_object_hues']) == 1
+    assert len(test_case['test_case_example_object_saturations']) == 1
+    assert len(test_case['test_case_example_object_chroma']) == 1
+    assert len(test_case['test_case_example_object_luminance']) == 1
+    assert len(test_case['test_case_example_object_intensities']) == 1
+    assert len(test_case['test_case_example_object_densities']) == 1
+    assert len(test_case['test_case_example_object_frequencies']) == 1
+    assert len(test_case['test_case_example_object_amplitudes']) == 1
+    assert len(test_case['test_case_example_object_wavelengths']) == 1
+    assert len(test_case['test_case_example_object_periods']) == 1
+    assert len(test_case['test_case_example_object_phases']) == 1
+    assert len(test_case['test_case_example_object_angles']) == 1
+    assert len(test_case['test_case_example_object_directions']) == 1
+    assert len(test_case['test_case_example_object_azimuths']) == 1
+    assert len(test_case['test_case_example_object_elevations']) == 1
+    assert len(test_case['test_case_example_object_latitudes']) == 1
+    assert len(test_case['test_case_example_object_longitudes']) == 1
+    assert len(test_case['test_case_example_object_radians']) == 1
+    assert len(test_case['test_case_example_object_degrees']) == 1
+    assert len(test_case['test_case_example_object_arcseconds']) == 1
+    assert len(test_case['test_case_example_object_minutes']) == 1
+    assert len(test_case['test_case_example_object_seconds']) == 1
+    assert len(test_case['test_case_example_object_milliseconds']) == 1
+    assert len(test_case['test_case_example_object_nanoseconds']) == 1
+    assert len(test_case['test_case_example_object_microseconds']) == 1
+    assert len(test_case['test_case_example_object_picoseconds']) == 1
+    assert len(test_case['test_case_example_object_femtoseconds']) == 1
+    assert len(test_case['test_case_example_object_attoseconds']) == 1
+    assert len(test_case['test_case_example_object_plancktimes']) == 
+
+
+###########################################################
+Result:
+solution: [[7, 7, 0, 0, 0], [9, 9, 0, 0, 0], [1, 0, 0, 0, 0], [5, 5, 0, 0, 0], [8, 8, 0, 0, 0]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.0
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

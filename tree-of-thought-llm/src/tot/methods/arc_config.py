@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '0,1'
+GPU = '3,4'
 
 #################### Prompt ####################
 CHANGE_REPRESENTATION = False
@@ -86,10 +86,10 @@ REVISIONS = []
 # REVISIONS.append("main")
 
 ##### Proprietary #####
-# MODEL_NAMES.append('gpt-4-1106-preview')
-# REVISIONS.append('')
-MODEL_NAMES.append('gpt-3.5-turbo-1106')
+MODEL_NAMES.append('gpt-4-1106-preview')
 REVISIONS.append('')
+# MODEL_NAMES.append('gpt-3.5-turbo-1106')
+# REVISIONS.append('')
 
 
 #################### automatic completion of parameters ####################

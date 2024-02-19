@@ -1,0 +1,326 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 2-dimensional input grid of pixels should be transformed into a corresponding output grid. The input and output grids have values from 1 to 9 representing different pixel colors, and 0 representing the background color. The transformation can relate to the entire grid or individual objects in the grid. Objects are usually adjacent pixels of a single color. 
+Example: [[0, 2, 2, 0, 3], [0, 2, 0, 0, 0]] represents a pixel grid of dimension (2,5) with the following objects: [Object_1: {color: '2', coordinates: [(0,1), (0,2), (1,1)], size: 3}, Object_2: {color: '3', coordinates: [(0,4)], size: 1}], with zero-indexing for the coordinates.
+
+The logical pattern might refer to concepts as follows:
+- Geometry and topology:
+	- Lines, rectangular shapes.
+	- Connecting points, orthogonal projections.
+ 	- Symmetries, mirroring, rotations, translations.
+	- Shape upscaling or downscaling, elastic distortions.
+	- Containing / being contained / being inside or outside of a perimeter.
+	- Copying, repeating.
+	- Patterns or mosaic based on sections.
+- Objects:
+	- Objects are shapes based on similar colors or based on surroundings.
+	- Object transformations based on geometry and topology.
+	- Touching objects have at least one adjacent pixel.
+	- Noise pixels.
+-  Arithmetics based on objects or shapes:
+	- Counting.
+	- Sorting.
+
+The list is not exhaustive. Transformations can be conditional.
+
+
+You are to infer the relation between input and output. Then, your task is to transform the test input grid into its test output grid.
+You are to output only the following in json format: {'example_1_description': {'pixel_changes': 'regarding the first example, describe the changes between the input and output pixels, focusing on pattern changes', 'object_changes': 'regarding the first example, describe the changes between the input and output objects, focusing on color, size, coordinates, shape, and object number'}, 'example_2_description': {Ellipsis}, 'overall_pattern': 'describe the input-output relationship valid for all input-output pairs', 'instructions': 'describe the required transformation actions in detail step by step', 'test_case_input_copy': 'copy the test case input grid from the task', 'test_case_grid_view': 'regarding the test input, describe the pixels of the entire grid, focusing on patterns', 'test_case_object_view': 'regarding the test input, describe the objects, focusing on color, size, coordinates and movement, shape, and object number', 'test_case_transformation': 'describe how the grid or objects should be transformed', 'test_case_output': 'create the resulting output grid as numpy array.'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 0, 6, 0, 6, 0, 6, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 6, 7, 6, 7, 6, 7, 6, 7, 6, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 7, 6, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 7, 6, 0, 0, 0]]
+
+Example_2:
+input: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 0, 6, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 7, 6, 7, 6, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 7, 6, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 7, 6, 0, 0, 0]]
+
+Example_3:
+input: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 0, 6, 0, 6, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 6, 7, 6, 7, 6, 7, 6, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 7, 6, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 7, 6, 0, 0, 0]]
+
+
+
+Test case:
+input: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 0], [0, 0, 0, 0, 0, 6, 0, 6, 0, 6, 0, 6, 0, 6, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 6, 0, 6, 0, 6, 0, 6, 0, 6, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 6, 0, 6, 0, 6, 0, 6, 0, 6, 0, 0, 0, 0, 0]]
+
+###########################################################
+Sample Outputs:
+'''
+
+#%%
+import pandas as pd
+from pathlib import Path
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import os
+import re
+import sys
+import time
+import random
+import string
+import math
+import copy
+import pickle
+import shutil
+import glob
+import warnings
+warnings.filterwarnings("ignore")
+
+def get_data(path):
+    '''
+    This function reads data from csv files.
+    
+    Parameters
+    ----------
+        path : str
+            Path to folder containing csv file.
+            
+    Returns
+    -------
+        df : DataFrame
+            Pandas dataframe containing data read from csv file.
+        
+    Raises
+    ------
+        FileNotFoundError
+            If no such file exists.
+    '''
+    try:
+        df = pd.read_csv(os.path.join(path,'train.csv'))
+    except FileNotFoundError:
+        raise FileNotFoundError('No such file found')
+    return df
+
+def get_labels(df):
+    '''
+    This function returns labels from the given dataframe.
+    
+    Parameters
+    ----------
+        df : DataFrame
+            Pandas dataframe containing data read from csv file.
+            
+    Returns
+    -------
+        y : Series
+            Labels extracted from the dataframe.
+    '''
+    y=[]
+    for i in range(len(df)):
+        if type(df['y'][i])==str:
+            y.append([int(j) for j in re.findall('\d+',df['y'][i])])
+        else:
+            y.append(list(map(int,df['y'][i])))
+    return y
+
+def get_images(df,nrows,ncols):
+    '''
+    This function returns images from the given dataframe.
+    
+    Parameters
+    ----------
+        df : DataFrame
+            Pandas dataframe containing data read from csv file.
+        nrows : int
+            Number of rows in each image.
+        ncols : int
+            Number of columns in each image.
+            
+    Returns
+    -------
+        X : List
+            Images extracted from the dataframe.
+    '''
+    X=[]
+    for i in range(len(df)):
+        img=np.zeros((nrows,ncols))
+        for j in range(nrows):
+            for k in range(ncols):
+                img[j][k]=int(re.search('\d+',df['x'][i][j*ncols + k]).group())
+        X.append(img)
+    return X
+
+def get_image(X,y,idx):
+    '''
+    This function returns an image and label pair from the given dataset.
+    
+    Parameters
+    ----------
+        X : List
+            Images extracted from the dataframe.
+        y : Series
+            Labels extracted from the dataframe.
+        idx : int
+            Index of the image and label pair to be returned.
+            
+    Returns
+    -------
+        x : NumPy Array
+            Image.
+        y : NumPy Array
+            Label.
+    '''
+    return X[idx],y[idx]
+
+def get_batch(X,y,bs,shuffle=True):
+    '''
+    This function returns batches of images and their respective labels.
+    
+    Parameters
+    ----------
+        X : List
+            Images extracted from the dataframe.
+        y : Series
+            Labels extracted from the dataframe.
+        bs : int
+            Batch size.
+        shuffle : bool
+            Whether to shuffle the order of the samples before returning them. Default value is True.
+            
+    Returns
+    -------
+        X_batch : List
+            A list of images.
+        y_batch : List
+            A list of labels.
+    '''
+    if shuffle:
+        idx=random.sample(range(len(X)),len(X))
+    else:
+        idx=[i for i in range(len(X))]
+    X_batch=[]
+    y_batch=[]
+    for i in idx[:bs]:
+        X_batch.append(get_image(X,y,i)[0])
+        y_batch.append(get_image(X,y,i)[1])
+    return X_batch,y_batch
+
+def get_dataset():
+    '''
+    This function returns training set and testing set.
+    
+    Returns
+    -------
+        train_set : Tuple
+            Training set consisting of tuple of (images,labels).
+        test_set : Tuple
+            Testing set consisting of tuple of (images,labels).
+    '''
+    df=get_data('/home/ubuntu/Desktop/DataSets/GridWorld/')
+    X=get_images(df,8,8)
+    y=get_labels(df)
+    train_size=int(.8 * len(X))
+    test_size=len(X)-train_size
+    train_set=(X[:train_size],y[:train_size])
+    test_set=(X[train_size:],y[train_size:])
+    return train_set,test_set
+
+if __name__ == '__main__':
+    start_time = time.time()
+    print('Start Time: ',start_time)
+    #%%
+    # Get the datasets
+    train_set,test_set=get_dataset()
+    #%%
+    # Define model architecture
+    class Model(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=1)
+            self.relu1 = nn.ReLU()
+            self.maxpool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+            self.dropout1 = nn.Dropout(0.25)
+            self.fc1 = nn.Linear(16*8*8, 128)
+            self.relu2 = nn.ReLU()
+            self.dropout2 = nn.Dropout(0.5)
+            self.fc2 = nn.Linear(128, 64)
+            self.relu3 = nn.ReLU()
+            self.fc3 = nn.Linear(64, 1)
+        def forward(self, x):
+            x = self.conv1(x)
+            x = self.relu1(x)
+            x = self.maxpool1(x)
+            x = self.dropout1(x)
+            x = torch.flatten(x, 1)
+            x = self.fc1(x)
+            x = self.relu2(x)
+            x = self.dropout2(x)
+            x = self.fc2(x)
+            x = self.relu3(x)
+            x = self.fc3(x)
+            return x
+    #%%
+    # Train the model
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+    criterion = nn.CrossEntropyLoss()
+    epochs = 10
+    device = torch.device('cuda' if torch.cuda.FloatTensor else torch.LongTensor)
+    history = []
+    best_model_wins = []
+    for e in range(epochs):
+        model.zero_grad()
+        optimizer.step()
+        loss.backward()
+        optimizer.zero_grad()
+        history.clear()
+        for param in model.parameters():
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.zero_grad()
+            history.clear()
+            optimizer.zero_grad()
+            loss.backward()
+            history.clear()
+            optimizer.zero_grad()
+            history.clear()
+            loss.backward()
+            history.clear()
+            history.clear()
+            history.clear()
+            loss.backward()
+            history.clear()
+            history.clear()
+            loss.backward()
+            history.clear()
+            history.clear()
+            history.clear()
+            loss.backward()
+            history.clear()
+            history.clear()
+            history.clear()
+            history.clear()
+            history.clear()
+            history.clear()
+            history.clear()
+            history.clear()
+            history.clear()
+            history.clear()
+            history.clear()
+            history.clear()
+            history.clear()
+            history.clear
+
+
+###########################################################
+Result:
+solution: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 7, 6, 0], [0, 0, 0, 0, 0, 6, 7, 6, 7, 6, 7, 6, 7, 6, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 6, 7, 6, 7, 6, 7, 6, 7, 6, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 6, 7, 6, 7, 6, 7, 6, 7, 6, 0, 0, 0, 0, 0]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.0
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

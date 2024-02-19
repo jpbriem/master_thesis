@@ -34,6 +34,7 @@ class ARC_1D(ARCTask):
         self.cat_success, self.cat_failures = {}, {} # saves success rates for each category
         self.too_long_prompts_no_output = {}
         self.too_long_prompts_all = {'sampling': [], 'value': [], 'vote': []}
+        self.tasks_failed_solving = {}
         self.solved_tasks = []
         self.solved_tasks_str_comparison = []
         self.value_cache = {}

@@ -1,0 +1,187 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 2-dimensional input grid of pixels should be transformed into a corresponding output grid. The input and output grids have values from 1 to 9 representing different pixel colors, and 0 representing the background color. The transformation can relate to the entire grid or individual objects in the grid. Objects are usually adjacent pixels of a single color. 
+Example: [[0, 2, 2, 0, 3], [0, 2, 0, 0, 0]] represents a pixel grid of dimension (2,5) with the following objects: [Object_1: {color: '2', coordinates: [(0,1), (0,2), (1,1)], size: 3}, Object_2: {color: '3', coordinates: [(0,4)], size: 1}], with zero-indexing for the coordinates.
+
+The logical pattern might refer to concepts as follows:
+- Geometry and topology:
+	- Lines, rectangular shapes.
+	- Connecting points, orthogonal projections.
+ 	- Symmetries, mirroring, rotations, translations.
+	- Shape upscaling or downscaling, elastic distortions.
+	- Containing / being contained / being inside or outside of a perimeter.
+	- Copying, repeating.
+	- Patterns or mosaic based on sections.
+- Objects:
+	- Objects are shapes based on similar colors or based on surroundings.
+	- Object transformations based on geometry and topology.
+	- Touching objects have at least one adjacent pixel.
+	- Noise pixels.
+-  Arithmetics based on objects or shapes:
+	- Counting.
+	- Sorting.
+
+The list is not exhaustive. Transformations can be conditional.
+
+
+You are to infer the relation between input and output. Then, your task is to transform the test input grid into its test output grid.
+You are to output only the following in json format: {'example_1_description': {'pixel_changes': 'regarding the first example, describe the changes between the input and output pixels, focusing on pattern changes', 'object_changes': 'regarding the first example, describe the changes between the input and output objects, focusing on color, size, coordinates, shape, and object number'}, 'example_2_description': {Ellipsis}, 'overall_pattern': 'describe the input-output relationship valid for all input-output pairs', 'instructions': 'describe the required transformation actions in detail step by step', 'test_case_input_copy': 'copy the test case input grid from the task', 'test_case_grid_view': 'regarding the test input, describe the pixels of the entire grid, focusing on patterns', 'test_case_object_view': 'regarding the test input, describe the objects, focusing on color, size, coordinates and movement, shape, and object number', 'test_case_transformation': 'describe how the grid or objects should be transformed', 'test_case_output': 'create the resulting output grid as numpy array.'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[5, 5, 5, 5, 5, 5, 5, 5, 5, 0], [0, 5, 0, 5, 5, 5, 5, 5, 5, 0], [0, 5, 0, 5, 5, 5, 5, 5, 5, 0], [0, 5, 0, 5, 5, 5, 5, 5, 5, 0], [0, 5, 0, 5, 5, 0, 5, 5, 5, 0], [0, 0, 4, 5, 0, 0, 0, 0, 5, 0], [0, 0, 4, 5, 0, 0, 0, 0, 0, 0], [4, 0, 4, 0, 0, 0, 0, 0, 0, 0], [4, 0, 4, 0, 0, 0, 0, 0, 0, 0], [4, 0, 4, 0, 0, 0, 4, 0, 0, 0]]
+output: [[5, 5, 5, 5, 5, 5, 5, 5, 5, 0], [4, 5, 4, 5, 5, 5, 5, 5, 5, 0], [4, 5, 4, 5, 5, 5, 5, 5, 5, 0], [4, 5, 4, 5, 5, 5, 5, 5, 5, 0], [0, 5, 4, 5, 5, 0, 5, 5, 5, 0], [0, 0, 4, 5, 0, 0, 4, 0, 5, 0], [0, 0, 0, 5, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+
+Example_2:
+input: [[5, 5, 5, 5, 5, 5, 5, 5, 5, 0], [5, 5, 5, 5, 5, 5, 5, 5, 5, 0], [5, 5, 5, 5, 0, 5, 5, 5, 5, 0], [0, 5, 5, 0, 0, 5, 0, 5, 0, 0], [0, 5, 5, 0, 0, 0, 0, 5, 0, 0], [0, 0, 5, 0, 0, 0, 0, 0, 0, 0], [0, 0, 5, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 4, 0, 0, 0], [0, 0, 0, 4, 4, 4, 4, 4, 4, 0], [4, 0, 0, 4, 4, 4, 4, 4, 4, 0]]
+output: [[5, 5, 5, 5, 5, 5, 5, 5, 5, 0], [5, 5, 5, 5, 5, 5, 5, 5, 5, 0], [5, 5, 5, 5, 4, 5, 5, 5, 5, 0], [4, 5, 5, 4, 4, 5, 4, 5, 4, 0], [0, 5, 5, 4, 0, 4, 4, 5, 4, 0], [0, 0, 5, 0, 0, 4, 4, 4, 0, 0], [0, 0, 5, 0, 0, 0, 0, 4, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+
+Example_3:
+input: [[0, 5, 5, 5, 5, 5, 5, 5, 0, 0], [0, 5, 5, 5, 5, 5, 5, 5, 0, 0], [0, 0, 0, 5, 5, 5, 5, 5, 0, 0], [0, 0, 0, 5, 0, 5, 5, 5, 0, 0], [0, 0, 0, 0, 0, 5, 5, 5, 0, 0], [0, 0, 0, 0, 0, 5, 5, 0, 0, 0], [0, 0, 0, 0, 4, 5, 0, 0, 0, 0], [0, 4, 4, 4, 4, 0, 0, 0, 0, 0], [0, 4, 4, 4, 4, 0, 0, 0, 0, 0], [0, 4, 4, 4, 4, 0, 0, 0, 0, 0]]
+output: [[0, 5, 5, 5, 5, 5, 5, 5, 0, 0], [0, 5, 5, 5, 5, 5, 5, 5, 0, 0], [0, 4, 4, 5, 5, 5, 5, 5, 0, 0], [0, 4, 4, 5, 4, 5, 5, 5, 0, 0], [0, 4, 4, 4, 4, 5, 5, 5, 0, 0], [0, 0, 0, 4, 4, 5, 5, 0, 0, 0], [0, 0, 0, 4, 4, 5, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+
+
+
+Test case:
+input: [[0, 0, 0, 5, 5, 5, 5, 5, 5, 0], [0, 0, 0, 5, 5, 5, 5, 0, 5, 0], [0, 0, 0, 5, 5, 5, 5, 0, 5, 0], [0, 0, 0, 0, 0, 5, 5, 0, 5, 0], [0, 0, 0, 0, 0, 5, 5, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 4, 0, 0], [0, 0, 0, 0, 4, 0, 0, 4, 0, 0], [0, 0, 0, 4, 4, 0, 0, 4, 0, 0]]
+
+###########################################################
+Sample Outputs:
+'''
+
+#%%
+import pandas as pd
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import math
+import random
+import timeit
+import os
+import sys
+import re
+import copy
+import pickle
+import itertools
+import functools
+import multiprocessing
+import warnings
+warnings.filterwarnings("ignore")
+
+def get_data():
+    '''
+    This function returns the data set used in this challenge.
+    
+    Returns:
+        - A tuple containing two lists of strings. Each string contains a line of the data set.
+            The first list corresponds to the training data set, while the second list corresponds to the test data set.
+    '''
+    # Load the data file
+    with open(os.path.join('..','data/task_16_data.txt'),'r') as f:
+        lines = f.readlines()
+        
+    # Split the data into train and test sets
+    train_set = []
+    test_set = []
+    for i in range(len(lines)):
+        if i < len(lines)/2:
+            train_set.append(lines[i])
+        else:
+            test_set.append(lines[i])
+            
+    return train_set, test_set
+
+train_set, test_set = get_data()
+
+#%%
+class Task16:
+    def __init__(self):
+        self.train_set = train_set
+        self.test_set = test_set
+        self.n_jobs = 8
+        self.pool = None
+        self.start_time = timeit.default_timer()
+        self.end_time = None
+        self.solution = None
+        self.score = None
+        self.best_params = {}
+        self.model = None
+        self.prediction = None
+        self.submission = None
+        self.features = ['example_1_description', 'example_2_description', 'example_3_description', 'overall_pattern', 'instructions', 'test_case_input_copy', 'test_case_grid_view', 'test_case_object_view', 'test_case_transformation', 'test_case_output']
+        self.target = 'test_case_output'
+        self.X_train = None
+        self.y_train = None
+        self.X_test = None
+        self.y_test = None
+        self.df_train = None
+        self.df_test = None
+        self.df_sample = None
+        self.df_sample_test = None
+        self.df_sample_train = None
+        self.df_sample_train_transformed = None
+        self.df_sample_test_transformed = None
+        self.df_sample_train_encoded = None
+        self.df_sample_test_encoded = None
+        self.df_sample_train_encoded_transformed = None
+        self.df_sample_test_encoded_transformed = None
+        self.df_sample_train_encoded_transformed_onehot = None
+        self.df_sample_test_encoded_transformed_onehot = None
+        self.df_sample_train_encoded_transformed_onehot_dummies = None
+        self.df_sample_test_encoded_transformed_onehot_dummies = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled_normalized = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax_zscore = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax_zscore = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax_zscore_polynomial = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax_zscore_polynomial = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax_zscore_polynomial_crossval = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax_zscore_polynomial_crossval = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax_zscore_polynomial_crossval_rf = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax_zscore_polynomial_crossval_rf = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax_zscore_polynomial_crossval_rf = None
+        self.df_sample_test_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax_zscore_polynomial_crossval_rf = None
+        self.df_sample_train_encoded_transformed_onehot_dummies_dropna_scaled_normalized_log_impute_fillna_addconstant_minmax_zscore_crossval_polynomial_crossval = None
+        self._crossval_scaled_normalized_log = None
+        self.df_scaled_polynomial = None
+        self.df_crossval = None
+        self.crossval = None
+        self.crossval = None
+        self.crossval = None
+
+
+###########################################################
+Result:
+solution: [[0, 0, 0, 5, 5, 5, 5, 5, 5, 0], [0, 0, 0, 5, 5, 5, 5, 4, 5, 0], [0, 0, 0, 5, 5, 5, 5, 4, 5, 0], [0, 0, 0, 4, 4, 5, 5, 4, 5, 0], [0, 0, 0, 0, 4, 5, 5, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.013071895424836602
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

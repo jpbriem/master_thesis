@@ -35,6 +35,7 @@ class ARCTask(Task):
         self.cat_success, self.cat_failures = {}, {} # saves success rates for each category
         self.too_long_prompts_no_output = {}
         self.too_long_prompts_all = {'sampling': [], 'value': [], 'vote': []}
+        self.tasks_failed_solving = {}
         self.solved_tasks = []
         self.solved_tasks_str_comparison = []
         self.value_cache = {}
@@ -93,23 +94,25 @@ class ARCTask(Task):
                 self.too_long_prompts_no_output[category] = [task_name]
             else:
                 self.too_long_prompts_no_output[category].append(task_name)
-            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': True, 'tries': None, 'success_rate': self.full_success / (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) if (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+            n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
+            n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
+            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': True, 'tries': None, 'success_rate': self.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
             return info
         
         try_cnt = 0
-        str_comparison = False
+        output_key = list(output_format.keys())[-1]
+        # add potential keys, in case model used a slightly different one
+        potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
+        output_keys = [output_key] + [k for k in potential_keys if k != output_key]
+        # change solution in np array
+        solution_grid = grid_to_2D_nparray(solution)
         for output in outputs:
             output = output.LLM_answer
             try_cnt += 1 
             try:
-                output_key = list(output_format.keys())[-1]
-                # add potential keys, in case model used a slightly different one
-                potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
-                output_keys = [output_key] + [k for k in potential_keys if k != output_key]
                 # extract answer and check if correct
                 test_output_grid = extract_json_value(output, output_format, output_keys) 
                 test_output_grid = grid_to_2D_nparray(test_output_grid)
-                solution_grid = grid_to_2D_nparray(solution)
                 is_success = np.array_equal(test_output_grid, solution_grid)
                 if is_success:
                     break     
@@ -117,12 +120,16 @@ class ARCTask(Task):
                 pass
             # second, if not successful, check if solution string is in output string
             print("Check if solution string is in output string")
+            #  remove second brackets for 1D ARC tasks
             if solution_grid.shape[0] == 1:
-                solution = str(solution)[1:-1] #  remove second brackets for 1D ARC tasks
-            is_success = re.sub(r'\s+', ' ', solution).strip() in re.sub(r'\s+', ' ', output).strip()
+                solution = solution.strip()
+                if "[[" in solution[:2]:
+                    solution = solution[1:]
+                if "]]" in solution[-2:]:
+                    solution = solution[:-1]
+            is_success = re.sub(r'\s+', '', solution).strip() in re.sub(r'\s+', '', output).strip()
             if is_success:
                 self.solved_tasks_str_comparison.append(task_name)
-                str_comparison = True
                 break     
 
         # log the success if not revision
@@ -140,7 +147,9 @@ class ARCTask(Task):
             if self.success[task_name] > 0:
                 self.solved_tasks.append((task_name, self.success[task_name]))
             # print('------------')
-            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': False, 'tries': try_cnt, 'success_rate': self.full_success / (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) if (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+            n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
+            n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
+            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': False, 'tries': try_cnt, 'success_rate': self.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
         
         return info
     
@@ -166,7 +175,9 @@ class ARCTask(Task):
                 self.too_long_prompts_no_output[category] = [task_name]
             else:
                 self.too_long_prompts_no_output[category].append(task_name)
-            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': True, 'tries': None, 'success_rate': self.full_success / (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) if (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+            n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
+            n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
+            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': True, 'tries': None, 'success_rate': self.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
             return info
 
         try_cnt = 0
@@ -190,6 +201,13 @@ class ARCTask(Task):
                 pass
             # second, if not successful, check if solution string is in output string
             print("Check if solution string is in output string")
+            #  remove second brackets for 1D ARC tasks
+            if solution_grid.shape[0] == 1:
+                solution = solution.strip()
+                if "[[" in solution[:2]:
+                    solution = solution[1:]
+                if "]]" in solution[-2:]:
+                    solution = solution[:-1]
             is_success = re.sub(r'\s+', ' ', solution).strip() in re.sub(r'\s+', ' ', output).strip()
             if is_success:
                 break     
@@ -203,7 +221,9 @@ class ARCTask(Task):
             
         if self.success[task_name] > 0:
             self.solved_tasks.append((task_name, self.success[task_name]))
-        info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': False, 'tries': try_cnt, 'success_rate': self.full_success / (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) if (idx+1-sum([len(v) for k, v in self.too_long_prompts_no_output.items()])) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+        n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
+        n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
+        info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': False, 'tries': try_cnt, 'success_rate': self.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
         return info
     
     def update_prompt_modules(self, type: str="naive", p: dict=prompt_modules_naive):
@@ -356,9 +376,16 @@ class ARCTask(Task):
                             text_file.write(log)
                     example_id += 1
             elif "value" in value_output:
-                value += int(value_output["value"])
-                cnt_examples += 1
-
+                try:
+                    value += int(value_output["value"])
+                    cnt_examples += 1
+                except:
+                    log = "'value' from LLM not a single integer: " + str(value_output["value"])
+                    print(log)
+                    path = "error_log/json_parsing_errors/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".txt"
+                    with open(path, "w") as text_file:
+                        text_file.write(log)
+                
             if cnt_examples > 0:
                 value /= cnt_examples
                 final_value += value

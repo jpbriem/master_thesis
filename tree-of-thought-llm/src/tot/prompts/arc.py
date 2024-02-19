@@ -127,14 +127,14 @@ prompt_modules = {
 			"output_format": {
 				'objects': {
 					'Example_1': { 
-						'input': 'regarding the first example, describe all objects in the input sequence.',
-						'output': 'regarding the first example, describe all objects in the output sequence.',
+						'input': 'regarding the first example, describe all pixel pattern and objects in the input sequence.',
+						'output': 'regarding the first example, describe all pixel pattern and objects in the output sequence; Ignore transformation patterns.',
 					},
 					'Example_2': {...},
-					'description': {
-	        			'input': 'summarize your findings to highlight commonalities within input grids.',
-	        			'output': 'summarize your findings to highlight commonalities within output grids.',
-						},
+				},
+				'description': {
+					'input': 'summarize your findings to highlight commonalities within input grids.',
+					'output': 'summarize your findings to highlight commonalities within output grids.',
 				},
    		 	},
 		},
@@ -218,6 +218,7 @@ prompt_modules = {
 			"output_format": {
                 'input_description': 'describe the test input and identify all objects in the input grid by following the format: [Object_ID: {color: \'object color\', coordinates: [[x_1,y_1], [x_2,y_2], ..], size: number of pixels}, ...]',
                 'transformation': 'apply the transformation steps to the test input grid, detailing how each condition of the transformation pattern applies to the current task and respond to every step in detail.',
+                'transformation_result': 'describe the resulting pixel pattern or objects in the test output grid.',
                 'output': 'return only the resulting test output grid as numpy array' 
                 }
    		 	},

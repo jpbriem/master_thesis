@@ -1,0 +1,172 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+You are confronted with a task in which a 2-dimensional input grid of pixels should be transformed into a corresponding output grid. The input and output grids have values from 1 to 9 representing different pixel colors, and 0 representing the background color. The transformation can relate to the entire grid or individual objects in the grid. Objects are usually adjacent pixels of a single color. 
+Example: [[0, 2, 2, 0, 3], [0, 2, 0, 0, 0]] represents a pixel grid of dimension (2,5) with the following objects: [Object_1: {color: '2', coordinates: [(0,1), (0,2), (1,1)], size: 3}, Object_2: {color: '3', coordinates: [(0,4)], size: 1}], with zero-indexing for the coordinates.
+
+The logical pattern might refer to concepts as follows:
+- Geometry and topology:
+	- Lines, rectangular shapes.
+	- Connecting points, orthogonal projections.
+ 	- Symmetries, mirroring, rotations, translations.
+	- Shape upscaling or downscaling, elastic distortions.
+	- Containing / being contained / being inside or outside of a perimeter.
+	- Copying, repeating.
+	- Patterns or mosaic based on sections.
+- Objects:
+	- Objects are shapes based on similar colors or based on surroundings.
+	- Object transformations based on geometry and topology.
+	- Touching objects have at least one adjacent pixel.
+	- Noise pixels.
+-  Arithmetics based on objects or shapes:
+	- Counting.
+	- Sorting.
+
+The list is not exhaustive. Transformations can be conditional.
+
+
+You are to infer the relation between input and output. Then, your task is to transform the test input grid into its test output grid.
+You are to output only the following in json format: {'example_1_description': {'pixel_changes': 'regarding the first example, describe the changes between the input and output pixels, focusing on pattern changes', 'object_changes': 'regarding the first example, describe the changes between the input and output objects, focusing on color, size, coordinates, shape, and object number'}, 'example_2_description': {Ellipsis}, 'overall_pattern': 'describe the input-output relationship valid for all input-output pairs', 'instructions': 'describe the required transformation actions in detail step by step', 'test_case_input_copy': 'copy the test case input grid from the task', 'test_case_grid_view': 'regarding the test input, describe the pixels of the entire grid, focusing on patterns', 'test_case_object_view': 'regarding the test input, describe the objects, focusing on color, size, coordinates and movement, shape, and object number', 'test_case_transformation': 'describe how the grid or objects should be transformed', 'test_case_output': 'create the resulting output grid as numpy array.'}. Do not use quotation marks ' or " within the fields.
+
+The following input-output pairs are examples and share the same underlying transformation pattern.
+Example_1:
+input: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 0, 0, 0, 0], [0, 0, 4, 0, 0], [0, 0, 0, 0, 0], [4, 0, 0, 0, 0], [0, 0, 4, 0, 0], [0, 0, 0, 0, 0], [4, 0, 0, 0, 0], [0, 0, 4, 0, 0], [0, 0, 0, 0, 0], [4, 0, 0, 0, 0], [0, 0, 4, 0, 0], [0, 0, 0, 4, 0], [4, 0, 0, 0, 0], [0, 0, 4, 0, 0], [0, 0, 0, 4, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 0, 0, 0, 0], [5, 0, 4, 0, 0], [5, 0, 5, 0, 0], [4, 0, 5, 0, 0], [5, 0, 4, 0, 0], [5, 0, 5, 0, 0], [4, 0, 5, 0, 0], [5, 0, 4, 0, 0], [5, 0, 5, 0, 0], [4, 0, 5, 0, 0], [5, 0, 4, 0, 0], [5, 0, 5, 4, 0], [4, 0, 5, 5, 0], [0, 0, 4, 5, 0], [0, 0, 0, 4, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+
+Example_2:
+input: [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [4, 0, 0, 0], [0, 4, 0, 0], [0, 0, 4, 0], [4, 0, 0, 0], [0, 4, 0, 0], [0, 0, 4, 0], [4, 0, 0, 0], [0, 4, 0, 0], [0, 0, 4, 0], [4, 0, 0, 0], [0, 4, 0, 0], [0, 0, 4, 0], [4, 0, 0, 0], [0, 4, 0, 0], [0, 0, 4, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+output: [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [4, 0, 0, 0], [5, 4, 0, 0], [5, 5, 4, 0], [4, 5, 5, 0], [5, 4, 5, 0], [5, 5, 4, 0], [4, 5, 5, 0], [5, 4, 5, 0], [5, 5, 4, 0], [4, 5, 5, 0], [5, 4, 5, 0], [5, 5, 4, 0], [4, 5, 5, 0], [0, 4, 5, 0], [0, 0, 4, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+
+Example_3:
+input: [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [4, 0, 0, 0, 0, 0, 0], [0, 0, 4, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [4, 0, 0, 0, 0, 0, 0], [0, 0, 4, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [4, 0, 0, 0, 0, 0, 0], [0, 0, 4, 0, 0, 0, 0], [0, 0, 0, 0, 0, 4, 0], [4, 0, 0, 0, 0, 0, 0], [0, 0, 4, 0, 0, 0, 0], [0, 0, 0, 0, 0, 4, 0], [4, 0, 0, 0, 0, 0, 0], [0, 0, 4, 0, 0, 0, 0], [0, 0, 0, 0, 0, 4, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [4, 0, 0, 0, 0, 0, 0], [5, 0, 4, 0, 0, 0, 0], [5, 0, 5, 0, 0, 0, 0], [4, 0, 5, 0, 0, 0, 0], [5, 0, 4, 0, 0, 0, 0], [5, 0, 5, 0, 0, 0, 0], [4, 0, 5, 0, 0, 0, 0], [5, 0, 4, 0, 0, 0, 0], [5, 0, 5, 0, 0, 4, 0], [4, 0, 5, 0, 0, 5, 0], [5, 0, 4, 0, 0, 5, 0], [5, 0, 5, 0, 0, 4, 0], [4, 0, 5, 0, 0, 5, 0], [0, 0, 4, 0, 0, 5, 0], [0, 0, 0, 0, 0, 4, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]
+
+
+
+Test case:
+input: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 0, 0, 4, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 4, 0, 4, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 4, 0, 4, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 4, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+
+###########################################################
+Sample Outputs:
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [5, 0, 0, 4, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [5, 5, 0, 4, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [5, 5, 0, 4, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 4, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+'''
+
+#%%
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+
+def get_image(img):
+    img = Image.open('./images/'+str(img)+'.png')
+    return img
+
+def show_image(img):
+    img.show()
+
+def save_image(img, name=''):
+    if len(name) == 0:
+        name = str(img).split('.')[0] + '.jpg'
+    img.save("./images/"+name+".jpg")
+
+def load_data():
+    data = []
+    with open('./data/task_16.txt','r') as f:
+        lines = f.readlines()[1:]
+        for line in lines:
+            line = line.strip().split('\t')
+            data.append([int(x) for x in line])
+    return data
+
+def create_test_cases(data):
+    test_cases = {}
+    for i in range(len(data)):
+        test_cases['example_{}'.format(i)] = data[i][:-1]
+    return test_cases
+
+def create_test_case_input_copies(test_cases):
+    test_case_input_copies = {}
+    for key in test_cases.keys():
+        test_case_input_copies[key] = test_cases[key].copy()
+    return test_case_input_copies
+
+def create_test_case_grids(test_cases):
+    test_case_grids = {}
+    for key in test_cases.keys():
+        test_case_grids[key] = np.array(test_cases[key]).reshape((*np.shape(test_cases[key]),1))
+    return test_case_grids
+
+def create_test_case_objects(test_cases):
+    test_case_objects = {}
+    for key in test_cases.keys():
+        test_case_objects[key] = []
+        for y in range(len(test_cases[key])):
+            for x in range(len(test_cases[key][y])):
+                if test_cases[key][y][x]!= 0:
+                    test_case_objects[key].append({'coordinates':[(x,y)],'size':1,'color':test_cases[key][y][x]})
+    return test_case_objects
+
+def create_test_case_views(test_cases, test_case_objects):
+    test_case_views = {}
+    for key in test_cases.keys():
+        test_case_views[key] = ''
+        for obj in test_case_objects[key]:
+            test_case_views[key]+=f'\n{obj["color"]}: {obj["coordinates"]}'
+    return test_case_views
+
+def create_test_case_transformations(test_cases, test_case_objects, test_case_views):
+    test_case_transformations = {}
+    for key in test_cases.keys():
+        test_case_transformations[key] = ''
+        for obj in test_case_objects[key]:
+            test_case_transformations[key]+=f'\n{obj["color"]}: {obj["coordinates"]}'
+    return test_case_transformations
+
+def create_test_case_outputs(test_cases):
+    test_case_outputs = {}
+    for key in test_cases.keys():
+        test_case_outputs[key] = np.zeros(np.shape(test_cases[key]))
+    return test_case_outputs
+
+def create_test_case_instructions(test_cases, test_case_objects, test_case_views, test_case_transformations, test_case_outputs):
+    test_case_instructions = {}
+    for key in test_cases.keys():
+        test_case_instructions[key] = ''
+        for obj in test_case_objects[key]:
+            test_case_instructions[key]+=f'\n{obj["color"]}: {obj["coordinates"]}'
+    return test_case_instructions
+
+if __name__=='__main__':
+    # Load data
+    data = load_data()
+    
+    # Create test cases
+    test_cases = create_test_cases(data)
+    test_case_input_copies = create_test_case_input_copies(test_cases)
+    test_case_grids = create_test_case_grids(test_cases)
+    test_case_objects = create_test_case_objects(test_cases)
+    test_case_views = create_test_case_views(test_cases, test_case_objects)
+    test_case_transformations = create_test_case_transformations(test_cases, test_case_objects, test_case_views)
+    test_case_outputs = create_test_case_outputs(test_cases)
+    test_case_instructions = create_test_case_instructions(test_cases, test_case_objects, test_case_views, test_case_transformations, test_case_outputs)
+
+
+
+###########################################################
+Result:
+solution: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 0, 0, 0, 0], [5, 0, 0, 0, 0], [5, 0, 0, 0, 0], [4, 0, 0, 4, 0], [5, 0, 0, 5, 0], [5, 0, 0, 5, 0], [4, 4, 0, 4, 0], [5, 5, 0, 5, 0], [5, 5, 0, 5, 0], [4, 4, 0, 4, 0], [0, 0, 0, 5, 0], [0, 0, 0, 5, 0], [0, 0, 0, 4, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.03389830508474576
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+
