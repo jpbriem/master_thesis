@@ -52,7 +52,7 @@ standard_prompt = {
 }
 
 cot_prompt = {
-    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the fields.\n''',
+    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Any output key containing < and > indicates you must generate the key name to replace it. Example input: {{'<location>': 'description of location'}}, Example output: {{school: a place for education}}. Do not use quotation marks ' or " within the json fields.\n''',
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
 
@@ -123,12 +123,12 @@ prompt_modules = {
 		'spread': True,
 		'phase': 'abstraction',
 		'generation': {
-			"instruct_task": f'\n\nYour task is to describe the objects in the given input and output grids.',
+			"instruct_task": f'\n\nYour task is to describe the given input and output grids.',
 			"output_format": {
 				'objects': {
 					'Example_1': { 
 						'input': 'regarding the first example, describe all pixel pattern and objects in the input sequence.',
-						'output': 'regarding the first example, describe all pixel pattern and objects in the output sequence; Ignore transformation patterns.',
+						'output': 'regarding the first example, describe all pixel pattern and objects in the output sequence; Ignore transformation rules.',
 					},
 					'Example_2': {...},
 				},
@@ -139,13 +139,13 @@ prompt_modules = {
    		 	},
 		},
 		'evaluation': {
-			"instruct_previous_thoughts": f'\nYou are given example input-output pairs with descriptions about identified objects.',
-			"instruct_task": f'\n\nEvaluate the given object descriptions and analyze if they correctly describe all objects. Be as critical as possible with all details!',
+			"instruct_previous_thoughts": f'\nYou are given example input-output pairs with respective descriptions.',
+			"instruct_task": f'\n\nEvaluate the given descriptions and analyze if they correctly describe all objects. Be as critical as possible with all details!',
 			"output_format": {
                 'Example_1': {
-                    'input_analysis': 'Regarding the first example, analyze if the given object descriptions correctly cover all objects in the input grid.',
-                    'output_analysis': 'Regarding the first example, analyze if the given object descriptions correctly cover all objects in the output grid',
-                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the given object descriptions as integer.'
+                    'input_analysis': 'Regarding the first example, analyze if the given description correctly cover all objects and pixel pattern in the input grid.',
+                    'output_analysis': 'Regarding the first example, analyze if the given description correctly cover all objects and pixel pattern in the output grid',
+                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the given descriptions as integer.'
                     },
                 'Example_2': {...},
                 },
@@ -216,8 +216,8 @@ prompt_modules = {
 		'generation': {
         	"instruct_task": f'\n\nMoreover, you are given a new test case with a new input grid. Your task is to transform the test input grid into its test output grid.',
 			"output_format": {
-                'input_description': 'describe the test input and identify all objects in the input grid by following the format: [Object_ID: {color: \'object color\', coordinates: [[x_1,y_1], [x_2,y_2], ..], size: number of pixels}, ...]',
-                'transformation': 'apply the transformation steps to the test input grid, detailing how each condition of the transformation pattern applies to the current task and respond to every step in detail.',
+                'input_description': 'describe the test input grid and identify all objects and pixel pattern', # in the input grid by following the format: [Object_ID: {color: \'object color\', coordinates: [[x_1,y_1], [x_2,y_2], ..], size: number of pixels}, ...]',
+                'transformation': 'apply the transformation steps to the test input grid, detailing how each condition of the transformation rules applies to the current task and respond to every step in detail.',
                 'transformation_result': 'describe the resulting pixel pattern or objects in the test output grid.',
                 'output': 'return only the resulting test output grid as numpy array' 
                 }

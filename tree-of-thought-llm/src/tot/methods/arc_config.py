@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '3,4'
+GPU = '0,3'
 
 #################### Prompt ####################
 CHANGE_REPRESENTATION = False
@@ -54,8 +54,8 @@ REVISIONS = []
 # REVISIONS.append("main")
 # MODEL_NAMES.append("mistralai/Mixtral-8x7B-v0.1")
 # REVISIONS.append("main")
-# MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
-# REVISIONS.append("main")
+MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
+REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
 # REVISIONS.append("main") 
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-Instruct-v0.1-GPTQ") 
@@ -64,12 +64,12 @@ REVISIONS = []
 # REVISIONS.append("main")
 
 # Qwen 
-# MODEL_NAMES.append("TheBloke/Qwen-14B-Chat-GPTQ")
+# MODEL_NAMES.append("")
 # REVISIONS.append("main") 
-# MODEL_NAMES.append("TheBloke/Qwen-7B-Chat-GPTQ")
+# MODEL_NAMES.append("")
 # REVISIONS.append("main")
-# MODEL_NAMES.append("Qwen/Qwen-72B-Chat")
-# REVISIONS.append("main") 
+MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
+REVISIONS.append("main") 
 
 # Vicuna
 # MODEL_NAMES.append("TheBloke/vicuna-7B-v1.5-GPTQ")
@@ -86,8 +86,8 @@ REVISIONS = []
 # REVISIONS.append("main")
 
 ##### Proprietary #####
-MODEL_NAMES.append('gpt-4-1106-preview')
-REVISIONS.append('')
+# MODEL_NAMES.append('gpt-4-1106-preview')
+# REVISIONS.append('')
 # MODEL_NAMES.append('gpt-3.5-turbo-1106')
 # REVISIONS.append('')
 
@@ -109,14 +109,18 @@ for model in MODEL_NAMES:
         config["max_token"] = 128000
     elif "gpt-3.5-turbo-1106" in model.lower():
         config["max_token"] = 16385
-    elif "Qwen-7B".lower() in model.lower():
-        config["max_token"] = 8192
-    elif "Qwen-14B".lower() in model.lower():
-        config["max_token"] = 2048
-    elif "Qwen-72B".lower() in model.lower():
-        config["max_token"] = 32768
+    elif "Qwen".lower() in model.lower():
+        config["model_config"]["temperature"] = 0.7
+        if "Qwen-7B".lower() in model.lower():
+            config["max_token"] = 8192
+        elif "Qwen-14B".lower() in model.lower():
+            config["max_token"] = 2048
+        elif "Qwen-72B".lower() in model.lower():
+            config["max_token"] = 32768
     elif "Falcon".lower() in model.lower():
         config["max_token"] = 2048
+    elif "Mixtral".lower() in model.lower():
+        config["max_token"] = 32768
     MODEL_CONFIGS[model] = config
 
 DELIMITER = {

@@ -45,7 +45,7 @@ def initialize_model(args):
             response_format = { "type": "text" }
         else:
             response_format = { "type": "json_object" }
-        llm = partial(gpt, model=backend, temperature=args.temperature, response_format=response_format)
+        llm = partial(gpt, model=backend, temperature=MODEL_CONFIGS[backend]["model_config"]["temperature"], response_format=response_format)
         return call_model
     if not torch.cuda.is_available():
         print("Warning: CUDA is not available")
@@ -54,7 +54,7 @@ def initialize_model(args):
         if backend in ["TheBloke/Falcon-7B-Instruct-GPTQ", "TheBloke/Falcon-40B-Instruct-GPTQ"]:
             model, tokenizer = load_falcon(backend, args.model_revision)
             llm = run_falcon
-        elif backend in ["Qwen/Qwen-14B-Chat", "Qwen/Qwen-7B-Chat", "Qwen/Qwen-72B-Chat"]:
+        elif "qwen" in backend.lower():
             llm, tokenizer = load_qwen(backend, MODEL_CONFIGS[backend]["model_config"])
         else:
             tokenizer, model, llm = load_llama(backend, args.model_revision, MODEL_CONFIGS[backend]["max_token"], MODEL_CONFIGS[backend]["model_config"])
@@ -106,7 +106,7 @@ def prompt_preprocessing_for_model(prompt):
                 return "[INST] " + prompt["system"] + "\n" + prompt["user"] + "\n[/INST]"
             else:
                 return "[INST] " + prompt["user"] + "\n[/INST]"
-        elif "Qwen" in backend:
+        elif "Qwen".lower() in backend.lower():
             if "system" not in prompt:
                 prompt["system"] = ""
             return prompt 
@@ -140,13 +140,14 @@ def call_model(prompt, max_tokens=2000, n=1, stop=None):
             prompt_tokens += count_tokens(prompt, backend, tokenizer)[0]
             completion_tokens += count_tokens(output, backend, tokenizer)[0]
             outputs.append(output)
-    elif backend in ["Qwen/Qwen-14B-Chat", "Qwen/Qwen-7B-Chat", "Qwen/Qwen-72B-Chat"]:
+    elif "qwen" in backend.lower():
         outputs = []
         for i in range(n):
             output, _ = llm(tokenizer, prompt["user"], history=None, system=prompt["system"])
             prompt_tokens += count_tokens("\n".join(prompt), backend, tokenizer)[0]
             completion_tokens += count_tokens(output, backend, tokenizer)[0]
             outputs.append(output)
+    
     else:
         outputs = []
         for i in range(n):
@@ -281,18 +282,18 @@ def load_falcon(model_name, revision):
     if model_name in ["TheBloke/Falcon-40B-Instruct-GPTQ"]:
         model = exllama_set_max_input_length(model, 4096)
     return model, tokenizer
-
 def run_falcon(tokenizer, model, prompt, max_new_tokens, temperature):
     input_ids = tokenizer(prompt, return_tensors='pt').input_ids.cuda()
     output = model.generate(inputs=input_ids, temperature=temperature, max_new_tokens=max_new_tokens)
-    return [tokenizer.decode(output[0])]
-
+    output = tokenizer.decode(output[0])
+    if prompt in output:
+        output = output.removeprefix(prompt)
+    return output
 
 # Qwen Models
 def load_qwen(model_name, model_config):
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, use_fast=True)
-    model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", trust_remote_code=True, bf16=True).eval()
-    # model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", trust_remote_code=True).eval()
+    model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", trust_remote_code=True).eval()
     # Docs for config: https://huggingface.co/docs/transformers/v4.33.3/en/main_classes/configuration#transformers.PretrainedConfig
     # https://www.promptingguide.ai/introduction/settings
     generation_config = GenerationConfig.from_pretrained(model_name)
@@ -303,6 +304,26 @@ def load_qwen(model_name, model_config):
     generation_config.repetition_penalty = model_config["repetition_penalty"] # 1.0 means no penalty.
     model.generation_config = generation_config
     return model.chat, tokenizer
+
+# Mixtral Models
+def load_mixtral(model_name, revision, model_config):
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", torch_dtype=torch.float16, revision=revision, use_flash_attention_2=True)
+    generation_config = GenerationConfig.from_pretrained(model_name)
+    generation_config.max_new_tokens = model_config["max_new_tokens"]
+    generation_config.temperature = model_config["temperature"]
+    #generation_config.top_p = 0.9 #  If set to float < 1, only the most probable tokens with probabilities that add up to top_p or higher are kept for generation.
+    generation_config.do_sample = True # Whether or not to use sampling ; use greedy decoding otherwise.
+    generation_config.repetition_penalty = model_config["repetition_penalty"] # 1.0 means no penalty.
+    model.generation_config = generation_config
+    return model, tokenizer
+def run_mixtral(tokenizer, model, prompt):
+    inputs = tokenizer(prompt, return_tensors="pt").input_ids.cuda()
+    output = model.generate(inputs=inputs)
+    output = tokenizer.decode(output[0], skip_special_tokens=True)
+    if prompt in output:
+        output = output.removeprefix(prompt)
+    return output
 
 #################### Utils #####################
 

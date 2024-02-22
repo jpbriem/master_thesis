@@ -134,6 +134,11 @@ def replace_quotes_in_text(res, json_format):
         if "example_1" in json_format:
             for i in range(2, 11): # do for 10 examples
                 k = "example_" + str(i)
+                output_format.update({k: ""})
+        if "Example_1" in json_format:
+            for i in range(2, 11): # do for 10 examples
+                k = "Example_" + str(i)
+                output_format.update({k: ""})
         if "example_1_description" in json_format:
             for i in range(2, 11): # do for 10 examples
                 k = "example_" + str(i) + "_description"
@@ -143,6 +148,10 @@ def replace_quotes_in_text(res, json_format):
             if "example_1" in value:
                 for i in range(2, 11): # do for 10 examples
                     k = "example_" + str(i)
+                    output_format.update({k: ""})
+            if "Example_1" in value:
+                for i in range(2, 11): # do for 10 examples
+                    k = "Example_" + str(i)
                     output_format.update({k: ""})
             if "example_1_description" in value:
                 for i in range(2, 11): # do for 10 examples
@@ -154,6 +163,10 @@ def replace_quotes_in_text(res, json_format):
                     if "example_1" in value2:
                         for i in range(2, 11): # do for 10 examples
                             k = "example_" + str(i)
+                            output_format.update({k: ""})
+                    if "Example_1" in value:
+                        for i in range(2, 11): # do for 10 examples
+                            k = "Example_" + str(i)
                             output_format.update({k: ""})
                     if "example_1_description" in value2:
                         for i in range(2, 11): # do for 10 examples

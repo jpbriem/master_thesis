@@ -181,19 +181,19 @@ class ARCTask(Task):
             return info
 
         try_cnt = 0
+        # first, check if output is in json format with answer in the end
+        output_key = list(output_format.keys())[-1]
+        # add potential keys, in case model used a slightly different one
+        potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
+        output_keys = [output_key] + [k for k in potential_keys if k != output_key]
+        solution_grid = grid_to_2D_nparray(solution)
         for output in outputs:
             output = output.LLM_answer
             try_cnt += 1 
-            # first, check if output is in json format with answer in the end
-            output_key = list(output_format.keys())[-1]
             try:
-                # add potential keys, in case model used a slightly different one
-                potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
-                output_keys = [output_key] + [k for k in potential_keys if k != output_key]
                 test_output_grid = extract_json_value(output, output_format, output_keys) 
                 if test_output_grid:
                     test_output_grid = grid_to_2D_nparray(test_output_grid)
-                    solution_grid = grid_to_2D_nparray(solution)
                     is_success = np.array_equal(test_output_grid, solution_grid)
                     if is_success:
                         break
@@ -210,7 +210,8 @@ class ARCTask(Task):
                     solution = solution[:-1]
             is_success = re.sub(r'\s+', ' ', solution).strip() in re.sub(r'\s+', ' ', output).strip()
             if is_success:
-                break     
+                self.solved_tasks_str_comparison.append(task_name)
+                break   
                         
         self.success[task_name] += is_success    
         if self.success[task_name] == 1:

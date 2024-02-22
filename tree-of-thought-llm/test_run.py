@@ -14,17 +14,16 @@ from tot.methods.arc_utils import check_model_selection
 
 ########## ARC ##########
 args = argparse.Namespace(
-    continue_run="gpt-4-1106-preview_2024-02-18_19-09-24", # TODO: Set model!
+    # continue_run="gpt-4-1106-preview_2024-02-18_19-09-24", # TODO: Set model!
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
     use_api=True,                       # TODO: Use API?!
-    temperature=0.7, 
     # task='arc',                       # TODO: Set task!
     task='arc_1D',
     # task = 'arc_h_v',
     input_representation = None,    # TODO: set input representation
     # input_representation = 'objects',
-    naive_run=False,                    # TODO: Naive run? TODO: chang in prompts
+    naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
     prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
@@ -32,9 +31,9 @@ args = argparse.Namespace(
     method_evaluate='value', 
     method_select='greedy',
     revision=False,                     # TODO: Revision?
-    n_generate_sample=4,                # TODO: Set tree search parameters!
-    n_evaluate_sample=2, 
-    n_select_sample=2)
+    n_generate_sample=1,                # TODO: Set tree search parameters!
+    n_evaluate_sample=1, 
+    n_select_sample=1)
 
 # get IDs of 50 ARC tasks to be tested # TODO: original ARC???
 # data = pd.read_csv('/work/jbriem/repos/master_thesis/ARC_datasets/1D-ARC/LLM4ARC/output-logs/direct-grid/ARC-subset/direct_grid_few_shot_number_3.5.csv')
@@ -81,7 +80,7 @@ def run(args):
     indices = list(range(len(task)))
     # random.seed(42)
     # random.shuffle(indices)
-    count = 0 # TODO: delete!!!
+    # count = 0 # TODO: delete!!!
     if hasattr(args, 'continue_run'):
         intermediate_state = json.load(open(directory+'/all_tasks_log.json'))
         reset_usage(new_completion_tokens=intermediate_state[-1]["usage_so_far"]["completion_tokens"], new_prompt_tokens=intermediate_state[-1]["usage_so_far"]["prompt_tokens"])
@@ -110,9 +109,12 @@ def run(args):
         task_category = task.categories[idx]
 
         print(f"Task: {task_name}\nTask {idx+1} of {len(task)}")
-        count += 1 # TODO: delete!!!       
-        if count == 21: # TODO: delete!!!
-            break
+        # count += 1 # TODO: delete!!!       
+        # if count == 2: # TODO: delete!!!
+        #     break
+        # if task_category == "move_v": # TODO: delete!!!
+        #     break
+        
         if hasattr(args, 'continue_run'):
             task_already_tried = False
             for old_log in intermediate_state:
