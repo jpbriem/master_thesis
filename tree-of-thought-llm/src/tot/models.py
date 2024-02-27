@@ -106,10 +106,12 @@ def prompt_preprocessing_for_model(prompt):
                 return "[INST] " + prompt["system"] + "\n" + prompt["user"] + "\n[/INST]"
             else:
                 return "[INST] " + prompt["user"] + "\n[/INST]"
-        elif "Qwen".lower() in backend.lower():
-            if "system" not in prompt:
-                prompt["system"] = ""
-            return prompt 
+    
+    # for qwen models it's same for naive and not naive run
+    if "Qwen".lower() in backend.lower():
+        if "system" not in prompt:
+            prompt["system"] = ""
+        return prompt 
             
     # use naive prompting template, instead 
     if "system" in prompt:

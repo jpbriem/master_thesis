@@ -52,7 +52,7 @@ standard_prompt = {
 }
 
 cot_prompt = {
-    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Any output key containing < and > indicates you must generate the key name to replace it. Example input: {{'<location>': 'description of location'}}, Example output: {{school: a place for education}}. Do not use quotation marks ' or " within the json fields.\n''',
+    "system": general_explanation + human_priors + '''\n{special_instructions}\nYou are to output only the following in json format: {output}. Do not use quotation marks ' or " within the json fields.\n''',
 	"user": '''{context}{previous_thoughts}{test_input}'''
  }
 
@@ -119,7 +119,7 @@ prompt_modules = {
         #         },
      	# 	},
 		# },
-		# grid dimension
+		# grid description
 		'spread': True,
 		'phase': 'abstraction',
 		'generation': {
@@ -128,13 +128,13 @@ prompt_modules = {
 				'objects': {
 					'Example_1': { 
 						'input': 'regarding the first example, describe all pixel pattern and objects in the input sequence.',
-						'output': 'regarding the first example, describe all pixel pattern and objects in the output sequence; Ignore transformation rules.',
+						'output': 'regarding the first example, describe all pixel pattern and objects in the output sequence; Ignore relations to the input!',
 					},
 					'Example_2': {...},
 				},
 				'description': {
-					'input': 'summarize your findings to highlight commonalities within input grids.',
-					'output': 'summarize your findings to highlight commonalities within output grids.',
+					'input': 'summarize your findings to highlight commonalities within input grids by completing the following sentence: "A typical input grid looks like..."',
+					'output': 'summarize your findings to highlight commonalities within output grids by completing the following sentence: "A typical output grid looks like..."',
 				},
    		 	},
 		},

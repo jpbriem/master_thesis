@@ -464,32 +464,129 @@ def load_arc_tasks(path, dataset="arc"):
     print("Total number of tasks:", len(tasks_jsons))
     return tasks_jsons, tasks_names, subdirecotries
 
-import numpy as np
-
 # Find objects in 1D pixel sequences
-def find_objects(input_array, background_colour):
+def find_objects(task, name, grid, bg_colour):
     objects = []
     current_object = None
-
-    for i, pixel in enumerate(input_array):
-        if pixel != background_colour:
-            if current_object is None:
-                # Start a new object
-                current_object = {'colour': pixel, 'start_index': i, 'end_index': i, 'size': 1}
-            elif pixel == current_object['colour']:
-                # Continue the current object
-                current_object['end_index'] = i
-                current_object['size'] += 1
+    if task == "arc_1D":
+        for i, pixel in enumerate(grid[0]):
+            if pixel != bg_colour:
+                if current_object is None:
+                    # Start a new object
+                    current_object = {'colour': pixel, 'start_index': i, 'end_index': i, 'size': 1}
+                elif pixel == current_object['colour']:
+                    # Continue the current object
+                    current_object['end_index'] = i
+                    current_object['size'] += 1
+                else:
+                    # Finish the current object and start a new one
+                    objects.append(current_object)
+                    current_object = {'colour': pixel, 'start_index': i, 'end_index': i, 'size': 1}
             else:
-                # Finish the current object and start a new one
-                objects.append(current_object)
-                current_object = {'colour': pixel, 'start_index': i, 'end_index': i, 'size': 1}
-        else:
-            if current_object is not None:
-                # Finish the current object
-                objects.append(current_object)
-                current_object = None
-
+                if current_object is not None:
+                    # Finish the current object
+                    objects.append(current_object)
+                    current_object = None
+    if task == "arc_h_v":
+        if "arc2smr_v" in name:
+            # fill vertical
+            # Transpose grid to work column by column
+            transposed_grid = [list(col) for col in zip(*grid)]
+            
+            outside_colour = None
+            # get outside color
+            for col in transposed_grid:
+                if outside_colour is not None:
+                    break
+                for i, pixel in enumerate(col):
+                    if pixel != bg_colour:
+                        outside_colour = pixel
+                        inside_colour = col[i+1]
+                        break
+            # get objects per column
+            for i, col in enumerate(transposed_grid):
+                if outside_colour not in col:
+                    continue
+                # Find index of first occurrence of outside color
+                index = col.index(outside_colour)
+                # Find index of last occurrence of outside color
+                last_index = len(col) - 1 - col[::-1].index(outside_colour)
+                while index != last_index:
+                    objects.append({'colour': outside_colour, 'coordinates': [[index, i]], 'size': 1})
+                    if inside_colour is not None:
+                        objects.append({'colour': inside_colour, 'coordinates': [[index+1, i]], 'size': 1})
+                    index = index + 2
+                objects.append({'colour': outside_colour, 'coordinates': [[index, i]], 'size': 1})
+        elif "arc2smr_h" in name:
+            # fill horizontal
+            outside_colour = None
+            # get outside color
+            for row in grid:
+                if outside_colour is not None:
+                    break
+                for i, pixel in enumerate(row):
+                    if pixel != bg_colour:
+                        outside_colour = pixel
+                        inside_colour = row[i+1]
+                        break
+            # get objects per row
+            for i, row in enumerate(grid):
+                if outside_colour not in row:
+                    continue
+                # Find index of first occurrence of outside color
+                index = row.index(outside_colour)
+                # Find index of last occurrence of outside color
+                last_index = len(row) - 1 - row[::-1].index(outside_colour)
+                while index != last_index:
+                    objects.append({'color': outside_colour, 'coordinates': [[i, index]], 'size': 1})
+                    objects.append({'color': inside_colour, 'coordinates': [[i, index+1]], 'size': 1})
+                    index = index + 2
+                objects.append({'color': outside_colour, 'coordinates': [[i, index]], 'size': 1})
+        if "arc_3906de3d_v" in name:
+            # move vertical
+            # Transpose grid to work column by column
+            transposed_grid = [list(col) for col in zip(*grid)]
+            for i, col in enumerate(grid):
+                if col[0] != bg_colour:
+                    coordinates_left = []
+                    coordinates_right = []
+                    for j in range(len(1,col)):
+                        if col[j] == col[0]:
+                            coordinates_left.append([j,i])
+                            pixel_left = col[j]
+                        elif col[j] != bg_colour:
+                            coordinates_right.append([j,i])
+                            pixel_right = col[j]
+                    if len(coordinates_left) > 0:
+                        objects.append({'color': pixel_left, 'coordinates': coordinates_left, 'size': len(coordinates_left)})
+                    if len(coordinates_right) > 0:
+                        objects.append({'color': pixel_right, 'coordinates': coordinates_right, 'size': len(coordinates_right)})
+        elif "arc_3906de3d_h" in name:
+            # move horizontal
+            for i, row in enumerate(grid):
+                if row[0] != bg_colour:
+                    coordinates_left = []
+                    coordinates_right = []
+                    for j in range(len(1,row)):
+                        if row[j] == row[0]:
+                            coordinates_left.append([i,j])
+                            pixel_left = row[j]
+                        elif row[j] != bg_colour:
+                            coordinates_right.append([i,j])
+                            pixel_right = row[j]
+                    if len(coordinates_left) > 0:
+                        objects.append({'color': pixel_left, 'coordinates': coordinates_left, 'size': len(coordinates_left)})
+                    if len(coordinates_right) > 0:
+                        objects.append({'color': pixel_right, 'coordinates': coordinates_right, 'size': len(coordinates_right)})
+                
+                
+                left_object = False
+                for i, pixel in enumerate(row):
+                    if not left_object and pixel != bg_colour:
+                        left_object = True
+                        right_colour = pixel
+                        break
+    
     # Add the last object if it exists
     if current_object is not None:
         objects.append(current_object)
@@ -499,7 +596,7 @@ def find_objects(input_array, background_colour):
 
 
 # get context out of json
-def get_context(task_json, delimiter, with_intro=True, use_object_representation=False):
+def get_context(task_name, task_json, delimiter, with_intro=True, use_object_representation=None):
     if with_intro:
         text = "The following input-output pairs are examples and share the same underlying transformation pattern.\n"
     else:
@@ -511,18 +608,20 @@ def get_context(task_json, delimiter, with_intro=True, use_object_representation
         else:
             text += delimiter["example_start"]
         text += delimiter["input_train"]
-        text += delimiter["grid_start"]
-        for i, row in enumerate(sample["input"]):
-            if use_object_representation:
-                if CHANGE_REPRESENTATION:
-                    bg_colour = NEW_REPRESENTATION[0]
-                else:
-                    bg_colour = 0
-                objects = find_objects(row, bg_colour)
-                for i, o in enumerate(objects, 1):
-                    text += "Object_" + str(i) + ": " + str(o) + ", "
-                text = text[:-2] + "\n"
+        if use_object_representation:
+            text+= f"Size: {len(sample['input']),len(sample['input'][0])}, "
+            if CHANGE_REPRESENTATION:
+                bg_colour = NEW_REPRESENTATION[0]
             else:
+                bg_colour = 0
+            text+= f"Size: {len(sample['input']),len(sample['input'][0])}, Objects: "
+            objects = find_objects(task=use_object_representation, name=task_name, grid=sample["input"], bg_colour=bg_colour)
+            for i, o in enumerate(objects, 1):
+                text += "Object_" + str(i) + ": " + str(o) + ", "
+            text = text[:-2] + "\n"
+        else:
+            text += delimiter["grid_start"]
+            for i, row in enumerate(sample["input"]):
                 text += delimiter["row_start"]
                 for j, value in enumerate(row):
                     text += str(value)
@@ -531,16 +630,17 @@ def get_context(task_json, delimiter, with_intro=True, use_object_representation
                 if i < len(sample["input"]) - 1:
                     text += delimiter["row_end"]
                 #text += delimiter["row_end"]
-        text += delimiter["grid_end"]
+            text += delimiter["grid_end"]
         text += delimiter["output_train"]
-        text += delimiter["grid_start"]
-        for i, row in enumerate(sample["output"]):
-            if use_object_representation:
-                objects = find_objects(row, bg_colour)
-                for i, o in enumerate(objects, 1):
-                    text += "Object_" + str(i) + ": " + str(o) + ", "
-                text = text[:-2] + "\n"
-            else:
+        if use_object_representation:
+            text+= f"Size: {len(sample['output']),len(sample['output'][0])}, "
+            objects = find_objects(task=use_object_representation, name=task_name, grid=sample["output"], bg_colour=bg_colour)
+            for i, o in enumerate(objects, 1):
+                text += "Object_" + str(i) + ": " + str(o) + ", "
+            text = text[:-2] + "\n"
+        else:
+            text += delimiter["grid_start"]
+            for i, row in enumerate(sample["output"]):
                 text += delimiter["row_start"]
                 for j, value in enumerate(row):
                     text += str(value)
@@ -548,30 +648,31 @@ def get_context(task_json, delimiter, with_intro=True, use_object_representation
                         text += delimiter["item"]
                 if i < len(sample["output"]) - 1:
                     text += delimiter["row_end"]
-        text += delimiter["grid_end"]
+            text += delimiter["grid_end"]
         text += delimiter["example_end"]
     return text
 
 # get tasks out of json
-def get_tasks(task_json, delimiter, use_object_representation=False):
+def get_tasks(task_name, task_json, delimiter, use_object_representation=False):
     tasks = []
     solutions = []
     
     for sample in task_json["test"]:
         task = delimiter["task_start"]
         task += delimiter["input_test"]
-        task += delimiter["grid_start"]
-        for i, row in enumerate(sample["input"]):
-            if use_object_representation:
-                if CHANGE_REPRESENTATION:
-                    bg_colour = NEW_REPRESENTATION[0]
-                else:
-                    bg_colour = 0
-                objects = find_objects(row, bg_colour)
-                for i, o in enumerate(objects, 1):
-                    task += "Object_" + str(i) + ": " + str(o) + ", "
-                task = task[:-2] + "\n"
+        if use_object_representation:
+            if CHANGE_REPRESENTATION:
+                bg_colour = NEW_REPRESENTATION[0]
             else:
+                bg_colour = 0
+            task += f"Size: {len(sample['input']),len(sample['input'][0])}, "
+            objects = find_objects(task=use_object_representation, name=task_name, grid=sample["input"], bg_colour=bg_colour)
+            for i, o in enumerate(objects, 1):
+                task += "Object_" + str(i) + ": " + str(o) + ", "
+            task = task[:-2] + "\n"
+        else:
+            task += delimiter["grid_start"]
+            for i, row in enumerate(sample["input"]):
                 task += delimiter["row_start"]
                 for j, value in enumerate(row):
                     task += str(value)
@@ -579,29 +680,29 @@ def get_tasks(task_json, delimiter, use_object_representation=False):
                         task += delimiter["item"]
                 if i < len(sample["input"]) - 1:
                     task += delimiter["row_end"]
-        task += delimiter["grid_end"]
+            task += delimiter["grid_end"]
         task += delimiter["output_test"]
         task += delimiter["task_end"]
 
         solution = delimiter["grid_start"]
         for i, row in enumerate(sample["output"]):
-            if use_object_representation:
-                if CHANGE_REPRESENTATION:
-                    bg_colour = NEW_REPRESENTATION[0]
-                else:
-                    bg_colour = 0
-                objects = find_objects(row, bg_colour)
-                for i, o in enumerate(objects, 1):
-                    solution += "Object_" + str(i) + ": " + str(o) + ", "
-                solution = solution[:-2] + "\n"
-            else:
-                solution += delimiter["row_start"]
-                for j, value in enumerate(row):
-                    solution += str(value)
-                    if j < len(row) - 1:
-                        solution += delimiter["item"]
-                if i < len(sample["output"]) - 1:
-                    solution += delimiter["row_end"]
+            # if use_object_representation:
+            #     if CHANGE_REPRESENTATION:
+            #         bg_colour = NEW_REPRESENTATION[0]
+            #     else:
+            #         bg_colour = 0
+            #     objects = find_objects(row, bg_colour)
+            #     for i, o in enumerate(objects, 1):
+            #         solution += "Object_" + str(i) + ": " + str(o) + ", "
+            #     solution = solution[:-2] + "\n"
+            # else:
+            solution += delimiter["row_start"]
+            for j, value in enumerate(row):
+                solution += str(value)
+                if j < len(row) - 1:
+                    solution += delimiter["item"]
+            if i < len(sample["output"]) - 1:
+                solution += delimiter["row_end"]
         solution += delimiter["grid_end"]
         tasks.append(task)
         solutions.append(solution)

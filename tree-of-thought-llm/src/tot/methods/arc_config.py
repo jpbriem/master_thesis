@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '0,3'
+GPU = '2,4'
 
 #################### Prompt ####################
 CHANGE_REPRESENTATION = False
@@ -54,8 +54,8 @@ REVISIONS = []
 # REVISIONS.append("main")
 # MODEL_NAMES.append("mistralai/Mixtral-8x7B-v0.1")
 # REVISIONS.append("main")
-MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
-REVISIONS.append("main")
+# MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
 # REVISIONS.append("main") 
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-Instruct-v0.1-GPTQ") 
