@@ -56,6 +56,9 @@ def initialize_model(args):
             llm = run_falcon
         elif "qwen" in backend.lower():
             llm, tokenizer = load_qwen(backend, MODEL_CONFIGS[backend]["model_config"])
+        elif "vicuna" in backend.lower():
+            model, tokenizer = load_vicuna(backend, args.model_revision)
+            llm = run_vicuna
         else:
             tokenizer, model, llm = load_llama(backend, args.model_revision, MODEL_CONFIGS[backend]["max_token"], MODEL_CONFIGS[backend]["model_config"])
         return call_model
@@ -106,7 +109,13 @@ def prompt_preprocessing_for_model(prompt):
                 return "[INST] " + prompt["system"] + "\n" + prompt["user"] + "\n[/INST]"
             else:
                 return "[INST] " + prompt["user"] + "\n[/INST]"
-    
+        elif "vicuna" in backend.lower():
+            # use prompting template for Vicuna models
+            if "system" in prompt:
+                return prompt["system"] + "\nUser: " + prompt["user"] + "\nAssistant: "
+            else:
+                return "User: " + prompt["user"] + "\nAssistant: "
+            
     # for qwen models it's same for naive and not naive run
     if "Qwen".lower() in backend.lower():
         if "system" not in prompt:
@@ -149,7 +158,13 @@ def call_model(prompt, max_tokens=2000, n=1, stop=None):
             prompt_tokens += count_tokens("\n".join(prompt), backend, tokenizer)[0]
             completion_tokens += count_tokens(output, backend, tokenizer)[0]
             outputs.append(output)
-    
+    elif "vicuna" in backend.lower():
+        outputs = []
+        for i in range(n):
+            output = llm(tokenizer, model, prompt, MODEL_CONFIGS[backend]["model_config"])
+            prompt_tokens += count_tokens(prompt, backend, tokenizer)[0]
+            completion_tokens += count_tokens(output, backend, tokenizer)[0]
+            outputs.append(output)
     else:
         outputs = []
         for i in range(n):
@@ -323,6 +338,20 @@ def run_mixtral(tokenizer, model, prompt):
     inputs = tokenizer(prompt, return_tensors="pt").input_ids.cuda()
     output = model.generate(inputs=inputs)
     output = tokenizer.decode(output[0], skip_special_tokens=True)
+    if prompt in output:
+        output = output.removeprefix(prompt)
+    return output
+
+# Vicuna Models
+def load_vicuna(model_name, revision):
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto",trust_remote_code=False,revision=revision)
+    return model, tokenizer
+def run_vicuna(tokenizer, model, prompt, model_config):
+    input_ids = tokenizer(prompt, return_tensors='pt').input_ids.cuda()
+    output = model.generate(inputs=input_ids, max_new_tokens=model_config["max_new_tokens"], temperature=model_config["temperature"])
+    output = tokenizer.decode(output[0])
+    output = output[4:] # remove start of sequence token
     if prompt in output:
         output = output.removeprefix(prompt)
     return output

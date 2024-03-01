@@ -14,19 +14,19 @@ from tot.methods.arc_utils import check_model_selection
 
 ########## ARC ##########
 args = argparse.Namespace(
-    # continue_run="", # TODO: Set model!
+    # continue_run="", # TODO: Bisher noch nicht für Object result infos!!!
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
     use_api=True,                       # TODO: Use API?!
     # task='arc',                       # TODO: Set task!
     task='arc_1D', 
     # task = 'arc_h_v',
-    input_representation = None,    # TODO: set input representation
-    # input_representation = 'objects',
+    # input_representation = None,    # TODO: set input representation
+    input_representation = 'objects',
     naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
-    prompt_sample='standard',                # TODO: Set prompt sample: cot - standard!
+    prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy',
@@ -57,10 +57,15 @@ def run(args):
     # Create directory for results 
     # directory = "results/"                # TODO: set result directory!
     directory = "Testing_none_official_result/"
+    if args.input_representation == "objects":
+        object_flag = "_object-representation"
+    else: 
+        object_flag = ""
     if args.naive_run:
-        directory += f"{args.task}/{args.backend.split('/')[-1]}_naive_{args.prompt_sample}_" + current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+        directory += f"{args.task}/{args.backend.split('/')[-1]}_naive_{args.prompt_sample}{object_flag}_" + current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+
     else:
-        directory += f"{args.task}/{args.backend.split('/')[-1]}_" + current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+        directory += f"{args.task}/{args.backend.split('/')[-1]}{object_flag}_" + current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
     os.makedirs(directory+"/tasks", exist_ok=True)
        
     # initialize task
@@ -77,7 +82,7 @@ def run(args):
     log.append(summary)
 
     # solve the task
-    indices = list(range(len(task)))
+    indices = list(range(0, len(task), 1))      # TODO: check if correct!
     # random.seed(42)
     # random.shuffle(indices)
     # count = 0 # TODO: delete!!!
@@ -112,8 +117,8 @@ def run(args):
         # count += 1 # TODO: delete!!!       
         # if count == 2: # TODO: delete!!!
         #     break
-        if task_category == "move_v": # TODO: delete!!!
-            continue
+        # if task_category == "move_v": # TODO: delete!!!
+        #     continue
         task_already_tried = False
         if hasattr(args, 'continue_run'):
             for old_log in intermediate_state:
@@ -191,7 +196,9 @@ def run(args):
         log.append(infos)
         n_tasks_too_long_prompts = sum([len(v) for k, v in task.too_long_prompts_no_output.items()])
         n_tasks_error = sum([len(v) for k, v in task.tasks_failed_solving.items()])
-        summary.update({'usage_total': gpt_usage(args.backend), 'num_tasks_with_too_long_prompts': n_tasks_too_long_prompts, 'num_tasks_error': n_tasks_error, 'success_cnt': task.full_success, 'success_rate': task.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error), 'cat_success_cnt': task.cat_success, 'cat_success_rate': {k: v/(v+v2) if v+v2 > 0 else 0 for (k, v), (k2, v2) in zip(task.cat_success.items(), task.cat_failures.items())}, 'solved_tasks': task.solved_tasks, 'solved_tasks_str_comparison': task.solved_tasks_str_comparison, 'tasks_with_too_long_prompts': task.too_long_prompts_no_output, 'too_long_prompts_all': task.too_long_prompts_all, 'error_in_task_solving': task.tasks_failed_solving, 'args:': vars(args), 'failure_log': failure_log})
+        summary.update({'usage_total': gpt_usage(args.backend), 'num_tasks_with_too_long_prompts': n_tasks_too_long_prompts, 'num_tasks_error': n_tasks_error, 'success_cnt': task.full_success, 'success_rate': task.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': task.cat_success, 'cat_success_rate': {k: v/(v+v2) if v+v2 > 0 else 0 for (k, v), (k2, v2) in zip(task.cat_success.items(), task.cat_failures.items())}, 'solved_tasks': task.solved_tasks, 'solved_tasks_str_comparison': task.solved_tasks_str_comparison, 'tasks_with_too_long_prompts': task.too_long_prompts_no_output, 'too_long_prompts_all': task.too_long_prompts_all, 'error_in_task_solving': task.tasks_failed_solving, 'args:': vars(args), 'failure_log': failure_log})
+        if args.input_representation == "objects":
+            summary.update({"object_info": {'object_representation_success_cnt': task.object_representation_success_cnt, 'object_representation_success_rate': task.object_representation_success_cnt / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'object_representation_cat_success_cnt': task.object_representation_cat_success, 'object_representation_cat_success_rate': {k: v/(v+v2) if v+v2 > 0 else 0 for (k, v), (k2, v2) in zip(task.object_representation_cat_success.items(), task.object_representation_cat_failures.items())}, 'object_representation_solved_tasks': task.solved_tasks_object_representation}})
         log = [summary] + log[1:]
         print(summary)
         failure_log = save_log_files(log, task_name, directory, failure_log, task_already_tried)

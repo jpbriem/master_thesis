@@ -1,5 +1,6 @@
 ################## General Task Explanation ##################
-general_explanation = '''You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence with the following objects: [Object_1: {{color: 2, start_index: 1, end_index: 2, size: 2}}, Object_2: {{color: 3, start_index: 4, end_index: 4, size: 1}}], with zero-indexing for the position.\n'''
+general_explanation = '''You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence of dimension [1, 5] with the following objects: [Object_1: {{color: 2, start_index: 1, end_index: 2, size: 2}}, Object_2: {{color: 3, start_index: 4, end_index: 4, size: 1}}], with zero-indexing for the position.\n'''
+
 human_priors = '''\nThe transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
 - Objects: 
 	- transformations, such as move, hollow, scale, remove, copy, recolor.
@@ -12,7 +13,7 @@ This list is not exhaustive.'''
 ################## Prompt Templates ##########################
 
 standard_prompt = {
-	"user": '''{context}{test_input}\n\nGive no explanation. '''
+	"user": '''{context}{test_input}''' # \n\nGive no explanation. 
 }
 
 # cot_prompt = {
@@ -497,6 +498,44 @@ prompt_modules_naive = {
    		 	},
 		},
 	} 
+# für object representation
+prompt_modules_naive = {
+	"0": {
+		'generation': {
+			"instruct_task": f'\n\nYou are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.',
+			"output_format": {
+				'description': {
+					'Example_1': 'regarding the first example, describe the differences between the input and output objects, be precise and say WHAT changed HOW!',
+					'Example_2': '...',
+    				},
+    			'overall_pattern': 'describe the input-output relationship for all input-output pairs', 
+				'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 
+				# 'transformation': {
+        		# 	'input': 'copy the test case input sequence from the task. Mind the sequence length!',
+				# 	'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color',
+				# 	'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color',
+            	# 	'output': 'create the resulting test output sequence. Mind the sequence length!'
+                #  	},
+				'test_case_input_objects': 'copy the objects of the test case input sequence from the task',
+				'transformation': 'Describe in natural language how the objects should look like in the test output sequence, focusing on size, position, color',
+				'transformed_objects': 'Describe the transformed objects for the test output sequence by following the format in the test case input.',
+				# 'test_case_output_empty': 'create a numpy array of the same dimension as the test case input sequence filled with zeros',
+    			# 'test_case_output': 'Insert the transformed objects into the test output sequence and return it as numpy array. Mind the sequence length!'
+				'test_case_output_dimension': 'state the dimension of the test case output sequence [rows, columns] as list of integers',
+				'test_case_output': 'Create the test case output pixel sequence with the transformed objects as numpy array, e.g. \"[0, 0, ..., 0]\". Use zero-indexing for the object positions and fill unoccupied cells with the background color!'
+             	},
+   		 	},
+		},
+	} 
+
+
+
+
+
+
+
+
+
 # TODO: FÜR TEST NOT NESTED
 # prompt_modules_naive = {
 # 	"0": {
@@ -589,4 +628,3 @@ prompt_modules_naive = {
 #    		 	},
 # 		},
 # 	}
- 

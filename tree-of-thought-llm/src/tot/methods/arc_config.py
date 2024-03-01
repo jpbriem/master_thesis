@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '2,4'
+GPU = '3,4'
 
 #################### Prompt ####################
 CHANGE_REPRESENTATION = False
@@ -63,19 +63,19 @@ REVISIONS = []
 # MODEL_NAMES.append("TheBloke/Nous-Hermes-2-Mixtral-8x7B-DPO-GPTQ")
 # REVISIONS.append("main")
 
-# Qwen 
-# MODEL_NAMES.append("")
-# REVISIONS.append("main") 
-# MODEL_NAMES.append("")
-# REVISIONS.append("main")
-MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
-REVISIONS.append("main") 
-
 # Vicuna
 # MODEL_NAMES.append("TheBloke/vicuna-7B-v1.5-GPTQ")
 # REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/vicuna-13B-v1.5-GPTQ")
 # REVISIONS.append("main")
+
+# Qwen 
+# MODEL_NAMES.append("Qwen/Qwen-7B-Chat-Int4")
+# REVISIONS.append("main") 
+# MODEL_NAMES.append("Qwen/Qwen-14B-Chat-Int4") # Too small context length
+# REVISIONS.append("main")
+# MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
+# REVISIONS.append("main") 
 
 # Falcon 
 # MODEL_NAMES.append("TheBloke/Falcon-7B-Instruct-GPTQ") # TODO: Run all tests )
@@ -86,8 +86,8 @@ REVISIONS.append("main")
 # REVISIONS.append("main")
 
 ##### Proprietary #####
-# MODEL_NAMES.append('gpt-4-1106-preview')
-# REVISIONS.append('')
+MODEL_NAMES.append('gpt-4-1106-preview')
+REVISIONS.append('')
 # MODEL_NAMES.append('gpt-3.5-turbo-1106')
 # REVISIONS.append('')
 

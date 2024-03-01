@@ -1,6 +1,7 @@
 ################## General Task Explanation ##################
 general_explanation = '''You are confronted with a task in which a 2-dimensional input grid of pixels should be transformed into a corresponding output grid. The input and output grids have values from 1 to 9 representing different pixel colors, and 0 representing the background color. The transformation can relate to the entire grid or individual objects in the grid. Objects are usually adjacent pixels of a single color. 
-Example: [[0, 2, 2, 0, 3], [0, 2, 0, 0, 2]] represents a pixel grid of dimension [2,5] with the following objects: [Object_1: {{color: '2', coordinates: [[0,1], [0,2], [1,1]], size: 3}}, Object_2: {{color: '3', coordinates: [[0,4]], size: 1}}, Object_3: {{color: '2', coordinates: [[1,4]], size: 1}}], with zero-indexing for the coordinates.\n'''
+Example: [[0, 2, 2, 0, 3], [0, 2, 0, 0, 2]] represents a pixel grid of dimension [2,5] with the following objects: [Object_1: {{color: 2, coordinates: [[0,1], [0,2], [1,1]], size: 3}}, Object_2: {{color: 3, coordinates: [[0,4]], size: 1}}, Object_3: {{color: '2', coordinates: [[1,4]], size: 1}}], with zero-indexing for the coordinates: [row_index, column_index].\n'''
+
 
 human_priors = '''\nThe logical pattern might refer to concepts as follows:
 - Geometry and topology:
@@ -48,7 +49,7 @@ The list is not exhaustive. Transformations can be conditional.'''
 ################## Prompt Templates ##########################
 
 standard_prompt = {
-	"user": '''{context}{test_input}\n\nGive no explanation. '''
+	"user": '''{context}{test_input}''' # \n\nGive no explanation. 
 }
 
 cot_prompt = {
@@ -127,14 +128,14 @@ prompt_modules = {
 			"output_format": {
 				'objects': {
 					'Example_1': { 
-						'input': 'regarding the first example, describe all pixel pattern and objects in the input sequence.',
-						'output': 'regarding the first example, describe all pixel pattern and objects in the output sequence; Ignore relations to the input!',
+						'input': 'regarding the first example, describe all pixels in the input grid, focusing on pixel coordinates and patterns',
+						'output': 'regarding the first example, describe all pixels in the output grid, focusing on pixel coordinates and patterns',
 					},
 					'Example_2': {...},
 				},
 				'description': {
-					'input': 'summarize your findings to highlight commonalities within input grids by completing the following sentence: "A typical input grid looks like..."',
-					'output': 'summarize your findings to highlight commonalities within output grids by completing the following sentence: "A typical output grid looks like..."',
+					'input': 'summarize your findings to highlight commonalities within input grids by completing the following sentence: "A typical input grid shows pixels that..."',
+					'output': 'summarize your findings to highlight commonalities within output grids by completing the following sentence: "A typical output grid shows pixels that..."',
 				},
    		 	},
 		},
@@ -159,14 +160,14 @@ prompt_modules = {
 			"instruct_task": f'\n\nImagine you want to explain how to transform a new input without knowing its output yet. Your task is to infer the overall pattern that describes the relation between all input-output pairs.',
 			"output_format": {
 				'Example_1': {
-					'pixel_changes': 'regarding the first example, describe the changes between the input and output pixels, focusing on color, coordinates, patterns, counts', 
-					'object_changes': 'regarding the first example, describe the changes between the objects in the input and output grids, focusing on shape, size, position, values, counts, symmetry', 
+					'pixel_changes': 'regarding the first example, describe the changes between the input and output pixels, focusing on pattern changes', 
+					'object_changes': 'regarding the first example, describe the changes between the objects in the input and output grids, focusing on color, size, coordinates, shape, and object number', 
 					'parts_of_interest': 'regarding the transformation from input to output, describe the parts of interest of the input grid (e.g. a pixel pattern or objects) and explain their importance; be specific and describe the parts appropriately (position, color, shape, size, count, symmetry, etc.)',
 					},
 				'Example_2': {...},
 				'overall_pattern': {
 					'conditions': 'why do pixels or objects change? Search for conditions in the input based on colors, positions, and sizes!',
-					'overall_pattern': 'define general rules to transform any input into its output based only on the input. Specify WHAT changes, WHY it changes, and HOW. Be specific!',
+					'overall_pattern': 'describe the input-output relationship valid for all input-output pairs based only on the input. Specify WHAT changes, WHY it changes, and HOW. Be specific!',
 					},
                 },
    		 	},
@@ -412,6 +413,29 @@ prompt_modules_naive = {
 				'test_case_transformation': 'describe how the grid or objects should be transformed',
 				'test_case_output': 'create the resulting output grid as numpy array.'	
             	},
+   		 	},
+		},
+	}
+
+# für Object representation
+prompt_modules_naive = {
+	"0": {
+		'generation': {
+			"instruct_task": f'\n\nYou are to infer the relation between input and output. Then, your task is to transform the test input grid into its test output grid.',
+			"output_format": {
+				'example_1_description': {
+					'object_number_changes': 'regarding the first example, does the number of objects change from input to output?',
+					'object_changes': 'regarding the first example, describe the changes between the input and output objects, focusing on color, size, coordinates ([row_index, column_index]), and shape', 
+					},
+				'example_2_description': {...},
+    			'overall_pattern': 'describe the input-output relationship valid for all input-output pairs', 
+				'instructions': 'describe the required transformation actions to transform a new input into its output, think step by step', 
+				'test_case_input_objects': 'copy the objects of the test case input grid from the task',
+				'transformation': 'Describe in natural language how the objects should look like in the test output grid, focusing on size, coordinates, color',
+				'transformed_objects': 'Describe the transformed objects for the test output sequence by following the format in the test case input.',
+				'test_case_output_dimension': 'state the dimension of the test case output sequence [rows, columns] as list of integers',
+				'test_case_output': 'Create the test case output pixel grid with the transformed objects as numpy array, e.g. \"[[0, 0, ...], [...]]\". Use zero-indexing for the object positions and fill unoccupied cells with the background color!'
+             	},
    		 	},
 		},
 	}
