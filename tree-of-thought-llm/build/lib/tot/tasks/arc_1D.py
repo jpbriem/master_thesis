@@ -24,15 +24,22 @@ class ARC_1D(ARCTask):
         """
         several subfolders by task type
         """    
-        path = os.path.join(DATA_PATH, 'arc_1D')
-        self.data, self.names, self.categories = load_arc_tasks(path, "arc_1D")
+        self.path = os.path.join(DATA_PATH, 'arc_1D')
+        self.data, self.names, self.categories = load_arc_tasks(self.path, "arc_1D")
         self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
         self.stops = [None]*self.steps # TODO: adjust to prompt! 
         self.success = {} # saves success rates for each task
-        self.solved_tasks = []
         self.full_success = 0 # counts completely solved tasks
-        self.cat_success, self.cat_failures = {}, {} # saves success rates for each category
+        self.cat_success, self.cat_failures = {}, {} # saves success cnt for each category
+        self.object_representation_success_cnt = 0
+        self.object_representation_success = {} # saves obj repres. success rates for each task
+        self.object_representation_cat_success, self.object_representation_cat_failures = {}, {} # saves success cnt for each category
+        self.too_long_prompts_no_output = {}
+        self.too_long_prompts_all = {'sampling': [], 'value': [], 'vote': []}
+        self.tasks_failed_solving = {}
         self.solved_tasks = []
+        self.solved_tasks_str_comparison = []
+        self.solved_tasks_object_representation = []
         self.value_cache = {}
 
     

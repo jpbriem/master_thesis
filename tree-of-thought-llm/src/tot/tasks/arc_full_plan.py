@@ -406,9 +406,10 @@ class ARCTask(Task):
             prompt_modules = ARCTask.prompt_modules
         final_value = 0
         cnt_outputs = 0 # counter for number of outputs w valid value
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["evaluation"], "output_format")
+        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["evaluation"], "output_format")
+        output_format = prompt_modules[str(current_step)]["evaluation"]["output_format"]
         for value_output in value_outputs:
-            value_output = get_json_from_text(value_output, output_keys)
+            value_output = get_json_from_text(value_output, output_format)
             if isinstance(value_output, str): # error in json parsin
                 continue
             cnt_examples = 0 # counter for number of examples w valid value
@@ -475,10 +476,10 @@ class ARCTask(Task):
         if prompt_modules is None:
             prompt_modules = ARCTask.prompt_modules
         current_step = node.level - 1 # -1 bc. node is the child of the node under revision
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["analysis"], "output_format")   
+        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["analysis"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
         thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
-        thought_data = extract_json_value(output[0], output_keys, thought_key)
+        thought_data = extract_json_value(output[0], output_format, thought_key)
         if isinstance(thought_data, dict):
             thought = ""
             for key, value in thought_data.items():
@@ -534,10 +535,10 @@ class ARCTask(Task):
         if prompt_modules is None:
             prompt_modules = ARCTask.prompt_modules
         current_step = node.level - 2 # -2 bc. node is the grand child of the node under revision
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
+        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
         thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
-        thought_data = extract_json_value(output[0], output_keys, thought_key)
+        thought_data = extract_json_value(output[0], output_format, thought_key)
         if isinstance(thought_data, dict):
             thought = ""
             for key, value in thought_data.items():
@@ -558,10 +559,10 @@ class ARCTask(Task):
             prompt_modules = ARCTask.prompt_modules
         replacement_log = ""
         current_step = revision_node.level
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
+        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
         thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
-        thought_data = extract_json_value(node.LLM_answer, output_keys, thought_key)
+        thought_data = extract_json_value(node.LLM_answer, output_format, thought_key)
         if isinstance(thought_data, dict):
             for i, (key, value) in enumerate(reversed(thought_data.items()), 1):
                 thought = f'\n{" ".join(key.split("_"))}: {value}'                

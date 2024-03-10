@@ -4,7 +4,7 @@ import openai
 import backoff 
 import datetime
 import json
-from tot.methods.arc_config import MAX_TOKEN, MODEL_CONFIG_LLAMA, MODEL_CONFIG_FALCON, GPU
+from tot.methods.arc_config import MODEL_CONFIGS, GPU
 from tot.methods.credentials import OPENAI_KEY, HF_TOKEN
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
 os.environ['CUDA_DEVICE_ORDER']='PCI_BUS_ID'
@@ -21,6 +21,7 @@ naive_run = False
 responses = [] # TODO: Delete
 idx = 0 # TODO: Delete
 date = datetime.datetime.now() # TODO: Delete
+
 
 def initialize_model(args):
     global model, tokenizer, llm, backend, naive_run, prompt_sample
@@ -44,7 +45,7 @@ def initialize_model(args):
             response_format = { "type": "text" }
         else:
             response_format = { "type": "json_object" }
-        llm = partial(gpt, model=backend, temperature=args.temperature, response_format=response_format)
+        llm = partial(gpt, model=backend, temperature=MODEL_CONFIGS[backend]["model_config"]["temperature"], response_format=response_format)
         return call_model
     if not torch.cuda.is_available():
         print("Warning: CUDA is not available")
@@ -53,8 +54,13 @@ def initialize_model(args):
         if backend in ["TheBloke/Falcon-7B-Instruct-GPTQ", "TheBloke/Falcon-40B-Instruct-GPTQ"]:
             model, tokenizer = load_falcon(backend, args.model_revision)
             llm = run_falcon
+        elif "qwen" in backend.lower():
+            llm, tokenizer = load_qwen(backend, MODEL_CONFIGS[backend]["model_config"])
+        elif "vicuna" in backend.lower():
+            model, tokenizer = load_vicuna(backend, args.model_revision)
+            llm = run_vicuna
         else:
-            tokenizer, model, llm = load_llama(backend, args.model_revision, MAX_TOKEN, MODEL_CONFIG_LLAMA)
+            tokenizer, model, llm = load_llama(backend, args.model_revision, MODEL_CONFIGS[backend]["max_token"], MODEL_CONFIGS[backend]["model_config"])
         return call_model
     except Exception as e:
         print(e)
@@ -91,18 +97,46 @@ def prompt_preprocessing_for_model(prompt):
                 return prompt["system"] + "\n\nUser: " + prompt["user"] + "\n\nAssistant:"
             else:
                 return "User: " + prompt["user"] + "\n\nAssistant:"
-        elif "mistral" in backend.lower() or "mixtral" in backend.lower():
+        elif "mixtral" in backend.lower() and "DPO" in backend.lower():
+            # use prompting template for Mixtral DPO model
+            if "system" in prompt:
+                return "<|im_start|>system\n" + prompt["system"] + "<|im_end|>\n<|im_start|>user\n" + prompt["user"] + "<|im_end|>\n<|im_start|>assistant"
+            else:
+                return "<|im_start|>user\n" + prompt["user"] + "<|im_end|>\n<|im_start|>assistant"
+        elif ("mistral" in backend.lower() or "mixtral" in backend.lower()) and "instruct" in backend.lower():
             # use prompting template for Mistral models
             if "system" in prompt:
                 return "[INST] " + prompt["system"] + "\n" + prompt["user"] + "\n[/INST]"
             else:
                 return "[INST] " + prompt["user"] + "\n[/INST]"
+        elif "vicuna" in backend.lower():
+            # use prompting template for Vicuna models
+            if "system" in prompt:
+                return prompt["system"] + "\nUser: " + prompt["user"] + "\nAssistant: "
+            else:
+                return "User: " + prompt["user"] + "\nAssistant: "
+            
+    # for qwen models it's same for naive and not naive run
+    if "Qwen".lower() in backend.lower():
+        if "system" not in prompt:
+            prompt["system"] = ""
+        return prompt 
+            
     # use naive prompting template, instead 
     if "system" in prompt:
         return prompt["system"] + "\n" + prompt["user"]
     else:
         return prompt["user"]
 
+def check_prompt_size(prompt):
+    global backend, tokenizer
+    if isinstance(prompt, dict):
+        prompt = "\n".join(prompt.values())
+    num_tokens, token_limit = count_tokens(prompt, backend, tokenizer)
+    if num_tokens > token_limit:
+        return False, num_tokens, token_limit
+    return True, num_tokens, token_limit
+   
 
 def call_model(prompt, max_tokens=2000, n=1, stop=None):
     global model, tokenizer, llm, completion_tokens, prompt_tokens, backend, naive_run
@@ -113,7 +147,21 @@ def call_model(prompt, max_tokens=2000, n=1, stop=None):
     elif backend in ["TheBloke/Falcon-7B-Instruct-GPTQ", "TheBloke/Falcon-40B-Instruct-GPTQ"]:
         outputs = []
         for i in range(n):
-            output = llm(tokenizer, model, prompt, **MODEL_CONFIG_FALCON)
+            output = llm(tokenizer, model, prompt, **MODEL_CONFIGS[backend]["model_config"])
+            prompt_tokens += count_tokens(prompt, backend, tokenizer)[0]
+            completion_tokens += count_tokens(output, backend, tokenizer)[0]
+            outputs.append(output)
+    elif "qwen" in backend.lower():
+        outputs = []
+        for i in range(n):
+            output, _ = llm(tokenizer, prompt["user"], history=None, system=prompt["system"])
+            prompt_tokens += count_tokens("\n".join(prompt), backend, tokenizer)[0]
+            completion_tokens += count_tokens(output, backend, tokenizer)[0]
+            outputs.append(output)
+    elif "vicuna" in backend.lower():
+        outputs = []
+        for i in range(n):
+            output = llm(tokenizer, model, prompt, MODEL_CONFIGS[backend]["model_config"])
             prompt_tokens += count_tokens(prompt, backend, tokenizer)[0]
             completion_tokens += count_tokens(output, backend, tokenizer)[0]
             outputs.append(output)
@@ -193,9 +241,14 @@ def gpt_usage(backend="gpt-4", input_tokens=None, output_tokens=None):
         cost = None
     return {"completion_tokens": completion_tokens, "prompt_tokens": prompt_tokens, "cost": cost}
 
-
+def reset_usage(new_completion_tokens=0, new_prompt_tokens=0):
+    global completion_tokens, prompt_tokens
+    
+    completion_tokens = new_completion_tokens
+    prompt_tokens = new_prompt_tokens
+    
 #################### Open-Source #############
-# LLama Models
+# LLama Models and Llama-like models
 def load_llama(model_name, revision, max_token, model_config):
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
     if tokenizer.model_max_length is None or tokenizer.model_max_length > 9999999999:
@@ -204,9 +257,9 @@ def load_llama(model_name, revision, max_token, model_config):
         model_name, trust_remote_code=True, device_map="auto", torch_dtype=torch.float16, revision=revision
     )
 
-    # # fix bug for certain models - fixed in new Optimum version
-    # if model_name in ["TheBloke/Camel-Platypus2-70B-GPTQ", "TheBloke/Platypus2-70B-GPTQ", "TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ", "TheBloke/Llama-2-70B-GPTQ"]:
-    #     model = exllama_set_max_input_length(model, 4096)
+    # fix bug for certain models - fixed in new Optimum version
+    if model_name in ["TheBloke/Camel-Platypus2-70B-GPTQ", "TheBloke/Platypus2-70B-GPTQ", "TheBloke/Llama-2-70b-Chat-GPTQ", "TheBloke/Mistral-7B-v0.1-GPTQ", "TheBloke/Llama-2-70B-GPTQ"]:
+        model = exllama_set_max_input_length(model, 4096)
 
     # make pipeline
     # Docs for config: https://huggingface.co/docs/transformers/v4.33.3/en/main_classes/configuration#transformers.PretrainedConfig
@@ -243,15 +296,65 @@ def load_falcon(model_name, revision):
             use_triton=False,
             quantize_config=None)
     # fix bug for certain models - fixed in new Optimum version
-    # if model_name in ["TheBloke/Falcon-40B-Instruct-GPTQ"]:
-    #     model = exllama_set_max_input_length(model, 4096)
+    if model_name in ["TheBloke/Falcon-40B-Instruct-GPTQ"]:
+        model = exllama_set_max_input_length(model, 4096)
     return model, tokenizer
-
 def run_falcon(tokenizer, model, prompt, max_new_tokens, temperature):
     input_ids = tokenizer(prompt, return_tensors='pt').input_ids.cuda()
     output = model.generate(inputs=input_ids, temperature=temperature, max_new_tokens=max_new_tokens)
-    return [tokenizer.decode(output[0])]
+    output = tokenizer.decode(output[0])
+    if prompt in output:
+        output = output.removeprefix(prompt)
+    return output
 
+# Qwen Models
+def load_qwen(model_name, model_config):
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, use_fast=True)
+    model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", trust_remote_code=True).eval()
+    # Docs for config: https://huggingface.co/docs/transformers/v4.33.3/en/main_classes/configuration#transformers.PretrainedConfig
+    # https://www.promptingguide.ai/introduction/settings
+    generation_config = GenerationConfig.from_pretrained(model_name)
+    generation_config.max_new_tokens = model_config["max_new_tokens"]
+    generation_config.temperature = model_config["temperature"]
+    #generation_config.top_p = 0.9 #  If set to float < 1, only the most probable tokens with probabilities that add up to top_p or higher are kept for generation.
+    generation_config.do_sample = True # Whether or not to use sampling ; use greedy decoding otherwise.
+    generation_config.repetition_penalty = model_config["repetition_penalty"] # 1.0 means no penalty.
+    model.generation_config = generation_config
+    return model.chat, tokenizer
+
+# Mixtral Models
+def load_mixtral(model_name, revision, model_config):
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", torch_dtype=torch.float16, revision=revision, use_flash_attention_2=True)
+    generation_config = GenerationConfig.from_pretrained(model_name)
+    generation_config.max_new_tokens = model_config["max_new_tokens"]
+    generation_config.temperature = model_config["temperature"]
+    #generation_config.top_p = 0.9 #  If set to float < 1, only the most probable tokens with probabilities that add up to top_p or higher are kept for generation.
+    generation_config.do_sample = True # Whether or not to use sampling ; use greedy decoding otherwise.
+    generation_config.repetition_penalty = model_config["repetition_penalty"] # 1.0 means no penalty.
+    model.generation_config = generation_config
+    return model, tokenizer
+def run_mixtral(tokenizer, model, prompt):
+    inputs = tokenizer(prompt, return_tensors="pt").input_ids.cuda()
+    output = model.generate(inputs=inputs)
+    output = tokenizer.decode(output[0], skip_special_tokens=True)
+    if prompt in output:
+        output = output.removeprefix(prompt)
+    return output
+
+# Vicuna Models
+def load_vicuna(model_name, revision):
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto",trust_remote_code=False,revision=revision)
+    return model, tokenizer
+def run_vicuna(tokenizer, model, prompt, model_config):
+    input_ids = tokenizer(prompt, return_tensors='pt').input_ids.cuda()
+    output = model.generate(inputs=input_ids, max_new_tokens=model_config["max_new_tokens"], temperature=model_config["temperature"])
+    output = tokenizer.decode(output[0])
+    output = output[4:] # remove start of sequence token
+    if prompt in output:
+        output = output.removeprefix(prompt)
+    return output
 
 #################### Utils #####################
 
@@ -272,15 +375,7 @@ def count_tokens(prompt, model_name, tokenizer):
                 if key == "name":
                     num_tokens += tokens_per_name
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
-        if "gpt-3.5" in model_name:
-            token_limit = 4096
-        elif "gpt-4" in model_name:
-            token_limit = 8192
-        elif "gpt-4-1106-preview" in model_name:
-            token_limit = 128000
-        elif "gpt-3.5-turbo-1106" in model_name:
-            token_limit = 8192
     else: 
         num_tokens = len(tokenizer.encode(prompt, add_special_tokens=True))
-        token_limit = tokenizer.model_max_length
+    token_limit = MODEL_CONFIGS[backend]["max_token"]
     return num_tokens, token_limit

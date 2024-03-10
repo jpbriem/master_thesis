@@ -131,28 +131,52 @@ def replace_quotes_in_text(res, json_format):
     # preprocess json format
     output_format = {}
     for key, value in json_format.items():
+        if "example_1" in json_format:
+            for i in range(2, 11): # do for 10 examples
+                k = "example_" + str(i)
+                output_format.update({k: ""})
         if "Example_1" in json_format:
             for i in range(2, 11): # do for 10 examples
                 k = "Example_" + str(i)
                 output_format.update({k: ""})
+        if "example_1_description" in json_format:
+            for i in range(2, 11): # do for 10 examples
+                k = "example_" + str(i) + "_description"
+                output_format.update({k: ""})
         output_format.update({key: ""})
         if isinstance(value, dict):
+            if "example_1" in value:
+                for i in range(2, 11): # do for 10 examples
+                    k = "example_" + str(i)
+                    output_format.update({k: ""})
             if "Example_1" in value:
                 for i in range(2, 11): # do for 10 examples
                     k = "Example_" + str(i)
                     output_format.update({k: ""})
+            if "example_1_description" in value:
+                for i in range(2, 11): # do for 10 examples
+                    k = "example_" + str(i) + "_description"
+                    output_format.update({k: ""})
             for key2, value2 in value.items():
                 output_format.update({key2: ""})
                 if isinstance(value2, dict):
-                    if "Example_1" in value2:
+                    if "example_1" in value2:
+                        for i in range(2, 11): # do for 10 examples
+                            k = "example_" + str(i)
+                            output_format.update({k: ""})
+                    if "Example_1" in value:
                         for i in range(2, 11): # do for 10 examples
                             k = "Example_" + str(i)
+                            output_format.update({k: ""})
+                    if "example_1_description" in value2:
+                        for i in range(2, 11): # do for 10 examples
+                            k = "example_" + str(i) + "_description"
                             output_format.update({k: ""})
                     for key3, value3 in value2.items():
                         output_format.update({key3: ""})   
         keys = list(output_format.keys())
     # add some potential artificially created keys from the model
-    keys += ["Choice", "test_case", "Test_case", "Test case", "test case", "test_output", "Test_output", "test output", "Test output", "output", "Test input", "Test_input", "test input", "test_input"]
+    keys += ["choice", "test_case", "test case", "test_output", "test output", "test input", "test_input"]
 
     # do some regex to remove unwanted line breakes
     res = res.replace("\n", " ")
@@ -440,42 +464,312 @@ def load_arc_tasks(path, dataset="arc"):
     print("Total number of tasks:", len(tasks_jsons))
     return tasks_jsons, tasks_names, subdirecotries
 
-import numpy as np
-
 # Find objects in 1D pixel sequences
-def find_objects(input_array, background_colour):
+def find_objects(task, name, grid, bg_color):
     objects = []
     current_object = None
-
-    for i, pixel in enumerate(input_array):
-        if pixel != background_colour:
-            if current_object is None:
-                # Start a new object
-                current_object = {'colour': pixel, 'start_index': i, 'end_index': i, 'size': 1}
-            elif pixel == current_object['colour']:
-                # Continue the current object
-                current_object['end_index'] = i
-                current_object['size'] += 1
+    if task == "arc_1D":
+        for i, pixel in enumerate(grid[0]):
+            if "denoising_mc" in name or "flip" in name:
+            # use multi color objects
+                if pixel != bg_color:
+                    if current_object is None:
+                        # Start a new object
+                        current_object = {'color': [pixel], 'coordinates': [[0, i]], 'size': 1}
+                    else:
+                        # Continue the current object
+                        current_object['color'].append(pixel)
+                        current_object['coordinates'].append([0, i])
+                        current_object['size'] += 1
             else:
-                # Finish the current object and start a new one
-                objects.append(current_object)
-                current_object = {'colour': pixel, 'start_index': i, 'end_index': i, 'size': 1}
-        else:
-            if current_object is not None:
-                # Finish the current object
-                objects.append(current_object)
+            # all other tasks
+                if pixel != bg_color:
+                    if current_object is None:
+                        # Start a new object
+                        current_object = {'color': pixel, 'start_index': i, 'end_index': i, 'size': 1}
+                    elif pixel == current_object['color']:
+                        # Continue the current object
+                        current_object['end_index'] = i
+                        current_object['size'] += 1
+                    else:
+                        # Finish the current object and start a new one
+                        objects.append(current_object)
+                        current_object = {'color': pixel, 'start_index': i, 'end_index': i, 'size': 1}
+                else:
+                    if current_object is not None:
+                        # Finish the current object
+                        objects.append(current_object)
+                        current_object = None
+    if task == "arc_h_v":
+        if "arc2smr_v" in name:
+            # fill vertical
+            # Transpose grid to work column by column
+            transposed_grid = [list(col) for col in zip(*grid)]
+            
+            outside_color = None
+            # get outside color
+            for col in transposed_grid:
+                if outside_color is not None:
+                    break
+                for i, pixel in enumerate(col):
+                    if pixel != bg_color:
+                        outside_color = pixel
+                        inside_color = col[i+1]
+                        for j in range(i+1, len(col)):
+                            if col[j] == outside_color:
+                                step = j - i 
+                                break
+                        break
+            # get objects per column
+            for i, col in enumerate(transposed_grid):
+                if outside_color not in col:
+                    continue
+                # Find index of first occurrence of outside color
+                index = col.index(outside_color)
+                # Find index of last occurrence of outside color
+                last_index = len(col) - 1 - col[::-1].index(outside_color)
+                while index < last_index:
+                    objects.append({'color': outside_color, 'coordinates': [[index, i]], 'size': 1})
+                    if inside_color is not None:
+                        objects.append({'color': inside_color, 'coordinates': [], 'size': 1})
+                        for j in range(step-1):
+                            objects[-1]['coordinates'].append([index+j+1, i])
+                    index = index + step
+                objects.append({'color': outside_color, 'coordinates': [[last_index, i]], 'size': 1})
+        elif "arc2smr_" in name and "arc2smr_v" not in name:
+            # fill horizontal
+            outside_color = None
+            # get outside color
+            for row in grid:
+                if outside_color is not None:
+                    break
+                for i, pixel in enumerate(row):
+                    if pixel != bg_color:
+                        outside_color = pixel
+                        inside_color = row[i+1]
+                        for j in range(i+1, len(row)):
+                            if row[j] == outside_color:
+                                step = j - i 
+                                break
+                        break
+                    
+            # get objects per row
+            for i, row in enumerate(grid):
+                if outside_color not in row:
+                    continue
+                # Find index of first occurrence of outside color
+                index = row.index(outside_color)
+                # Find index of last occurrence of outside color
+                last_index = len(row) - 1 - row[::-1].index(outside_color)
+                while index < last_index:
+                    objects.append({'color': outside_color, 'coordinates': [[i, index]], 'size': 1})
+                    objects.append({'color': inside_color, 'coordinates': [], 'size': 1})
+                    for j in range(step-1):
+                        objects[-1]['coordinates'].append([i, index+j+1])
+                    index = index + step
+                objects.append({'color': outside_color, 'coordinates': [[i, last_index]], 'size': 1})
+        elif "arc_3906de3d_v" in name:
+            # move vertical
+            # Transpose grid to work column by column
+            transposed_grid = [list(col) for col in zip(*grid)]
+            for i, col in enumerate(transposed_grid):
+                coordinates_left = []
+                coordinates_right = []
+                if col[0] != bg_color:
+                    coordinates_left.append([0,i])
+                    pixel_left = col[0]
+                    for j in range(1,len(col)):
+                        if col[j] == col[0]:
+                            coordinates_left.append([j,i])
+                            pixel_left = col[j]
+                        elif col[j] != bg_color:
+                            coordinates_right.append([j,i])
+                            pixel_right = col[j]
+                    if len(coordinates_left) > 0:
+                        objects.append({'color': pixel_left, 'coordinates': coordinates_left, 'size': len(coordinates_left)})
+                    if len(coordinates_right) > 0:
+                        objects.append({'color': pixel_right, 'coordinates': coordinates_right, 'size': len(coordinates_right)})
+        elif "arc_3906de3d_h" in name:
+            # move horizontal
+            for i, row in enumerate(grid):
+                coordinates_left = []
+                coordinates_right = []
+                if row[0] != bg_color:
+                    coordinates_left.append([i,0])
+                    pixel_left = row[0]
+                    for j in range(1,len(row)):
+                        if row[j] == row[0]:
+                            coordinates_left.append([i,j])
+                            pixel_left = row[j]
+                        elif row[j] != bg_color:
+                            coordinates_right.append([i,j])
+                            pixel_right = row[j]
+                    if len(coordinates_left) > 0:
+                        objects.append({'color': pixel_left, 'coordinates': coordinates_left, 'size': len(coordinates_left)})
+                    if len(coordinates_right) > 0:
+                        objects.append({'color': pixel_right, 'coordinates': coordinates_right, 'size': len(coordinates_right)})
+                left_object = False
+                for i, pixel in enumerate(row):
+                    if not left_object and pixel != bg_color:
+                        left_object = True
+                        right_color = pixel
+                        break
+        elif "pile_h" in name:
+            for i, row in enumerate(grid):
                 current_object = None
-
+                for j, pixel in enumerate(row):
+                    if pixel != bg_color:
+                        if current_object is None:
+                            # Start a new object
+                            current_object = {'color': pixel, 'coordinates': [[i, j]], 'size': 1}
+                        elif pixel == current_object['color']:
+                            # Continue the current object
+                            current_object['coordinates'].append([i, j])
+                            current_object['size'] += 1
+                        else:
+                            # Finish the current object and start a new one
+                            objects.append(current_object)
+                            current_object = {'color': pixel, 'coordinates': [[i, j]], 'size': 1}
+                    else:
+                        if current_object is not None:
+                            # Finish the current object
+                            objects.append(current_object)
+                            current_object = None
+                # Add the last object if it exists
+                if current_object is not None:
+                    objects.append(current_object)
+                    current_object = None
+        elif "pile_v" in name:
+            # Transpose grid to work column by column
+            transposed_grid = [list(col) for col in zip(*grid)]
+            for i, col in enumerate(transposed_grid):
+                current_object = None
+                for j, pixel in enumerate(col):
+                    if pixel != bg_color:
+                        if current_object is None:
+                            # Start a new object
+                            current_object = {'color': pixel, 'coordinates': [[j, i]], 'size': 1}
+                        elif pixel == current_object['color']:
+                            # Continue the current object
+                            current_object['coordinates'].append([j, i])
+                            current_object['size'] += 1
+                        else:
+                            # Finish the current object and start a new one
+                            objects.append(current_object)
+                            current_object = {'color': pixel, 'coordinates': [[j, i]], 'size': 1}
+                    else:
+                        if current_object is not None:
+                            # Finish the current object
+                            objects.append(current_object)
+                            current_object = None
+                # Add the last object if it exists
+                if current_object is not None:
+                    objects.append(current_object)
+                    current_object = None
     # Add the last object if it exists
     if current_object is not None:
         objects.append(current_object)
-
     return objects
 
+# extract objects from the LLM output 
+def extract_dicts_from_string(input_string):
+    if isinstance(input_string, dict):
+        if "object_1" in [k.lower() for k in list(input_string.keys())]:
+            input_string = str(input_string)[1:-1] # without curly brackets
+        input_string = str(input_string)
+    else:
+        input_string = str(input_string)
+        
+    # Define the pattern to match dictionaries within the string
+    pattern = r'\{([^}]+)\}'
+    
+    # Find all matches of dictionaries in the input string
+    matches = re.findall(pattern, input_string)
+    
+    # Initialize an empty list to store the extracted dictionaries
+    extracted_dicts = []
+    
+    # Iterate over the matches and convert them to dictionaries
+    for match in matches:
+        # Use eval to convert the matched string to a dictionary
+        extracted_dict = eval('{' + match + '}')
+        if "color" in extracted_dict:
+            if isinstance(extracted_dict["color"], str):
+                pattern = r'^\d$'
+                if re.match(pattern, extracted_dict["color"]):
+                    extracted_dict["color"] = int(extracted_dict["color"])
+        extracted_dicts.append(extracted_dict)
+    
+    return extracted_dicts
 
+# compare two lists of objects
+def compare_object_lists(list1, list2):
+    # Check if the number of objects is the same
+    if len(list1) != len(list2) or len(list1) == 0 or len(list2) == 0:
+        return False
+    
+    # Define a function to sort coordinates lists
+    def sort_coordinates(coords_list):
+        return sorted(coords_list)
+    
+    # Iterate over each object in the first list
+    for obj1 in list1:
+        found_match = False
+        # Iterate over each object in the second list
+        for obj2 in list2:
+            # Check if the dictionary keys match
+            if set(obj1.keys()) != set(obj2.keys()):
+                continue
+            # Compare all dictionary values
+            if all(obj1[key] == obj2[key] for key in obj1):
+                # If a match is found, remove the object from list2
+                list2.remove(obj2)
+                found_match = True
+                break
+            
+            # if no match, check if list within values are the same but diffrently ordered
+            if 'coordinates' in obj1 and 'coordinates' in obj2:
+                indices_obj1, obj1["coordinates"] = zip(*sorted(enumerate(obj1["coordinates"]), key=lambda x: x[1]))
+                indices_obj2, obj2["coordinates"] = zip(*sorted(enumerate(obj2["coordinates"]), key=lambda x: x[1]))
+                # if color is a list: multicolor object -> sort color accordingly
+                if isinstance(obj1['color'],list):
+                    obj1["color"] = [obj1["color"][i] for i in indices_obj1]
+                if isinstance(obj2['color'],list):
+                    obj2["color"] = [obj2["color"][i] for i in indices_obj2]
+                # Compare all dictionary values again 
+                if all(obj1[key] == obj2[key] for key in obj1):
+                    # If a match is found, remove the object from list2
+                    list2.remove(obj2)
+                    found_match = True
+                    break
+                print(obj1["coordinates"], obj2["coordinates"])
+                print(obj1["color"], obj2["color"])
+                
+        # If no match is found for any object, return False
+        if not found_match:
+            return False
+    
+    return True
 
+# compare the dimensions of two grids, given as lists [rows, columns]
+def compare_dimensions(test_output_dimension, gt_dimension):
+    if isinstance(test_output_dimension, list) and isinstance(gt_dimension, list):
+        if test_output_dimension == gt_dimension:
+            return True 
+    elif isinstance(test_output_dimension, str):
+        # Find all matches of digits within square brackets
+        matches = re.findall(r'\[(\d+),\s?(\d+)\]', test_output_dimension)
+        try:
+            # Convert matches to list of tuples of integers
+            test_output_dimension = list(map(int, matches[0])) 
+        except:
+            test_output_dimension = None
+        if test_output_dimension == gt_dimension:
+            return True 
+    return False
+    
 # get context out of json
-def get_context(task_json, delimiter, with_intro=True, use_object_representation=False):
+def get_context(task_name, task_json, delimiter, with_intro=True, use_object_representation=None):
     if with_intro:
         text = "The following input-output pairs are examples and share the same underlying transformation pattern.\n"
     else:
@@ -487,18 +781,19 @@ def get_context(task_json, delimiter, with_intro=True, use_object_representation
         else:
             text += delimiter["example_start"]
         text += delimiter["input_train"]
-        text += delimiter["grid_start"]
-        for i, row in enumerate(sample["input"]):
-            if use_object_representation:
-                if CHANGE_REPRESENTATION:
-                    bg_colour = NEW_REPRESENTATION[0]
-                else:
-                    bg_colour = 0
-                objects = find_objects(row, bg_colour)
-                for i, o in enumerate(objects, 1):
-                    text += "Object_" + str(i) + ": " + str(o) + ", "
-                text = text[:-2] + "\n"
+        if use_object_representation:
+            if CHANGE_REPRESENTATION:
+                bg_color = NEW_REPRESENTATION[0]
             else:
+                bg_color = 0
+            text+= f"Dimension: {[len(sample['input']),len(sample['input'][0])]}, Objects: "
+            objects = find_objects(task=use_object_representation, name=task_name, grid=sample["input"], bg_color=bg_color)
+            for i, o in enumerate(objects, 1):
+                text += "Object_" + str(i) + ": " + str(o) + ", "
+            text = text[:-2] + "\n"
+        else:
+            text += delimiter["grid_start"]
+            for i, row in enumerate(sample["input"]):
                 text += delimiter["row_start"]
                 for j, value in enumerate(row):
                     text += str(value)
@@ -507,16 +802,17 @@ def get_context(task_json, delimiter, with_intro=True, use_object_representation
                 if i < len(sample["input"]) - 1:
                     text += delimiter["row_end"]
                 #text += delimiter["row_end"]
-        text += delimiter["grid_end"]
+            text += delimiter["grid_end"]
         text += delimiter["output_train"]
-        text += delimiter["grid_start"]
-        for i, row in enumerate(sample["output"]):
-            if use_object_representation:
-                objects = find_objects(row, bg_colour)
-                for i, o in enumerate(objects, 1):
-                    text += "Object_" + str(i) + ": " + str(o) + ", "
-                text = text[:-2] + "\n"
-            else:
+        if use_object_representation:
+            text+= f"Dimension: {[len(sample['output']),len(sample['output'][0])]}, "
+            objects = find_objects(task=use_object_representation, name=task_name, grid=sample["output"], bg_color=bg_color)
+            for i, o in enumerate(objects, 1):
+                text += "Object_" + str(i) + ": " + str(o) + ", "
+            text = text[:-2] + "\n"
+        else:
+            text += delimiter["grid_start"]
+            for i, row in enumerate(sample["output"]):
                 text += delimiter["row_start"]
                 for j, value in enumerate(row):
                     text += str(value)
@@ -524,30 +820,31 @@ def get_context(task_json, delimiter, with_intro=True, use_object_representation
                         text += delimiter["item"]
                 if i < len(sample["output"]) - 1:
                     text += delimiter["row_end"]
-        text += delimiter["grid_end"]
+            text += delimiter["grid_end"]
         text += delimiter["example_end"]
     return text
 
 # get tasks out of json
-def get_tasks(task_json, delimiter, use_object_representation=False):
+def get_tasks(task_name, task_json, delimiter, use_object_representation=False):
     tasks = []
     solutions = []
     
     for sample in task_json["test"]:
         task = delimiter["task_start"]
         task += delimiter["input_test"]
-        task += delimiter["grid_start"]
-        for i, row in enumerate(sample["input"]):
-            if use_object_representation:
-                if CHANGE_REPRESENTATION:
-                    bg_colour = NEW_REPRESENTATION[0]
-                else:
-                    bg_colour = 0
-                objects = find_objects(row, bg_colour)
-                for i, o in enumerate(objects, 1):
-                    task += "Object_" + str(i) + ": " + str(o) + ", "
-                task = task[:-2] + "\n"
+        if use_object_representation:
+            if CHANGE_REPRESENTATION:
+                bg_color = NEW_REPRESENTATION[0]
             else:
+                bg_color = 0
+            task += f"Dimension: {[len(sample['input']),len(sample['input'][0])]}, "
+            objects = find_objects(task=use_object_representation, name=task_name, grid=sample["input"], bg_color=bg_color)
+            for i, o in enumerate(objects, 1):
+                task += "Object_" + str(i) + ": " + str(o) + ", "
+            task = task[:-2] + "\n"
+        else:
+            task += delimiter["grid_start"]
+            for i, row in enumerate(sample["input"]):
                 task += delimiter["row_start"]
                 for j, value in enumerate(row):
                     task += str(value)
@@ -555,29 +852,29 @@ def get_tasks(task_json, delimiter, use_object_representation=False):
                         task += delimiter["item"]
                 if i < len(sample["input"]) - 1:
                     task += delimiter["row_end"]
-        task += delimiter["grid_end"]
+            task += delimiter["grid_end"]
         task += delimiter["output_test"]
         task += delimiter["task_end"]
 
         solution = delimiter["grid_start"]
         for i, row in enumerate(sample["output"]):
-            if use_object_representation:
-                if CHANGE_REPRESENTATION:
-                    bg_colour = NEW_REPRESENTATION[0]
-                else:
-                    bg_colour = 0
-                objects = find_objects(row, bg_colour)
-                for i, o in enumerate(objects, 1):
-                    solution += "Object_" + str(i) + ": " + str(o) + ", "
-                solution = solution[:-2] + "\n"
-            else:
-                solution += delimiter["row_start"]
-                for j, value in enumerate(row):
-                    solution += str(value)
-                    if j < len(row) - 1:
-                        solution += delimiter["item"]
-                if i < len(sample["output"]) - 1:
-                    solution += delimiter["row_end"]
+            # if use_object_representation:
+            #     if CHANGE_REPRESENTATION:
+            #         bg_color = NEW_REPRESENTATION[0]
+            #     else:
+            #         bg_color = 0
+            #     objects = find_objects(row, bg_color)
+            #     for i, o in enumerate(objects, 1):
+            #         solution += "Object_" + str(i) + ": " + str(o) + ", "
+            #     solution = solution[:-2] + "\n"
+            # else:
+            solution += delimiter["row_start"]
+            for j, value in enumerate(row):
+                solution += str(value)
+                if j < len(row) - 1:
+                    solution += delimiter["item"]
+            if i < len(sample["output"]) - 1:
+                solution += delimiter["row_end"]
         solution += delimiter["grid_end"]
         tasks.append(task)
         solutions.append(solution)

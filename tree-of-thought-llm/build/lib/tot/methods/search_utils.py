@@ -1,5 +1,5 @@
 from tot.methods.tree_nodes import Node
-from tot.models import model, prompt_preprocessing_for_model
+from tot.models import model, prompt_preprocessing_for_model, check_prompt_size
 
 model = None
 
@@ -37,6 +37,18 @@ def get_value(args, task, child, cache_value=True):
     
     if args.use_api:
         value_prompt = prompt_preprocessing_for_model(value_prompt)
+        prompt_size_check, num_tokens, token_limit = check_prompt_size(value_prompt)
+        if not prompt_size_check: # prompt too large for model 
+            task.too_long_prompts_all["value"].append({'task_name': child.task_name, 'node_level': child.level, 'x': child.x, 'value_prompt': value_prompt, 'num_tokens': num_tokens, 'token_limit': token_limit})
+            # log
+            if isinstance(value_prompt, dict):
+                prompt_log = "Sample Prompt:\n" + "\n\n".join(value_prompt.values())
+            elif isinstance(value_prompt, str):
+                prompt_log = "Sample Prompt:\n" + value_prompt
+            elif isinstance(value_prompt, list):                             
+                prompt_log = "Value Prompt:\n" + "\n\n".join(["#####\n"+v+":\n#####" if k == "role" else v for p in value_prompt for k, v in p.items()])
+            prompt_log += f"\n###############################\nPrompt too large for model. Skipping sample generation.\nNumber of tokens: {num_tokens}\nModel max tokens: {token_limit}\n"
+            return 0, prompt_log
         value_outputs = model(value_prompt, n=args.n_evaluate_sample, stop=None)
     else: 
         # get values from chat interface
@@ -54,6 +66,10 @@ def get_value(args, task, child, cache_value=True):
         prompt_log = delimiter.join(["Value Prompt:\n" + "\n\n".join(value_prompt.values()), "Value Outputs:\n" + "\n------\n".join(value_outputs)])
     elif isinstance(value_prompt, str):
         prompt_log = delimiter.join(["Value Prompt:\n" + value_prompt, "Value Outputs:\n" + "\n------\n".join(value_outputs)])
+    elif isinstance(value_prompt, list):                             
+        prompt_log = delimiter.join(["Value Prompt:\n" + "\n\n".join(["#####\n"+v+":\n#####" if k == "role" else v for p in value_prompt for k, v in p.items()]), "Value Outputs:\n" + "\n------\n".join(value_outputs)])
+       
+
     return value, prompt_log
 
 
@@ -88,6 +104,20 @@ def get_votes(task, current_node, n_evaluate_sample):
     # voting
     vote_prompt = task.vote_prompt_wrap(current_node, task.steps) # TODO: add params to all calls
     vote_prompt = prompt_preprocessing_for_model(vote_prompt)
+    prompt_size_check, num_tokens, token_limit = check_prompt_size(vote_prompt)
+    if not prompt_size_check: # prompt too large for model 
+        task.too_long_prompts_all["vote"].append({'task_name': current_node.task_name, 'node_level': current_node.level, 'x': current_node.x, 'vote_prompt': vote_prompt, 'num_tokens': num_tokens, 'token_limit': token_limit})
+        # log
+        if isinstance(vote_prompt, dict):
+            prompt_log = "Sample Prompt:\n" + "\n\n".join(vote_prompt.values())
+        elif isinstance(vote_prompt, str):
+            prompt_log = "Sample Prompt:\n" + vote_prompt
+        elif isinstance(vote_prompt, list):                             
+            prompt_log = "Vote Prompt:\n" + "\n\n".join(["#####\n"+v+":\n#####" if k == "role" else v for p in vote_prompt for k, v in p.items()])
+        prompt_log += f"\n###############################\nPrompt too large for model. Skipping sample generation.\nNumber of tokens: {num_tokens}\nModel max tokens: {token_limit}\n"
+        for child in current_node.children:
+            child.value = 0
+            return prompt_log
     vote_outputs = model(vote_prompt, n=n_evaluate_sample, stop=None)
     values = task.vote_outputs_unwrap(current_node, vote_outputs)
     for value, child in zip(values, current_node.children):
@@ -113,6 +143,18 @@ def get_samples(args, task, current_node, prompt_sample, stop):
         raise ValueError(f'prompt_sample {prompt_sample} not recognized')
     if args.use_api:
         prompt = prompt_preprocessing_for_model(prompt)
+        prompt_size_check, num_tokens, token_limit = check_prompt_size(prompt)
+        if not prompt_size_check:
+            task.too_long_prompts_all["sampling"].append({'task_name': current_node.task_name, 'node_level': current_node.level, 'x': current_node.x, 'sampling_prompt': prompt, 'num_tokens': num_tokens, 'token_limit': token_limit})
+            # log
+            if isinstance(prompt, dict):
+                prompt_log = "Sample Prompt:\n" + "\n\n".join(prompt.values())
+            elif isinstance(prompt, str):
+                prompt_log = "Sample Prompt:\n" + prompt
+            elif isinstance(prompt, list):                             
+                prompt_log = "Sample Prompt:\n" + "\n\n".join(["#####\n"+v+":\n#####" if k == "role" else v for p in prompt for k, v in p.items()])
+            prompt_log += f"\n###############################\nPrompt too large for model. Skipping sample generation.\nNumber of tokens: {num_tokens}\nModel max tokens: {token_limit}\n"
+            return (prompt_size_check, prompt_log)
         samples = model(prompt, n=current_node.n_generate_children, stop=stop)
     else:
         # get samples from chat interface
@@ -122,6 +164,7 @@ def get_samples(args, task, current_node, prompt_sample, stop):
                 print(prompt["system"])
             if "user" in prompt:
                 print("\n" + prompt["user"])
+            print("\n\nDo not use code!")
             sample = read_multiline_input("Answer of LLM: ")
             samples.append(sample)
             
@@ -140,10 +183,10 @@ def get_samples(args, task, current_node, prompt_sample, stop):
     else:
         leaf = False
     for sample in samples:
-        new_node = Node(current_node.level+1, current_node.x, LLM_answer=sample, parent=current_node, n_generate_children=args.n_generate_sample, children=[], leaf=leaf)
+        new_node = Node(current_node.task_name, current_node.level+1, current_node.x, LLM_answer=sample, parent=current_node, n_generate_children=args.n_generate_sample, children=[], leaf=leaf)
         current_node.children.append(new_node)
     
-    if task.__class__.__name__ in ["ARCTask", "ARC_1D"]:
+    if task.__class__.__name__ in ["ARCTask", "ARC_1D", "ARC_h_v"]:
         return prompt_log
     #return [y + _ for _ in samples], prompt_log # TODO: apply to old tasks
 
@@ -161,7 +204,7 @@ def analyse_failure(args, task, node):
     analysis_result = task.failure_analysis_prompt_unwrap(output, node)
 
     # create new node
-    new_node = Node(node.level+1, node.x, LLM_answer=output[0], thought=analysis_result, parent=node, children=[])
+    new_node = Node(node.task_name, node.level+1, node.x, LLM_answer=output[0], thought=analysis_result, parent=node, children=[])
     node.children.append(new_node)
     
     # log
@@ -187,7 +230,7 @@ def revise(args, task, node, original_node):
     revision_result = task.revision_prompt_unwrap(output, node)
     
     # create new node
-    new_node = Node(node.level+1, node.x, LLM_answer=output[0], thought=revision_result, parent=node, children=[])
+    new_node = Node(node.task_name, node.level+1, node.x, LLM_answer=output[0], thought=revision_result, parent=node, children=[])
     node.children.append(new_node)
     
     # replace old thoughts with revised thoughts - for each element in thought revise one more parent node one layer higher

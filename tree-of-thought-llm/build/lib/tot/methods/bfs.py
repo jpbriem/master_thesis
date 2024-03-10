@@ -13,12 +13,22 @@ def solve(args, task, idx, to_print=True):
         print("Model not found!")
         exit()
     x = task.get_input(idx)  # input
-    current_best_nodes = [Node(0, x, n_generate_children=args.n_generate_sample, children=[])]
+    task_name = task.names[idx]
+    current_best_nodes = [Node(task_name, 0, x, n_generate_children=args.n_generate_sample, children=[])]
     infos = []
     for step in range(task.steps):
         # generation  # TODO: Rename? Generate children?
         if args.method_generate == 'sample':
             gen_prompts = [search_utils.get_samples(args, task, current_node, prompt_sample=args.prompt_sample, stop=task.stops[step]) for current_node in current_best_nodes]
+            # Iterate over gen_prompts in reverse to maintain correct indices while removing items from current_best_nodes, if prompt was too large
+            for i in range(len(gen_prompts) - 1, -1, -1):
+                if isinstance(gen_prompts[i], tuple):
+                    del current_best_nodes[i]
+                    gen_prompts[i] = gen_prompts[i][1]
+            if len(current_best_nodes) == 0:
+                log = {'step': step, 'x': x, 'ys': [], 'new_ys': [], 'values': [], 'select_new_ys': []}
+                infos.append(log)
+                return [], {'steps': infos}
         # elif args.method_generate == 'propose':
         #     # Propose potential next steps, define in prompt the amount of proposals
         #     new_ys, gen_prompts = get_proposals(task, x, y)
@@ -82,10 +92,10 @@ def solve(args, task, idx, to_print=True):
         
         current_best_nodes = selected_best_nodes
     if args.revision:
-            # get revision results for all end nodes
-            example_success = [node.parent.example_success for node in current_best_nodes]
-            revisions_total = [node.parent.revisions_total for node in current_best_nodes]
-            return current_best_nodes, {'steps': infos, 'revision_success': all(example_success), 'total_revisions': revisions_total}
+        # get revision results for all end nodes
+        example_success = [node.parent.example_success for node in current_best_nodes]
+        revisions_total = [node.parent.revisions_total for node in current_best_nodes]
+        return current_best_nodes, {'steps': infos, 'revision_success': all(example_success), 'total_revisions': revisions_total}
     return current_best_nodes, {'steps': infos}
     
     
@@ -98,7 +108,8 @@ def naive_solve(args, task, idx, to_print=True):
         print("Model not found!")
         exit()
     x = task.get_input(idx)  # input
-    root = Node(0, x, n_generate_children=args.n_generate_sample, children=[])
+    task_name = task.names[idx]
+    root = Node(task_name, 0, x, n_generate_children=args.n_generate_sample, children=[])
     prompt_log = search_utils.get_samples(args, task, root, args.prompt_sample, stop=None)
     infos = [{'prompt_log': prompt_log}]
     return root.children, {'steps': infos} 

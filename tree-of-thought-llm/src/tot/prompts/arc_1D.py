@@ -499,34 +499,34 @@ prompt_modules_naive = {
 		},
 	} 
 # für object representation
-prompt_modules_naive = {
-	"0": {
-		'generation': {
-			"instruct_task": f'\n\nYou are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.',
-			"output_format": {
-				'description': {
-					'Example_1': 'regarding the first example, describe the differences between the input and output objects, be precise and say WHAT changed HOW!',
-					'Example_2': '...',
-    				},
-    			'overall_pattern': 'describe the input-output relationship for all input-output pairs', 
-				'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 
-				# 'transformation': {
-        		# 	'input': 'copy the test case input sequence from the task. Mind the sequence length!',
-				# 	'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color',
-				# 	'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color',
-            	# 	'output': 'create the resulting test output sequence. Mind the sequence length!'
-                #  	},
-				'test_case_input_objects': 'copy the objects of the test case input sequence from the task',
-				'transformation': 'Describe in natural language how the objects should look like in the test output sequence, focusing on size, position, color',
-				'transformed_objects': 'Describe the transformed objects for the test output sequence by following the format in the test case input.',
-				# 'test_case_output_empty': 'create a numpy array of the same dimension as the test case input sequence filled with zeros',
-    			# 'test_case_output': 'Insert the transformed objects into the test output sequence and return it as numpy array. Mind the sequence length!'
-				'test_case_output_dimension': 'state the dimension of the test case output sequence [rows, columns] as list of integers',
-				'test_case_output': 'Create the test case output pixel sequence with the transformed objects as numpy array, e.g. \"[0, 0, ..., 0]\". Use zero-indexing for the object positions and fill unoccupied cells with the background color!'
-             	},
-   		 	},
-		},
-	} 
+# prompt_modules_naive = {
+# 	"0": {
+# 		'generation': {
+# 			"instruct_task": f'\n\nYou are to infer the simplest possible relation between input and output. Then, your task is to transform the test input sequence into its test output sequence.',
+# 			"output_format": {
+# 				'description': {
+# 					'Example_1': 'regarding the first example, describe the differences between the input and output objects, be precise and say WHAT changed HOW!',
+# 					'Example_2': '...',
+#     				},
+#     			'overall_pattern': 'describe the input-output relationship for all input-output pairs', 
+# 				'instructions': 'describe the needed transformation actions to transform a new input into its output, think step by step', 
+# 				# 'transformation': {
+#         		# 	'input': 'copy the test case input sequence from the task. Mind the sequence length!',
+# 				# 	'object_description': 'regarding the test input, describe the objects in the input sequences, focusing on size, position, color',
+# 				# 	'transformed_objects': 'Describe how the objects should look like in the test output sequence, focusing on size, position, color',
+#             	# 	'output': 'create the resulting test output sequence. Mind the sequence length!'
+#                 #  	},
+# 				'test_case_input_objects': 'copy the objects of the test case input sequence from the task',
+# 				'transformation': 'Describe in natural language how the objects should look like in the test output sequence, focusing on size, position, color',
+# 				'transformed_objects': 'Describe the transformed objects for the test output sequence by following the format in the test case input.',
+# 				# 'test_case_output_empty': 'create a numpy array of the same dimension as the test case input sequence filled with zeros',
+#     			# 'test_case_output': 'Insert the transformed objects into the test output sequence and return it as numpy array. Mind the sequence length!'
+# 				'test_case_output_dimension': 'state the dimension of the test case output sequence [rows, columns] as list of integers',
+# 				'test_case_output': 'Create the test case output pixel sequence with the transformed objects as numpy array, e.g. \"[0, 0, ..., 0]\". Use zero-indexing for the object positions and fill unoccupied cells with the background color!'
+#              	},
+#    		 	},
+# 		},
+# 	} 
 
 
 

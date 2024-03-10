@@ -19,21 +19,29 @@ class ARCTask(Task):
     # class variables
     prompt_modules = prompt_modules
     few_shot_ex = few_shot_ex
-    use_object_representation = False
+    use_object_representation = None
     
     def __init__(self):
         """
         2 subfolders: training, evaluation
         """
         super().__init__()
-        path = os.path.join(DATA_PATH, 'arc')
-        self.data, self.names, self.categories = load_arc_tasks(path)
+        self.path = os.path.join(DATA_PATH, 'arc')
+        self.data, self.names, self.categories = load_arc_tasks(self.path)
         self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
         self.stops = [None]*self.steps # TODO: adjust to prompt! 
         self.success = {} # saves success rates for each task
         self.full_success = 0 # counts completely solved tasks
-        self.cat_success, self.cat_failures = {}, {} # saves success rates for each category
+        self.cat_success, self.cat_failures = {}, {} # saves success cnt for each category
+        self.object_representation_success_cnt = 0
+        self.object_representation_success = {} # saves obj repres. success rates for each task
+        self.object_representation_cat_success, self.object_representation_cat_failures = {}, {} # saves success cnt for each category
+        self.too_long_prompts_no_output = {}
+        self.too_long_prompts_all = {'sampling': [], 'value': [], 'vote': []}
+        self.tasks_failed_solving = {}
         self.solved_tasks = []
+        self.solved_tasks_str_comparison = []
+        self.solved_tasks_object_representation = []
         self.value_cache = {}
 
     def __len__(self) -> int:
@@ -42,13 +50,16 @@ class ARCTask(Task):
     def get_task_infos(self) -> dict:
         return {"change_representation": CHANGE_REPRESENTATION, "new_representation": NEW_REPRESENTATION if CHANGE_REPRESENTATION else None}
     
-    def set_input_representation(self, input_representation: str):
+    def set_input_representation(self, task:str, input_representation: str):
         if input_representation == "objects":
-            ARCTask.use_object_representation = True
+            ARCTask.use_object_representation = task
     
     
     def get_input(self, idx: int) -> str:
         task_json = self.data[idx]
+        # The above code is a comment in Python. It is not doing anything in terms of code execution.
+        # It is simply providing a description or explanation of what the code below it is intended to
+        # do.
         
         # transform all grids into desired representation, e.g. numbers or letters
         if CHANGE_REPRESENTATION:
@@ -78,25 +89,53 @@ class ARCTask(Task):
                 self.cat_success[category] = 0
                 self.cat_failures[category] = 0
        
-        _, solutions = get_tasks(task_json, DELIMITER[dataset])
+        _, solutions = get_tasks(task_name, task_json, DELIMITER[dataset])
         solution = solutions[0] # TODO: currently just check first test case 
         
+        if len(outputs) == 0:
+            # No outputs to test
+            if category not in self.too_long_prompts_no_output:
+                self.too_long_prompts_no_output[category] = [task_name]
+            else:
+                self.too_long_prompts_no_output[category].append(task_name)
+            n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
+            n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
+            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': True, 'tries': None, 'success_rate': self.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+            return info
+        
         try_cnt = 0
+        output_key = list(output_format.keys())[-1]
+        # add potential keys, in case model used a slightly different one
+        potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
+        output_keys = [output_key] + [k for k in potential_keys if k != output_key]
+        # change solution in np array
+        solution_grid = grid_to_2D_nparray(solution)
         for output in outputs:
             output = output.LLM_answer
             try_cnt += 1 
-            output_key = list(output_format.keys())[-1]
-            # add potential keys, in case model used a slightly different one
-            potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
-            output_keys = [output_key] + [k for k in potential_keys if k != output_key]
-            # extract answer and check if correct
-            test_output_grid = extract_json_value(output, output_format, output_keys) 
-            test_output_grid = grid_to_2D_nparray(test_output_grid)
-            solution_grid = grid_to_2D_nparray(solution)
-            is_success = np.array_equal(test_output_grid, solution_grid)
+            try:
+                # extract answer and check if correct
+                test_output_grid = extract_json_value(output, output_format, output_keys) 
+                test_output_grid = grid_to_2D_nparray(test_output_grid)
+                is_success = np.array_equal(test_output_grid, solution_grid)
+                if is_success:
+                    break     
+            except:
+                pass
+            # second, if not successful, check if solution string is in output string
+            print("Check if solution string is in output string")
+            #  remove second brackets for 1D ARC tasks
+            if solution_grid.shape[0] == 1:
+                solution = solution.strip()
+                if "[[" in solution[:2]:
+                    solution = solution[1:]
+                if "]]" in solution[-2:]:
+                    solution = solution[:-1]
+            is_success = re.sub(r'\s+', '', solution).strip() in re.sub(r'\s+', '', output).strip()
             if is_success:
+                self.solved_tasks_str_comparison.append(task_name)
                 break     
-        
+
         # log the success if not revision
         if is_revision:
             node.thought = test_output_grid.tolist()
@@ -107,12 +146,14 @@ class ARCTask(Task):
                 self.full_success += 1
                 self.cat_success[category] += 1
             else:
-                self.cat_failures += 1
+                self.cat_failures[category] += 1
 
             if self.success[task_name] > 0:
                 self.solved_tasks.append((task_name, self.success[task_name]))
             # print('------------')
-            info = {'solution': str(solution), 'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category])}
+            n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
+            n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
+            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': False, 'tries': try_cnt, 'success_rate': self.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
         
         return info
     
@@ -129,23 +170,61 @@ class ARCTask(Task):
             self.cat_success[category] = 0
             self.cat_failures[category] = 0
             
-        _, solutions = get_tasks(task_json, DELIMITER[dataset])
+        _, solutions = get_tasks(task_name, task_json, DELIMITER[dataset])
         solution = solutions[0] # TODO: currently just check first test case 
 
+        if len(outputs) == 0:
+            # No outputs to test
+            if category not in self.too_long_prompts_no_output:
+                self.too_long_prompts_no_output[category] = [task_name]
+            else:
+                self.too_long_prompts_no_output[category].append(task_name)
+            n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
+            n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
+            info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': True, 'tries': None, 'success_rate': self.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+            return info
+
         try_cnt = 0
+        # first, check if output is in json format with answer in the end
+        output_key = list(output_format.keys())[-1]
+        # add potential keys, in case model used a slightly different one
+        potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
+        output_keys = [output_key] + [k for k in potential_keys if k != output_key]
+        solution_grid = grid_to_2D_nparray(solution)
+        is_success = objects_correct = False
         for output in outputs:
             output = output.LLM_answer
             try_cnt += 1 
-            # first, check if output is in json format with answer in the end
-            output_key = list(output_format.keys())[-1]
+            # if using object representation, check if objects are correct
             try:
-                # add potential keys, in case model used a slightly different one
-                potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
-                output_keys = [output_key] + [k for k in potential_keys if k != output_key]
+                if "transformed_objects" in output_format and "test_case_output_dimension" in output_format and not objects_correct:
+                    if task_name not in self.object_representation_success: # TODO: works currently only if we have just one try
+                        self.object_representation_success[task_name] = 0
+                    if category not in self.object_representation_cat_success:
+                        self.object_representation_cat_success[category] = 0
+                        self.object_representation_cat_failures[category] = 0
+                    test_output_dimension = extract_json_value(output, output_format, "test_case_output_dimension")
+                    test_output_objects = extract_json_value(output, output_format, "transformed_objects")
+                    output_objects = extract_dicts_from_string(test_output_objects)
+                    grid = task_json["test"][0]["output"]
+                    gt_dimension = [len(grid), len(grid[0])]
+                    if CHANGE_REPRESENTATION:
+                        bg_color = NEW_REPRESENTATION[0]
+                    else:
+                        bg_color = 0
+                    gt_output_objects = find_objects(self.path.split("/")[-1], task_name, grid, bg_color)
+                    objects_correct = compare_object_lists(output_objects, gt_output_objects)
+                    print("objects:", objects_correct)
+                    dimension_correct = compare_dimensions(test_output_dimension, gt_dimension)
+                    print("dimension:", dimension_correct)
+                    objects_correct = objects_correct and dimension_correct
+            except:
+                pass
+            # Check if LLM output is correct
+            try:
                 test_output_grid = extract_json_value(output, output_format, output_keys) 
                 if test_output_grid:
                     test_output_grid = grid_to_2D_nparray(test_output_grid)
-                    solution_grid = grid_to_2D_nparray(solution)
                     is_success = np.array_equal(test_output_grid, solution_grid)
                     if is_success:
                         break
@@ -153,20 +232,49 @@ class ARCTask(Task):
                 pass
             # second, if not successful, check if solution string is in output string
             print("Check if solution string is in output string")
+            #  remove second brackets for 1D ARC tasks
+            if solution_grid.shape[0] == 1:
+                solution = solution.strip()
+                if "[[" in solution[:2]:
+                    solution = solution[1:]
+                if "]]" in solution[-2:]:
+                    solution = solution[:-1]
             is_success = re.sub(r'\s+', ' ', solution).strip() in re.sub(r'\s+', ' ', output).strip()
             if is_success:
-                break     
+                self.solved_tasks_str_comparison.append(task_name)
+                break   
                         
+        # log object repres. success
+        object_info = None
+        if "transformed_objects" in output_format:
+            self.object_representation_success[task_name] += objects_correct    
+            if self.object_representation_success[task_name] == 1:
+                self.object_representation_success_cnt += 1
+                self.object_representation_cat_success[category] += 1
+            else:
+                self.object_representation_cat_failures[category] += 1
+            if self.object_representation_success[task_name] > 0:
+                self.solved_tasks_object_representation.append((task_name, self.object_representation_success[task_name]))
+            n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
+            n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
+            object_info = {'success': self.object_representation_success[task_name], 'success_rate': self.object_representation_success_cnt / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.object_representation_cat_success[category], 'cat_success_rate': self.object_representation_cat_success[category] / (self.object_representation_cat_success[category] + self.object_representation_cat_failures[category]) if self.object_representation_cat_success[category] + self.object_representation_cat_failures[category] > 0 else 0}
+
+        # log overall success
         self.success[task_name] += is_success    
         if self.success[task_name] == 1:
             self.full_success += 1
             self.cat_success[category] += 1
         else:
             self.cat_failures[category] += 1
-            
         if self.success[task_name] > 0:
             self.solved_tasks.append((task_name, self.success[task_name]))
-        info = {'solution': str(solution), 'success': self.success[task_name], 'tries': try_cnt, 'success_rate': self.full_success / (idx+1), 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+        
+        
+        n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
+        n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
+        info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': False, 'tries': try_cnt, 'success_rate': self.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
+        if object_info:
+            info.update({"object_info": object_info})
         return info
     
     def update_prompt_modules(self, type: str="naive", p: dict=prompt_modules_naive):
@@ -191,8 +299,8 @@ class ARCTask(Task):
     
     @staticmethod 
     def standard_prompt_wrap(node, standard_prompt: str=standard_prompt, dataset: str="arc") -> str:
-        task_context = get_context(node.x, DELIMITER[dataset], with_intro=False, use_object_representation=ARCTask.use_object_representation)
-        task_input, _ = get_tasks(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist        
+        task_context = get_context(node.task_name, node.x, DELIMITER[dataset], with_intro=False, use_object_representation=ARCTask.use_object_representation)
+        task_input, _ = get_tasks(node.task_name, node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist        
         prompt = standard_prompt.copy()
         prompt["user"] = prompt["user"].format(context=task_context, test_input=task_input[0])
         return prompt
@@ -206,10 +314,10 @@ class ARCTask(Task):
         current_step = node.level
         
         # get arc examples
-        task_context = get_context(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
+        task_context = get_context(node.task_name, node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
         # get test case
         if current_step == total_steps-1:
-            task_input, _ = get_tasks(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist
+            task_input, _ = get_tasks(node.task_name, node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist
             task_input[0] = "\n\n" + task_input[0]              
         else:
             task_input = [""]        
@@ -262,10 +370,10 @@ class ARCTask(Task):
         current_step = node.level-1 # -1 bc. node is the child to be evaluated
         
         # get arc examples
-        task_context = get_context(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
+        task_context = get_context(node.task_name, node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
         # get test case
         if current_step == total_steps-1:
-            task_input, _ = get_tasks(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist
+            task_input, _ = get_tasks(node.task_name, node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist
             task_input[0] = "\n\n" + task_input[0]
         else:
             task_input = ["\n"]
@@ -319,9 +427,16 @@ class ARCTask(Task):
                             text_file.write(log)
                     example_id += 1
             elif "value" in value_output:
-                value += int(value_output["value"])
-                cnt_examples += 1
-
+                try:
+                    value += int(value_output["value"])
+                    cnt_examples += 1
+                except:
+                    log = "'value' from LLM not a single integer: " + str(value_output["value"])
+                    print(log)
+                    path = "error_log/json_parsing_errors/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".txt"
+                    with open(path, "w") as text_file:
+                        text_file.write(log)
+                
             if cnt_examples > 0:
                 value /= cnt_examples
                 final_value += value
@@ -342,7 +457,7 @@ class ARCTask(Task):
         delimmiter = DELIMITER.copy()
         delimmiter[dataset]["task_start"] = "" #  We dont want the prefix "Test Case:\n" (or similar) here
         delimmiter[dataset]["input_test"] = "" #  We dont want the prefix "input: " (or similar) here
-        input, output_gt = get_tasks(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
+        input, output_gt = get_tasks(node.task_name, node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
         # get wrong output
         output_wrong = node.thought
         # get output format 
@@ -381,7 +496,7 @@ class ARCTask(Task):
         
         # get the arc example as context that was tried to be solved
         node.x["train"] = node.x["test"]
-        task_context = get_context(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
+        task_context = get_context(node.task_name, node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
         
         # get output format for current step
         output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
@@ -482,8 +597,8 @@ class ARCTask(Task):
     # TODO: NEEDED?!
     @staticmethod
     def vote_prompt_wrap(node, total_steps: int=1, dataset: str="arc") -> str:
-        task_context = get_context(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
-        task_input, _ = get_tasks(node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist
+        task_context = get_context(node.task_name, node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
+        task_input, _ = get_tasks(node.task_name, node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation) # TODO: currently just check first test case in case more exist
         instruct, previous_thoughts = "", ""  
         prompt = vote_prompt.copy()
         json_keys = {'reflection': "", 'grid_view': "", 'pixel_view': "",  'object_view': "", 'description': "", 'grid_changes': "", 'pixel_changes': "",  'object_changes': "", 'overall_pattern': "", 'part_of_interest': "", 'conditions': "", 'instructions': "",  'intermediate_results': "", 'test_output': ""}

@@ -178,8 +178,12 @@ def replace_quotes_in_text(res, json_format):
     # add some potential artificially created keys from the model
     keys += ["choice", "test_case", "test case", "test_output", "test output", "test input", "test_input"]
 
+    # correct backslashes "\_"
+    res = res.replace("\_", "_")
+
     # do some regex to remove unwanted line breakes
     res = res.replace("\n", " ")
+    
     # check if this is already enough procesing:
     try: 
         json.loads(res)
@@ -368,13 +372,13 @@ def get_int_from_dict_value(d, key):
     return value
 
 def get_thought(LLM_answer, prompt_modules, current_step, isRevision=False):
-    all_json_keys = extract_dict_keys(prompt_modules, "output_format")
+    # all_json_keys = extract_dict_keys(prompt_modules, "output_format")
     if isRevision:
         output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
     else:
         output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
     thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
-    thought_data = extract_json_value(LLM_answer, all_json_keys, thought_key)
+    thought_data = extract_json_value(LLM_answer, output_format, thought_key)
     if isinstance(thought_data, dict):
         thought = " ".join(thought_key.split("_")) + ":"
         for key, value in thought_data.items():

@@ -14,20 +14,33 @@ class ARC_h_v(ARCTask):
     Input Example:  [[0, 1, 0], [1, 0, 1], [0, 1, 0]]
     Output Example: [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
     """
-
+    
+    # class variable
+    prompt_modules = prompt_modules
+    few_shot_ex = few_shot_ex
+    
     def __init__(self):
         """
         several subfolders by task type
         """
-        path = os.path.join(DATA_PATH, 'arc_h_v')
-        self.data, self.names, self.categories = load_arc_tasks(path, "arc_h_v")
+        self.path = os.path.join(DATA_PATH, 'arc_h_v')
+        self.data, self.names, self.categories = load_arc_tasks(self.path, "arc_h_v")
         self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
         self.stops = [None]*self.steps # TODO: adjust to prompt! 
         self.success = {} # saves success rates for each task
-        self.solved_tasks = []
         self.full_success = 0 # counts completely solved tasks
-        self.cat_success = {} # saves success rates for each category
+        self.cat_success, self.cat_failures = {}, {} # saves success cnt for each category
+        self.object_representation_success_cnt = 0
+        self.object_representation_success = {} # saves obj repres. success rates for each task
+        self.object_representation_cat_success, self.object_representation_cat_failures = {}, {} # saves success cnt for each category
+        self.too_long_prompts_no_output = {}
+        self.too_long_prompts_all = {'sampling': [], 'value': [], 'vote': []}
+        self.tasks_failed_solving = {}
+        self.solved_tasks = []
+        self.solved_tasks_str_comparison = []
+        self.solved_tasks_object_representation = []
         self.value_cache = {}
+
 
     # NOTE No need to overwrite methods as logic, prompts, etc. are the same as in ARCTask (normal 2D ARC)
     

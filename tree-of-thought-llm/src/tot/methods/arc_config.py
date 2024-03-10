@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '3,4'
+GPU = '2,3,6'
 
 #################### Prompt ####################
 CHANGE_REPRESENTATION = False
@@ -54,8 +54,8 @@ REVISIONS = []
 # REVISIONS.append("main")
 # MODEL_NAMES.append("mistralai/Mixtral-8x7B-v0.1")
 # REVISIONS.append("main")
-# MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
-# REVISIONS.append("main")
+MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
+REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
 # REVISIONS.append("main") 
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-Instruct-v0.1-GPTQ") 
@@ -86,8 +86,8 @@ REVISIONS = []
 # REVISIONS.append("main")
 
 ##### Proprietary #####
-MODEL_NAMES.append('gpt-4-1106-preview')
-REVISIONS.append('')
+# MODEL_NAMES.append('gpt-4-1106-preview')
+# REVISIONS.append('')
 # MODEL_NAMES.append('gpt-3.5-turbo-1106')
 # REVISIONS.append('')
 
@@ -121,6 +121,8 @@ for model in MODEL_NAMES:
         config["max_token"] = 2048
     elif "Mixtral".lower() in model.lower():
         config["max_token"] = 32768
+        # TODO: für TOT Runs! 
+        # config["model_config"]["temperature"] = 0.7
     MODEL_CONFIGS[model] = config
 
 DELIMITER = {
