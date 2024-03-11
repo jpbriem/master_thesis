@@ -17,10 +17,10 @@ args = argparse.Namespace(
     # continue_run="", # TODO: Bisher noch nicht für Object result infos!!!
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
-    use_api=True,                       # TODO: Use API?!
+    use_api=False,                       # TODO: Use API?!
     # task='arc',                       # TODO: Set task!
-    task='arc_1D', 
-    # task = 'arc_h_v',
+    # task='arc_1D', 
+    task = 'arc_h_v',
     # input_representation = None,    # TODO: set input representation
     input_representation = 'objects',
     naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
@@ -117,8 +117,8 @@ def run(args):
         # count += 1 # TODO: delete!!!       
         # if count == 2: # TODO: delete!!!
         #     break
-        # if task_category == "move_v": # TODO: delete!!!
-        #     continue
+        if task_category == "move_h": # TODO: delete!!!
+            continue
         task_already_tried = False
         if hasattr(args, 'continue_run'):
             for old_log in intermediate_state:

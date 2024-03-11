@@ -196,7 +196,8 @@ def replace_quotes_in_text(res, json_format):
 
     # replace any color name enclosed in double quotation marks to single quotation marks
     # pattern = r'"([^\s"]+)"'
-    pattern = r'"((?:(?!np\.array)[^"\s])+)"'
+    
+    pattern = r'"((?:(?!np\.array|numpy\.array)[^"\s])+)"'
     res = re.sub(pattern, r"'\1'", res)
     pattern = r'(\': \s*)\'(\w+)\'(, \s*\')'
     res = re.sub(pattern, r'\1"\2"\3', res)
@@ -243,9 +244,10 @@ def replace_quotes_in_text(res, json_format):
     res = re.sub(pattern, "", res)
 
     # in case the model outputs the string "np.array" to indicate such an object
-    pattern = r'"np\.array\(([^)]*?)\)"'
+    res = res.replace("import numpy as np", "")
+    pattern = r'"(?:np|numpy)\.array\(([^)]*?)\)"'
     res = re.sub(pattern, r'\1', res)
-    pattern = r'np\.array\(([^)]*?)\)'
+    pattern = r'(?:np|numpy)\.array\(([^)]*?)\)'
     res = re.sub(pattern, r'"\1"', res)
 
     # In case any output is an array but with letters w/o double quotes
@@ -285,7 +287,7 @@ def get_json_from_text(string, json_format):
             if previous_segment:
                 json_segment = json_segment[:indices[i+1][0]+1] + previous_segment + json_segment[indices[i+1][1]+1:]
             try:
-                x = json.loads(json_segment)
+                json_segment = json.loads(json_segment)
             except:
                 json_segment = replace_quotes_in_text(json_segment, json_format)
             previous_segment = json_segment
@@ -339,10 +341,17 @@ def extract_json_value(string, json_format, keys):
         key_exists, key_path = find_key(data, key)
         if key_exists:
             for next_key in key_path:
-                data = data[next_key]
+                json_value = data[next_key]
             break
     # Return the value for the given key or entire dictionar if not found
-    return data
+    if isinstance(json_value, str):
+        # in case the model outputs the string "np.array" to indicate such an object
+        json_value = json_value.replace("import numpy as np", "")
+        pattern = r'"(?:np|numpy)\.array\(([^)]*?)\)"'
+        json_value = re.sub(pattern, r'\1', json_value)
+        pattern = r'(?:np|numpy)\.array\(([^)]*?)\)'
+        json_value = re.sub(pattern, r'\1', json_value)
+    return json_value
 
 def extract_dict_keys(d, target, keys=set(), found=False):
     for key, value in d.items():
@@ -1088,6 +1097,9 @@ def grid_to_2D_nparray(grid):
                     error = "No 2D-array found in final output string: " + grid
                     return error
                 print("No 2D-array found, trying to add extra bracket: [..]")
+                array_start = grid.find("[")
+                array_end = grid.rfind("]")
+                grid = grid[array_start:array_end+1]
                 grid = "[" + grid.strip() + "]"
             else:
                 break
