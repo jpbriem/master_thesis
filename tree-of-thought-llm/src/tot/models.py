@@ -45,7 +45,7 @@ def initialize_model(args):
             response_format = { "type": "text" }
         else:
             response_format = { "type": "json_object" }
-        llm = partial(gpt, model=backend, temperature=MODEL_CONFIGS[backend]["model_config"]["temperature"], response_format=response_format)
+        llm = partial(gpt, model=backend, temperature=MODEL_CONFIGS[backend]["model_config"]["temperature"], max_tokens=MODEL_CONFIGS[backend]["model_config"]["max_new_tokens"], response_format=response_format)
         return call_model
     if not torch.cuda.is_available():
         print("Warning: CUDA is not available")
@@ -138,12 +138,12 @@ def check_prompt_size(prompt):
     return True, num_tokens, token_limit
    
 
-def call_model(prompt, max_tokens=2000, n=1, stop=None):
+def call_model(prompt, n=1, stop=None):
     global model, tokenizer, llm, completion_tokens, prompt_tokens, backend, naive_run
     if llm is None:
         raise Exception("Model is not initialized")
     if "gpt" in backend:
-        return llm(prompt, max_tokens=max_tokens, n=n, stop=stop)
+        return llm(prompt, n=n, stop=stop)
     elif backend in ["TheBloke/Falcon-7B-Instruct-GPTQ", "TheBloke/Falcon-40B-Instruct-GPTQ"]:
         outputs = []
         for i in range(n):
@@ -195,7 +195,7 @@ def completions_with_backoff(**kwargs):
     res = openai.ChatCompletion.create(**kwargs)
     for choice in res["choices"]:
         if choice["finish_reason"] != "stop":
-            raise WrongFinishReasonError("finish_reason is {}".format(res["finish_reason"]))
+            raise WrongFinishReasonError("finish_reason is {}".format(choice["finish_reason"]))
     return res
 
 def gpt(messages, model="gpt-3.5-turbo-1106", temperature=0.7, response_format={ "type": "json_object" }, max_tokens=2000, n=1, stop=None) -> list:

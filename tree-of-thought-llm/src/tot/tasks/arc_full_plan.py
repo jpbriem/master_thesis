@@ -2,7 +2,6 @@ import os
 import re
 from tot.tasks.base import Task, DATA_PATH
 from tot.prompts.arc import *   
-from tot.models import gpt
 from tot.methods.arc_utils import *
 from tot.methods import arc_utils
 from tot.methods.arc_config import * 
@@ -27,6 +26,7 @@ class ARCTask(Task):
         """
         super().__init__()
         self.path = os.path.join(DATA_PATH, 'arc')
+        self.args = None
         self.data, self.names, self.categories = load_arc_tasks(self.path)
         self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
         self.stops = [None]*self.steps # TODO: adjust to prompt! 
@@ -116,7 +116,7 @@ class ARCTask(Task):
             try_cnt += 1 
             # if using object representation, check if objects are correct
             try:
-                if "transformed_objects" in output_format and "test_case_output_dimension" in output_format and not objects_correct:
+                if self.args.input_representation == "objects" and "transformed_objects" in output_format and "test_case_output_dimension" in output_format and not objects_correct:
                     if task_name not in self.object_representation_success: # TODO: works currently only if we have just one try
                         self.object_representation_success[task_name] = 0
                     if category not in self.object_representation_cat_success:
@@ -165,7 +165,7 @@ class ARCTask(Task):
         
         # log object repres. success
         object_info = None
-        if "transformed_objects" in output_format:
+        if self.args.input_representation == "objects":
             self.object_representation_success[task_name] += objects_correct    
             if self.object_representation_success[task_name] == 1:
                 self.object_representation_success_cnt += 1
@@ -242,7 +242,7 @@ class ARCTask(Task):
             try_cnt += 1 
             # if using object representation, check if objects are correct
             try:
-                if "transformed_objects" in output_format and "test_case_output_dimension" in output_format and not objects_correct:
+                if self.args.input_representation == "objects" and "transformed_objects" in output_format and "test_case_output_dimension" in output_format and not objects_correct:
                     if task_name not in self.object_representation_success: # TODO: works currently only if we have just one try
                         self.object_representation_success[task_name] = 0
                     if category not in self.object_representation_cat_success:
@@ -291,7 +291,7 @@ class ARCTask(Task):
                         
         # log object repres. success
         object_info = None
-        if "transformed_objects" in output_format:
+        if self.args.input_representation == "objects":
             self.object_representation_success[task_name] += objects_correct    
             if self.object_representation_success[task_name] == 1:
                 self.object_representation_success_cnt += 1

@@ -17,7 +17,7 @@ args = argparse.Namespace(
     # continue_run="", # TODO: Bisher noch nicht für Object result infos!!!
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
-    use_api=False,                       # TODO: Use API?!
+    use_api=True,                       # TODO: Use API?!
     # task='arc',                       # TODO: Set task!
     # task='arc_1D', 
     task = 'arc_h_v',
@@ -70,6 +70,8 @@ def run(args):
        
     # initialize task
     task = get_task(args.task)
+    task.args = args
+    
     # get further task information for logging, if needed
     task_infos = task.get_task_infos()
     # set representation of inputs
@@ -117,8 +119,8 @@ def run(args):
         # count += 1 # TODO: delete!!!       
         # if count == 2: # TODO: delete!!!
         #     break
-        if task_category == "move_h": # TODO: delete!!!
-            continue
+        # if task_category == "move_h": # TODO: delete!!!
+        #     continue
         task_already_tried = False
         if hasattr(args, 'continue_run'):
             for old_log in intermediate_state:

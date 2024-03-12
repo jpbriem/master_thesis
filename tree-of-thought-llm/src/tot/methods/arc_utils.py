@@ -755,8 +755,6 @@ def compare_object_lists(list1, list2):
                     list2.remove(obj2)
                     found_match = True
                     break
-                print(obj1["coordinates"], obj2["coordinates"])
-                print(obj1["color"], obj2["color"])
                 
         # If no match is found for any object, return False
         if not found_match:

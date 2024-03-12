@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '2,3,4'
+GPU = '0,1,6'
 
 #################### Prompt ####################
 CHANGE_REPRESENTATION = False
@@ -54,8 +54,8 @@ REVISIONS = []
 # REVISIONS.append("main")
 # MODEL_NAMES.append("mistralai/Mixtral-8x7B-v0.1")
 # REVISIONS.append("main")
-# MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
-# REVISIONS.append("main")
+MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
+REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
 # REVISIONS.append("main") 
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-Instruct-v0.1-GPTQ") 
@@ -88,8 +88,8 @@ REVISIONS = []
 ##### Proprietary #####
 # MODEL_NAMES.append('gpt-4-1106-preview')
 # REVISIONS.append('')
-MODEL_NAMES.append('gpt-3.5-turbo-1106')
-REVISIONS.append('')
+# MODEL_NAMES.append('gpt-3.5-turbo-1106')
+# REVISIONS.append('')
 
 
 #################### automatic completion of parameters ####################
@@ -97,7 +97,7 @@ MODEL_CONFIGS = {}
 for model in MODEL_NAMES:
     config = {
         'model_config': {
-                'max_new_tokens': 2048,
+                'max_new_tokens': 4096,
                 'temperature': 0.001,   
         },
         'max_token': 4096,
