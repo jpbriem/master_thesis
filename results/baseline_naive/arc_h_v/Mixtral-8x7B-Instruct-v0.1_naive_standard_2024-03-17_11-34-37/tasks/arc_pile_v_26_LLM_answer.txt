@@ -1,0 +1,122 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [[0, 0, 0, 9, 0, 0], [6, 2, 0, 0, 0, 0], [0, 0, 0, 9, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 8, 0], [0, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 9, 0, 0], [6, 2, 0, 9, 8, 0]]
+
+Example_2:
+input: [[0, 0, 0, 0, 0, 8], [0, 0, 0, 9, 6, 0], [0, 0, 0, 9, 6, 0], [2, 0, 3, 0, 6, 8], [2, 0, 3, 0, 0, 8], [0, 0, 3, 9, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 3, 9, 6, 8], [2, 0, 3, 9, 6, 8], [2, 0, 3, 9, 6, 8]]
+
+Example_3:
+input: [[0, 0, 0, 1, 9], [3, 0, 5, 0, 0], [3, 8, 5, 0, 0], [0, 0, 0, 1, 0], [3, 8, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [3, 0, 0, 0, 0], [3, 8, 5, 1, 0], [3, 8, 5, 1, 9]]
+
+Test case:
+input: [[0, 0, 6, 5, 0], [0, 0, 6, 0, 0], [9, 0, 0, 5, 1], [0, 0, 0, 0, 0], [0, 3, 6, 0, 0]]
+
+###########################################################
+Sample Outputs:
+output: [[0, 0, 6, 5, 0], [0, 0, 6, 0, 0], [9, 0, 0, 5, 1], [0, 0, 0, 0, 0], [0, 3, 6, 0, 0]]
+*/
+
+#include <iostream>
+using namespace std;
+
+void printBoard(int board[][6]) {
+    for (int i = 0; i < 6; ++i) {
+        cout << "[";
+        for (int j = 0; j < 6; ++j) {
+            if (board[i][j] == -1) continue;
+            cout << " " << board[i][j];
+        }
+        cout << " ]" << endl;
+    }
+}
+
+bool checkRow(int row, int col, int num, int board[][6]) {
+    for (int c = 0; c < 6; ++c) {
+        if (board[row][c]!= 0 && board[row][c] == num) return false;
+    }
+    return true;
+}
+
+bool checkCol(int row, int col, int num, int board[][6]) {
+    for (int r = 0; r < 6; ++r) {
+        if (board[r][col]!= 0 && board[r][col] == num) return false;
+    }
+    return true;
+}
+
+bool checkBlock(int row, int col, int num, int board[][6]) {
+    int startR = row / 3 * 3;
+    int startC = col / 3 * 3;
+    for (int r = startR; r < startR + 3; ++r) {
+        for (int c = startC; c < startC + 3; ++c) {
+            if (board[r][c]!= 0 && board[r][c] == num) return false;
+        }
+    }
+    return true;
+}
+
+bool isValid(int row, int col, int num, int board[][6]) {
+    return checkRow(row, col, num, board) && checkCol(row, col, num, board) && checkBlock(row, col, num, board);
+}
+
+bool solveSudoku(int board[][6], int idx) {
+    if (idx >= 36) return true;
+
+    int row = idx / 6;
+    int col = idx % 6;
+
+    if (board[row][col]!= 0) return solveSudoku(board, idx + 1);
+
+    for (int num = 1; num <= 9; ++num) {
+        if (!isValid(row, col, num, board)) continue;
+
+        board[row][col] = num;
+        bool solved = solveSudoku(board, idx + 1);
+        if (solved) return true;
+    }
+
+    // backtracking
+    board[row][col] = 0;
+    return false;
+}
+
+void sudokuSolver(int board[][6]) {
+    solveSudoku(board, 0);
+}
+
+int main() {
+    int testCase[][6] = {{0, 0, 6, 5, 0}, {0, 0, 6, 0, 0}, {9, 0, 0, 5, 1}, {0, 0, 0, 0, 0}, {0, 3, 6, 0, 0}};
+    printBoard(testCase);
+    cout << "\n";
+
+    sudokuSolver(testCase);
+    printBoard(testCase);
+
+    return 0;
+}
+
+
+###########################################################
+Result:
+solution: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 6, 0, 0], [0, 0, 6, 5, 0], [9, 3, 6, 5, 1]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.02962962962962963
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

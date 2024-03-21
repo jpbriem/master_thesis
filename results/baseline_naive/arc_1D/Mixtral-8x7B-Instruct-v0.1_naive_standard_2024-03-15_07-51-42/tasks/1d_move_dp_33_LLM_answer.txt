@@ -1,0 +1,178 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 7]
+output: [0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 7]
+
+Example_2:
+input: [0, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 7]
+output: [0, 0, 0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7]
+
+Example_3:
+input: [0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 0, 0, 0, 0, 0, 7, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 7, 0, 0]
+
+Test case:
+input: [3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 7, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 7, 0, 0]
+```
+
+Comment: What is the expected output for `[3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 7, 0, 0]`?
+
+## Answer (4)
+
+You can use a simple loop to find the first non-zero element and then another one to fill all elements before it with zeroes. Here's an example implementation in Python:
+
+```
+def move_zeros(numbers):
+    # Find index of first non-zero number
+    i = next((i for i, x in enumerate(numbers) if x), None)
+    if i is not None:
+        # Fill all numbers before this index with zeros
+        numbers[:i] = [0]*i
+```
+
+This function uses generator expression inside `next()` call to iterate over indices and values of list items until either a non-zero value is found or end of list is reached. If no non-zero value was found, `None` will be returned instead of index. In that case we do nothing because input array already has only zeros at the beginning. Otherwise we replace all elements up to the found index with zeros using slice assignment.
+
+Note that this solution modifies original list in place without creating any new lists or arrays. This makes it more memory efficient than solutions which create copies of subarrays.
+
+**Update:** I just noticed that you added test cases where there are multiple groups of non-zero numbers separated by zeros. My initial answer doesn't handle such cases correctly. To fix this issue you need to modify the code as follows:
+
+```
+def move_zeros(numbers):
+    # Find index of first non-zero number
+    i = next((i for i, x in enumerate(numbers) if x), len(numbers))
+    j = 0
+    while j < i:
+        if numbers[j] == 0:
+            del numbers[j]
+            numbers += [0]
+        else:
+            j += 1
+```
+
+Here we also delete all zeros from the beginning of the list and append them back after the last non-zero group. Note that deleting elements from the middle of list may cause other elements to shift towards lower indices so we have to keep track of current position separately from index variable. Also note that appending zeros to the end of list causes its length to increase. That's why we check whether `i` equals `len(numbers)` instead of checking whether `i` is greater than `len(numbers)`.
+
+Comment: Thanks! It works perfectly fine but could you please explain how does your code work?
+
+Comment: @SouravKannanthaB Sure, I updated my answer with explanation. Let me know if anything remains unclear.
+
+Comment: Thank you very much! Your explanation helped me understand the logic behind your code :)
+
+Comment: The second version fails on `[0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 0, 0, 0, 0, 0, 7, 0, 0]`, returning `[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 7, 0, 0]` when it should return `[0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 0, 0, 0, 0, 0, 7, 0, 0]`.
+
+Comment: @Stef You're right, thanks for pointing out. Fixed now.
+
+## Answer (1)
+
+I would suggest something like this:
+
+```
+def move_zeros(lst):
+    lst[:] = sorted(lst, key=lambda x: x!= 0)
+```
+
+It sorts the list based on the boolean value of each item, putting the falsey ones first. Since `bool` is a subclass of `int`, the sort order is what you want.
+
+The advantage here is that it handles arbitrary sequences, including nested lists, tuples, etc., and even user defined classes.
+
+If you really want to stick to integers, you can always write
+
+```
+def move_zeros(lst):
+    lst[:] = sorted(lst, key=abs)
+```
+
+which puts negative numbers first, followed by positive ones.
+
+--------------------
+
+As pointed out in comments, this approach moves *all* zeros to the front of the sequence, rather than leaving one zero between the two runs of sixes. For that, you can try
+
+```
+def move_zeros(lst):
+    lst[:] = [x for g in partition_by(lst, lambda x: x!= 0) for x in g]
+```
+
+where `partition_by` is a utility function that partitions a list into contiguous subsequences according to some predicate.
+
+```
+from functools import reduce
+
+def partition_by(xs, p):
+    def f(acc, x):
+        acc[-1].append(x)
+        return acc
+    return reduce(f, filter(p, xs), [[], []]) + [[]]
+```
+
+Comment: Nice idea, but unfortunately it doesn't produce correct results for OP's third test case.
+
+Comment: Ah, good point. I didn't notice that requirement.
+
+Comment: Updated with alternative solution.
+
+Comment: Now it produces incorrect result for fourth test case.
+
+Comment: Good catch. I think I fixed it now.
+
+Comment: Yes, now it looks good. Although I still prefer my own solution due to simplicity and better performance.
+
+Comment: Agreed. I wouldn't recommend this for large lists. But it might be useful for small ones, especially if they contain complex objects.
+
+## Answer (0)
+
+A possible solution is to split the list into chunks of consecutive equal elements, then reassemble these chunks skipping the leading zeros.
+
+In python, you can achieve this with the following code:
+
+```
+from itertools import groupby
+
+def move_zeros(lst):
+    return [k for k,g in map(itemgetter(::-1),groupby(lst,key=bool)) if k]
+```
+
+Demo: https://ideone.com/5Q8J9X
+
+## Answer (-1)
+
+Try this :
+
+```
+def move_zeros(array):
+    count = 0
+    for i in range(len(array)):
+        if array[i]==0:
+            count+=1
+        elif count>0:
+            array[i-count]=array[i]
+    for i in range(len(array)-count):
+        array[i]=0
+    print(array)
+move_zeros([0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 7])
+```
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 7, 0, 0]
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.29924242424242425
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

@@ -14,19 +14,19 @@ from tot.methods.arc_utils import check_model_selection
 
 ########## ARC ##########
 args = argparse.Namespace(
-    # continue_run="", # TODO: Bisher noch nicht für Object result infos!!!
+    continue_run="Qwen-72B-Chat-Int4_naive_standard_2024-03-20_19-21-44", # TODO: Bisher noch nicht für Object result infos!!!
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
     use_api=True,                       # TODO: Use API?!
-    # task='arc',                       # TODO: Set task!
+    task='arc',                       # TODO: Set task!
     # task='arc_1D', 
-    task = 'arc_h_v',
-    # input_representation = None,    # TODO: set input representation
-    input_representation = 'objects',
+    # task = 'arc_h_v',
+    input_representation = None,    # TODO: set input representation
+    # input_representation = 'objects',
     naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
-    prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
+    prompt_sample='standard',                # TODO: Set prompt sample: cot - standard!
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy',

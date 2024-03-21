@@ -1,0 +1,121 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [[0, 0, 6, 0, 0, 0], [0, 0, 0, 8, 8, 0], [2, 0, 0, 0, 0, 0], [5, 0, 5, 5, 0, 0], [0, 9, 0, 9, 0, 9], [0, 0, 1, 0, 0, 0]]
+output: [[6, 0, 0, 0, 0, 0], [8, 8, 0, 0, 0, 0], [2, 0, 0, 0, 0, 0], [5, 5, 5, 0, 0, 0], [9, 9, 9, 0, 0, 0], [1, 0, 0, 0, 0, 0]]
+
+Example_2:
+input: [[0, 0, 0, 0, 0, 0], [1, 0, 1, 0, 0, 1], [0, 6, 0, 6, 6, 0], [0, 0, 0, 2, 0, 0], [0, 0, 0, 0, 0, 0], [5, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0], [6, 6, 6, 0, 0, 0], [2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [5, 0, 0, 0, 0, 0]]
+
+Example_3:
+input: [[0, 0, 0, 0, 0], [0, 2, 0, 0, 0], [0, 0, 0, 8, 0], [9, 9, 9, 0, 0], [0, 0, 0, 5, 5]]
+output: [[0, 0, 0, 0, 0], [2, 0, 0, 0, 0], [8, 0, 0, 0, 0], [9, 9, 9, 0, 0], [5, 5, 0, 0, 0]]
+
+Test case:
+input: [[0, 0, 0, 7], [0, 1, 1, 1], [5, 0, 5, 5], [0, 0, 0, 2]]
+
+
+
+###########################################################
+Sample Outputs:
+Here's the Python code that implements the solution:
+
+```python
+def group_numbers(grid):
+    rows = len(grid)
+    cols = len(grid[0])
+    
+    # Create a dictionary to store the groups of numbers in each row
+    groups = {}
+    for i in range(rows):
+        group = []
+        for j in range(cols):
+            if grid[i][j] != 0:
+                if grid[i][j] not in group:
+                    group.append(grid[i][j])
+                else:
+                    group[group.index(grid[i][j])] += 1
+        groups[i] = group
+    
+    # Create a list to store the groups of numbers in each column
+    columns = [[] for _ in range(cols)]
+    for i in range(rows):
+        for j in range(cols):
+            if grid[i][j] != 0:
+                columns[j].append(grid[i][j])
+    
+    # Merge adjacent groups of numbers in the same row or column
+    result = []
+    while groups and columns:
+        current_group = groups.pop(0)
+        current_column = columns.pop(0)
+        
+        # If there are no more groups in the row, merge the current group with the first group in the next row
+        if not groups:
+            new_row = []
+            for group in current_column:
+                if group == current_group[0]:
+                    group.extend(current_group[1:])
+                else:
+                    new_row.append(group)
+            groups.append(new_row)
+            
+        # If there are no more columns in the same row, merge the current group with the last group in the previous row
+        elif not columns:
+            groups.insert(0, current_group + groups[-1])
+            
+        # Otherwise, merge the current group with the corresponding group in the next column
+        else:
+            other_group = columns[0]
+            if current_group[0] != other_group[0]:
+                new_group = [current_group[0]] * len(other_group)
+                for i in range(len(current_group)):
+                    if current_group[i] > other_group[i]:
+                        new_group[i] = max(new_group[i], other_group[i])
+                    else:
+                        new_group[i] = min(new_group[i], other_group[i])
+                groups.append(new_group)
+                
+                new_column = []
+                for group in current_column:
+                    if group == current_group[0]:
+                        group.extend(other_group)
+                    else:
+                        new_column.append(group)
+                columns[0] = new_column
+        
+        result.append([group for group in current_group])
+    
+    return result
+```
+
+The `group_numbers` function takes a two-dimensional array `grid` as input. It first creates two dictionaries, one to store the groups of numbers in each row and another to store the groups of numbers in each column.
+
+It then iterates over the rows and columns of the grid, and for each position where the value is non-zero, it checks whether the value is already part of an existing group. If so, it increments the count of that group; otherwise, it adds the value to a new group.
+
+Next, the function merges adjacent groups of numbers in the same row or column by iterating over the groups until either all groups have been processed or there are no more groups left to process.
+
+Finally, the function returns a list of lists representing the final groups of numbers. Each inner list represents a single group of numbers, and the elements of the inner list correspond to the positions in the original grid where those numbers were found.
+
+
+###########################################################
+Result:
+solution: [[7, 0, 0, 0], [1, 1, 1, 0], [5, 5, 5, 0], [2, 0, 0, 0]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.0
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

@@ -341,17 +341,17 @@ def extract_json_value(string, json_format, keys):
         key_exists, key_path = find_key(data, key)
         if key_exists:
             for next_key in key_path:
-                json_value = data[next_key]
+                data = data[next_key]
             break
     # Return the value for the given key or entire dictionar if not found
-    if isinstance(json_value, str):
+    if isinstance(data, str):
         # in case the model outputs the string "np.array" to indicate such an object
-        json_value = json_value.replace("import numpy as np", "")
+        data = data.replace("import numpy as np", "")
         pattern = r'"(?:np|numpy)\.array\(([^)]*?)\)"'
-        json_value = re.sub(pattern, r'\1', json_value)
+        data = re.sub(pattern, r'\1', data)
         pattern = r'(?:np|numpy)\.array\(([^)]*?)\)'
-        json_value = re.sub(pattern, r'\1', json_value)
-    return json_value
+        data = re.sub(pattern, r'\1', data)
+    return data
 
 def extract_dict_keys(d, target, keys=set(), found=False):
     for key, value in d.items():

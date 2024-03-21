@@ -1,0 +1,111 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [[0, 5, 0, 0, 4], [0, 5, 7, 0, 4], [6, 0, 0, 0, 0], [0, 5, 0, 9, 0], [6, 0, 0, 0, 4]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 5, 0, 0, 4], [6, 5, 0, 0, 4], [6, 5, 7, 9, 4]]
+
+Example_2:
+input: [[0, 8, 0, 7, 0, 0], [3, 0, 0, 7, 0, 0], [0, 8, 1, 0, 0, 9], [3, 0, 0, 0, 0, 9], [3, 8, 0, 7, 0, 0], [0, 0, 0, 0, 5, 9]]
+output: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [3, 8, 0, 7, 0, 9], [3, 8, 0, 7, 0, 9], [3, 8, 1, 7, 5, 9]]
+
+Example_3:
+input: [[0, 7, 4, 0, 1], [0, 0, 0, 0, 1], [2, 0, 4, 0, 0], [2, 7, 4, 0, 0], [0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 4, 0, 0], [2, 7, 4, 0, 1], [2, 7, 4, 0, 1]]
+
+Test case:
+input: [[3, 8, 5, 9, 2, 7], [0, 0, 5, 0, 2, 0], [0, 0, 0, 9, 0, 7], [0, 0, 5, 9, 0, 0], [0, 0, 0, 0, 2, 7], [0, 0, 0, 0, 0, 0]]
+
+###########################################################
+Sample Outputs:
+output: [[3, 8, 5, 9, 2, 7], [0, 0, 5, 0, 2, 0], [0, 0, 0, 9, 0, 7], [0, 0, 5, 9, 0, 0], [0, 0, 0, 0, 2, 7], [0, 0, 0, 0, 0, 0]]
+*/
+
+#include <iostream>
+using namespace std;
+
+void printArray(int arr[][5]) {
+    for (int i = 0; i < 5; ++i) {
+        cout << "[";
+        for (int j = 0; j < 5; ++j) {
+            if (j!= 0) cout << ", ";
+            cout << arr[i][j];
+        }
+        cout << "]" << endl;
+    }
+}
+
+bool isValid(int grid[][5], int row, int col, int num) {
+    // check the current row and column
+    for (int x = 0; x < 5; ++x) {
+        if ((grid[row][x] == num) || (grid[x][col] == num)) return false;
+    }
+
+    // check the sub-grid
+    int startRow = row - row % 3, startCol = col - col % 3;
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            if (grid[startRow + i][startCol + j] == num) return false;
+        }
+    }
+
+    return true;
+}
+
+bool solveSudoku(int grid[][5], int row, int col) {
+    // base case
+    if (row == 5 && col == 5) return true;
+
+    // next cell to be filled
+    bool isNextCellAvailable = (col < 5);
+    if (!isNextCellAvailable) {
+        row++;
+        col = 0;
+    }
+
+    // recursive call after filling the current cell
+    if (grid[row][col] > 0) return solveSudoku(grid, row, col + 1);
+
+    // try all numbers from 1 to 9 in the current cell
+    for (int num = 1; num <= 9; ++num) {
+        if (!isValid(grid, row, col, num)) continue;
+
+        grid[row][col] = num;
+        if (solveSudoku(grid, row, col + 1)) return true;
+    }
+
+    // backtracking step
+    grid[row][col] = 0;
+    return false;
+}
+
+int main() {
+    int input[][5] = {{0, 5, 0, 0, 4}, {0, 5, 7, 0, 4}, {6, 0, 0, 0, 0}, {0, 5, 0, 9, 0}, {6, 0, 0, 0, 4}};
+    printArray(input);
+    cout << "\n\n";
+    solveSudoku(input, 0, 0);
+    printArray(input);
+
+    return 0;
+}
+
+
+###########################################################
+Result:
+solution: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 5, 9, 2, 7], [0, 0, 5, 9, 2, 7], [3, 8, 5, 9, 2, 7]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.03018867924528302
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

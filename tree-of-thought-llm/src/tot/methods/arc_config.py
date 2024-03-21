@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '0,1,6'
+GPU = '5,6,7'
 
 #################### Prompt ####################
 CHANGE_REPRESENTATION = False
@@ -54,8 +54,8 @@ REVISIONS = []
 # REVISIONS.append("main")
 # MODEL_NAMES.append("mistralai/Mixtral-8x7B-v0.1")
 # REVISIONS.append("main")
-MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
-REVISIONS.append("main")
+# MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
 # REVISIONS.append("main") 
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-Instruct-v0.1-GPTQ") 
@@ -74,8 +74,8 @@ REVISIONS.append("main")
 # REVISIONS.append("main") 
 # MODEL_NAMES.append("Qwen/Qwen-14B-Chat-Int4") # Too small context length
 # REVISIONS.append("main")
-# MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
-# REVISIONS.append("main") 
+MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
+REVISIONS.append("main") 
 
 # Falcon 
 # MODEL_NAMES.append("TheBloke/Falcon-7B-Instruct-GPTQ") # TODO: Run all tests )
@@ -142,10 +142,10 @@ DELIMITER = {
         "output_test": "",
     },
     "arc_1D": {
-        "item": ", ", # TODO: add apostroph if needed
+        "item": "', '", # TODO: add apostroph if needed
         "grid_start": "[",
-        "grid_end": "]\n", # include end of last row # TODO: add apostroph if needed
-        "row_start": "", # TODO: add apostroph if needed
+        "grid_end": "']\n", # include end of last row # TODO: add apostroph if needed
+        "row_start": "'", # TODO: add apostroph if needed
         "row_end": "", # except for last row
         "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
         "example_end": "\n",

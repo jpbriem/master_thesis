@@ -1,0 +1,151 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0]
+output: [0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0]
+output: [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0]
+
+Example_3:
+input: [0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0]
+output: [0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0]
+
+Test case:
+input: [2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+```
+
+Comment: What is the expected output for `[2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]`?
+
+## Answer (4)
+
+You can use a simple loop to iterate over your array and check if there are any zeros before the current element. If so, you replace it with zero; otherwise, you leave it as-is. Here's an example implementation in Python:
+
+```
+def moveZerosToEnd(numbers):
+    i = 0
+    while i < len(numbers):
+        if numbers[i] == 0:
+            j = i + 1
+            while j < len(numbers) and numbers[j] == 0:
+                j += 1
+            if j < len(numbers):
+                numbers[i], numbers[j] = numbers[j], numbers[i]
+        i += 1
+
+# Test cases
+moveZerosToEnd([2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+print(numbers) # => [2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+moveZerosToEnd([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0])
+print(numbers) # => [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0]
+
+moveZerosToEnd([0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0])
+print(numbers) # => [0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0]
+```
+
+This algorithm has O(*n*) time complexity because each iteration of the outer loop moves one item from its original position to another position at most once. The inner loop only runs when we find a zero, which happens at most *n* times.
+
+Note that this solution does not create a new list or array but modifies the input directly. This may be desirable since creating a copy could consume more memory than necessary. However, if you want to keep the original data intact, simply make a copy first using e.g. `list()`.
+
+--------------------
+
+If you prefer a functional approach, here's how you might do it in Haskell:
+
+```
+import Data.List (partition)
+
+moveZerosToEnd :: [Int] -> [Int]
+moveZerosToEnd xs = fst $ partition (\x -> x /= 0) xs ++ snd (partition (== 0) xs)
+
+-- Test cases
+main = print $ moveZerosToEnd [2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] -- => [2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                              print $ moveZerosToEnd [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0] -- => [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0]
+                              print $ moveZerosToEnd [0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0] -- => [0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0]
+```
+
+The idea is similar: We split the list into two parts—one containing all nonzero elements and one containing all zeroes—and then concatenate them together again. Note that this creates a new list instead of mutating the old one.
+
+Comment: I think you should add some explanation about why this works. It took me a minute to figure out what was going on.
+
+Comment: @JosephSible-ReinstateMonica Thanks for the feedback! Added some explanations now. Let me know if anything remains unclear.
+
+Comment: Thank you very much for your answer. But I am looking for a recursive function. Can you help me please?
+
+Comment: Sure thing! Just added a recursive version below my previous answer. Hope it helps :)
+
+## Answer (1)
+
+Here's a recursive version based on the same logic as my imperative solution above. It uses tail recursion and thus doesn't require stack space proportional to the length of the input list.
+
+```
+def moveZerosToEndRecursive(numbers):
+    def helper(numbers, index):
+        if index >= len(numbers):
+            return []
+        elif numbers[index] == 0:
+            j = index + 1
+            while j < len(numbers) and numbers[j] == 0:
+                j += 1
+            if j < len(numbers):
+                return [numbers[j]] + helper(numbers[:j] + numbers[j+1:], index)
+            else:
+                return helper(numbers, index + 1)
+        else:
+            return [numbers[index]] + helper(numbers, index + 1)
+
+    return helper(numbers, 0)
+
+# Test cases
+print(moveZerosToEndRecursive([2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])) # => [2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+print(moveZerosToEndRecursive([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0])) # => [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0]
+print(moveZerosToEndRecursive([0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0])) # => [0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0]
+```
+
+As mentioned earlier, this solution does not create a new list or array but modifies the input directly. To avoid this, simply pass a copy of the input list to the function.
+
+## Answer (0)
+
+I have found a way to solve this problem by myself :D
+
+```
+def moveZeroes(nums):
+    """
+    Do not return anything, modify nums in-place instead.
+    """
+    count = 0
+    for i in range(len(nums)):
+        if nums[i]!= 0:
+            nums[count] = nums[i]
+            count+=1
+    for i in range(count,len(nums)):
+        nums[i]=0
+```
+
+Comment: You don't need the second loop. After the first loop, just set `nums[count:] = [0]*(len(nums)-count)`.
+
+
+###########################################################
+Result:
+solution: [0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.38972809667673713
+
+cat_success_cnt: 10
+
+cat_success_rate: 0.3225806451612903
+

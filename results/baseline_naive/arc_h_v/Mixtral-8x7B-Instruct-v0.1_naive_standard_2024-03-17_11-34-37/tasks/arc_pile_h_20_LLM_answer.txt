@@ -1,0 +1,113 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [[0, 0, 0, 7], [0, 0, 0, 0], [2, 0, 2, 0], [0, 9, 9, 9]]
+output: [[7, 0, 0, 0], [0, 0, 0, 0], [2, 2, 0, 0], [9, 9, 9, 0]]
+
+Example_2:
+input: [[0, 0, 0, 0], [4, 4, 0, 4], [0, 0, 0, 0], [0, 0, 0, 0]]
+output: [[0, 0, 0, 0], [4, 4, 4, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+
+Example_3:
+input: [[0, 8, 8, 8, 0], [0, 0, 2, 0, 2], [0, 0, 0, 0, 0], [9, 0, 9, 9, 0], [0, 0, 4, 4, 4]]
+output: [[8, 8, 8, 0, 0], [2, 2, 0, 0, 0], [0, 0, 0, 0, 0], [9, 9, 9, 0, 0], [4, 4, 4, 0, 0]]
+
+Test case:
+input: [[0, 0, 7, 0, 7], [4, 0, 4, 4, 0], [0, 0, 2, 0, 2], [5, 5, 0, 0, 5], [6, 0, 6, 0, 0]]
+
+###########################################################
+Sample Outputs:
+output: [[7, 0, 7, 0, 0], [4, 4, 4, 0, 0], [2, 0, 2, 0, 0], [5, 5, 5, 0, 0], [6, 0, 0, 0, 0]]
+*/
+
+#include <iostream>
+using namespace std;
+
+void printArray(int arr[][4]) {
+    for (int i = 0; i < 4; ++i) {
+        cout << "[";
+        for (int j = 0; j < 4; ++j) {
+            if (j!= 0) cout << ", ";
+            cout << arr[i][j];
+        }
+        cout << "]" << endl;
+    }
+}
+
+void fillZeroToLeft(int arr[][4], int row, int col) {
+    while (col >= 0 && arr[row][col] == 0) --col;
+    for (int c = col + 1; c < 4; ++c) arr[row][c] = 0;
+}
+
+void mergeRow(int arr[][4], int row) {
+    bool hasZero = false;
+    int num = -1;
+    for (int c = 0; c < 4; ++c) {
+        if (arr[row][c] == 0) {
+            hasZero = true;
+            continue;
+        }
+        if (num == -1) {
+            num = arr[row][c];
+        } else if (num == arr[row][c]) {
+            arr[row][c-1] += arr[row][c];
+            num = -1;
+        } else {
+            // do nothing
+        }
+    }
+    if (hasZero) {
+        fillZeroToLeft(arr, row, 3);
+    }
+}
+
+void moveZerosToRight(int arr[][4], int row, int col) {
+    while (col >= 0 && arr[row][col] == 0) ++col;
+    for (int c = 0; c < col; ++c) arr[row][c] = 0;
+}
+
+void mergeMatrix(int arr[][4], int rows, int cols) {
+    for (int r = 0; r < rows; ++r) {
+        mergeRow(arr, r);
+    }
+    for (int r = rows - 1; r > 0; --r) {
+        for (int c = 0; c < cols; ++c) {
+            if (arr[r][c] == arr[r-1][c]) {
+                arr[r-1][c] *= 2;
+                arr[r][c] = 0;
+            }
+        }
+        moveZerosToRight(arr, r, cols);
+    }
+    mergeRow(arr, 0);
+}
+
+int main() {
+    int testCase[][4] = {{0, 0, 7, 0, 7}, {4, 0, 4, 4, 0}, {0, 0, 2, 0, 2}, {5, 5, 0, 0, 5}, {6, 0, 6, 0, 0}};
+    printArray(testCase);
+    mergeMatrix(testCase, 5, 4);
+    printArray(testCase);
+    return 0;
+}
+
+
+###########################################################
+Result:
+solution: [[7, 7, 0, 0, 0], [4, 4, 4, 0, 0], [2, 2, 0, 0, 0], [5, 5, 5, 0, 0], [6, 6, 0, 0, 0]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.03271028037383177
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

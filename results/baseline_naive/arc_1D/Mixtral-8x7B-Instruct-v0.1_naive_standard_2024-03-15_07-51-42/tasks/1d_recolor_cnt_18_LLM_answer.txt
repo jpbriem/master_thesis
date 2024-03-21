@@ -1,0 +1,141 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [0, 0, 8, 0, 0, 8, 8, 0, 0, 8, 8, 8, 0, 0, 8, 8, 0, 0, 0, 8, 8, 8, 0, 0, 0, 0, 0]
+output: [0, 0, 7, 0, 0, 3, 3, 0, 0, 1, 1, 1, 0, 0, 3, 3, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 0, 8, 8, 8, 0, 8, 0, 8, 8, 0, 0, 0, 8, 8, 0, 0, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 1, 1, 1, 0, 7, 0, 3, 3, 0, 0, 0, 3, 3, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 8, 8, 8, 0, 0, 8, 8, 0, 0, 8, 0, 8, 8, 0, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 1, 1, 1, 0, 0, 3, 3, 0, 0, 7, 0, 3, 3, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 0, 8, 0, 0, 8, 8, 8, 0, 0, 8, 8, 0, 0, 8, 8, 8, 0, 0, 0, 8, 8, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 1, 0, 0, 3, 3, 3, 0, 0, 7, 7, 0, 0, 3, 3, 3, 0, 0, 0, 1, 1, 0, 0, 0, 0]
+*/
+
+#include <iostream>
+using namespace std;
+
+void printArray(int arr[], int n) {
+    for (int i = 0; i < n; i++) {
+        cout << arr[i] << " ";
+    }
+    cout << endl;
+}
+
+// Function to find the number of blocks in a row.
+int countBlocks(int arr[], int n) {
+    // Initialize variables to keep track of current block and previous non-zero element.
+    int currBlock = -1;
+    int prevNonZero = -1;
+
+    // Iterate through the array.
+    for (int i = 0; i < n; i++) {
+        if (arr[i]!= 0) {
+            // If this is not the first non-zero element, update the current block.
+            if (prevNonZero!= -1) {
+                currBlock++;
+            }
+            // Update the previous non-zero element index.
+            prevNonZero = i;
+        }
+    }
+
+    return currBlock + 1;
+}
+
+// Function to fill the grid with numbers according to the given rules.
+void fillGrid(int arr[], int n) {
+    // Calculate the number of blocks in the row.
+    int numBlocks = countBlocks(arr, n);
+
+    // Create an array to store the size of each block.
+    int blockSizes[numBlocks];
+
+    // Initialize variables to keep track of the current block size and previous non-zero element.
+    int currBlockSize = 0;
+    int prevNonZero = -1;
+
+    // Iterate through the array again.
+    for (int i = 0; i < n; i++) {
+        if (arr[i]!= 0) {
+            // If this is not the first non-zero element, add the size of the previous block to the array.
+            if (prevNonZero!= -1) {
+                blockSizes[currBlockSize++] = i - prevNonZero;
+            }
+            // Update the previous non-zero element index.
+            prevNonZero = i;
+        }
+    }
+
+    // Now we have the sizes of all blocks, so we can start filling the grid.
+    for (int i = 0; i < n; i++) {
+        // Check which block this element belongs to.
+        int blockIndex = (i / (n / numBlocks));
+
+        // Calculate the starting position of this block.
+        int blockStart = blockIndex * (n / numBlocks);
+
+        // Calculate the size of this block.
+        int blockSize = blockSizes[blockIndex];
+
+        // Fill the grid based on the block's type.
+        if (blockIndex % 2 == 0) {
+            // Even blocks are filled from left to right.
+            if (i - blockStart < blockSize / 2) {
+                // This element is in the left half of the block.
+                arr[i] = 8 - (i - blockStart);
+            } else {
+                // This element is in the right half of the block.
+                arr[i] = 8 - (blockSize - (i - blockStart) - 1);
+            }
+        } else {
+            // Odd blocks are filled from right to left.
+            if (i - blockStart < blockSize / 2) {
+                // This element is in the left half of the block.
+                arr[i] = 8 - (blockSize - (i - blockStart) - 1);
+            } else {
+                // This element is in the right half of the block.
+                arr[i] = 8 - (i - blockStart);
+            }
+        }
+    }
+}
+
+int main() {
+    int input[] = {0, 0, 0, 8, 0, 0, 8, 8, 8, 0, 0, 8, 8, 0, 0, 8, 8, 8, 0, 0, 0, 8, 8, 0, 0, 0, 0};
+    int n = sizeof(input) / sizeof(input[0]);
+
+    fillGrid(input, n);
+    printArray(input, n);
+
+    return 0;
+}
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 7, 0, 0, 1, 1, 1, 0, 0, 3, 3, 0, 0, 1, 1, 1, 0, 0, 0, 3, 3, 0, 0, 0, 0]
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.2680683311432326
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

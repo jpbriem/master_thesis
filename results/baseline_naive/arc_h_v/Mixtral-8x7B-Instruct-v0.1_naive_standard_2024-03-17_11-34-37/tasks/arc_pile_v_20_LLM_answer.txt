@@ -1,0 +1,172 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [[7, 0, 0, 9], [0, 0, 2, 9], [0, 0, 0, 9], [0, 0, 2, 0]]
+output: [[0, 0, 0, 0], [0, 0, 0, 9], [0, 0, 2, 9], [7, 0, 2, 9]]
+
+Example_2:
+input: [[0, 4, 0, 0], [0, 0, 0, 0], [0, 4, 0, 0], [0, 4, 0, 0]]
+output: [[0, 0, 0, 0], [0, 4, 0, 0], [0, 4, 0, 0], [0, 4, 0, 0]]
+
+Example_3:
+input: [[0, 2, 0, 0, 4], [8, 0, 0, 9, 4], [8, 2, 0, 9, 4], [8, 0, 0, 0, 0], [0, 0, 0, 9, 0]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [8, 0, 0, 9, 4], [8, 2, 0, 9, 4], [8, 2, 0, 9, 4]]
+
+Test case:
+input: [[7, 0, 2, 5, 0], [0, 4, 0, 0, 0], [7, 4, 2, 0, 6], [0, 0, 0, 5, 0], [0, 4, 0, 5, 6]]
+
+###########################################################
+Sample Outputs:
+output: [[0, 0, 2, 5, 0], [0, 4, 0, 0, 0], [7, 4, 2, 0, 6], [0, 0, 0, 5, 0], [0, 4, 0, 5, 6]]
+*/
+
+#include <iostream>
+using namespace std;
+
+void printBoard(int board[][5]) {
+    for (int i = 0; i < 5; ++i) {
+        cout << "[";
+        for (int j = 0; j < 5; ++j) {
+            if (board[i][j] == -1) continue;
+            cout << " " << board[i][j];
+        }
+        cout << " ]" << endl;
+    }
+}
+
+bool isValid(int board[][5], int row, int col, int num) {
+    // check the same column
+    for (int i = 0; i < 5; ++i) {
+        if (board[i][col] == num) return false;
+    }
+
+    // check the same row
+    for (int i = 0; i < 5; ++i) {
+        if (board[row][i] == num) return false;
+    }
+
+    // check the square
+    int startRow = row / 3 * 3;
+    int startCol = col / 3 * 3;
+    for (int i = startRow; i < startRow + 3; ++i) {
+        for (int j = startCol; j < startCol + 3; ++j) {
+            if (board[i][j] == num) return false;
+        }
+    }
+
+    return true;
+}
+
+bool solveSudoku(int board[][5], int row, int col) {
+    if (row >= 5 && col >= 5) return true;
+
+    if (col >= 5) {
+        row++;
+        col = 0;
+    }
+
+    if (board[row][col]!= 0) return solveSudoku(board, row, col + 1);
+
+    for (int num = 1; num <= 9; ++num) {
+        if (!isValid(board, row, col, num)) continue;
+
+        board[row][col] = num;
+        bool solved = solveSudoku(board, row, col + 1);
+        if (solved) return true;
+    }
+
+    board[row][col] = 0;
+    return false;
+}
+
+void setZeroes(int** matrix, int rows, int cols) {
+    int board[5][5] = {};
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            board[i/3][j/3] += matrix[i][j];
+            board[i][j] += matrix[i][j];
+        }
+    }
+
+    solveSudoku(board, 0, 0);
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            matrix[i][j] = board[i/3][j/3] % 10;
+            board[i/3][j/3] -= matrix[i][j];
+            board[i][j] -= matrix[i][j];
+        }
+    }
+}
+
+int main() {
+    int matrix1[][5] = {{7, 0, 0, 9}, {0, 0, 2, 9}, {0, 0, 0, 9}, {0, 0, 2, 0}};
+    int matrix2[][5] = {{0, 4, 0, 0}, {0, 0, 0, 0}, {0, 4, 0, 0}, {0, 4, 0, 0}};
+    int matrix3[][5] = {{0, 2, 0, 0, 4}, {8, 0, 0, 9, 4}, {8, 2, 0, 9, 4}, {8, 0, 0, 0, 0}, {0, 0, 0, 9, 0}};
+    int matrix4[][5] = {{7, 0, 2, 5, 0}, {0, 4, 0, 0, 0}, {7, 4, 2, 0, 6}, {0, 0, 0, 5, 0}, {0, 4, 0, 5, 6}};
+
+    int **matrixArr1 = new int*[5];
+    for (int i = 0; i < 5; ++i) {
+        matrixArr1[i] = new int[5];
+        memcpy(matrixArr1[i], matrix1[i], sizeof(int)*5);
+    }
+
+    int **matrixArr2 = new int*[5];
+    for (int i = 0; i < 5; ++i) {
+        matrixArr2[i] = new int[5];
+        memcpy(matrixArr2[i], matrix2[i], sizeof(int)*5);
+    }
+
+    int **matrixArr3 = new int*[5];
+    for (int i = 0; i < 5; ++i) {
+        matrixArr3[i] = new int[5];
+        memcpy(matrixArr3[i], matrix3[i], sizeof(int)*5);
+    }
+
+    int **matrixArr4 = new int*[5];
+    for (int i = 0; i < 5; ++i) {
+        matrixArr4[i] = new int[5];
+        memcpy(matrixArr4[i], matrix4[i], sizeof(int)*5);
+    }
+
+    setZeroes(matrixArr1, 5, 5);
+    printBoard(matrixArr1);
+
+    setZeroes(matrixArr2, 5, 5);
+    printBoard(matrixArr2);
+
+    setZeroes(matrixArr3, 5, 5);
+    printBoard(matrixArr3);
+
+    setZeroes(matrixArr4, 5, 5);
+    printBoard(matrixArr4);
+
+    delete [] matrixArr1;
+    delete [] matrixArr2;
+    delete [] matrixArr3;
+    delete [] matrixArr4;
+
+    return 0;
+}
+
+
+###########################################################
+Result:
+solution: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 4, 0, 5, 0], [7, 4, 2, 5, 6], [7, 4, 2, 5, 6]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.030303030303030304
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

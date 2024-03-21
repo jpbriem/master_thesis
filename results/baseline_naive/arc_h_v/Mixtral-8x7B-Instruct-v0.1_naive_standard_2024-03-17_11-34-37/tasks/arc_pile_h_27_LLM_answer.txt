@@ -1,0 +1,133 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [[0, 0, 0, 0, 4], [0, 0, 1, 0, 0], [0, 0, 2, 0, 2], [6, 0, 0, 0, 0], [0, 7, 0, 0, 0]]
+output: [[4, 0, 0, 0, 0], [1, 0, 0, 0, 0], [2, 2, 0, 0, 0], [6, 0, 0, 0, 0], [7, 0, 0, 0, 0]]
+
+Example_2:
+input: [[5, 0, 0, 5, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [2, 0, 0, 2, 0], [0, 4, 0, 4, 4]]
+output: [[5, 5, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [2, 2, 0, 0, 0], [4, 4, 4, 0, 0]]
+
+Example_3:
+input: [[0, 2, 0, 0, 0, 2], [9, 0, 9, 0, 0, 9], [0, 0, 6, 0, 6, 6], [0, 0, 0, 0, 0, 0], [3, 0, 0, 0, 3, 0], [4, 4, 0, 0, 0, 0]]
+output: [[2, 2, 0, 0, 0, 0], [9, 9, 9, 0, 0, 0], [6, 6, 6, 0, 0, 0], [0, 0, 0, 0, 0, 0], [3, 3, 0, 0, 0, 0], [4, 4, 0, 0, 0, 0]]
+
+Test case:
+input: [[0, 0, 3, 3, 3], [5, 0, 0, 0, 0], [0, 0, 0, 4, 0], [0, 2, 2, 0, 0], [0, 0, 9, 9, 9]]
+
+###########################################################
+Sample Outputs:
+output: [[3, 3, 3, 0, 0], [5, 0, 0, 0, 0], [0, 0, 0, 4, 0], [0, 2, 2, 0, 0], [0, 0, 9, 9, 9]]
+*/
+
+#include <iostream>
+using namespace std;
+
+void printArray(int arr[][5]) {
+    for (int i = 0; i < 5; ++i) {
+        cout << "[";
+        for (int j = 0; j < 5; ++j) {
+            if (j!= 0) cout << ", ";
+            cout << arr[i][j];
+        }
+        cout << "]" << endl;
+    }
+}
+
+void fillZeroToLeft(int arr[][5], int row, int col) {
+    while (col >= 0 && row < 5) {
+        if (arr[row][col] == 0) --col;
+        else break;
+    }
+    // move to the first non-zero element in this row
+    while (col >= 0 && row < 5) {
+        if (arr[row][col]!= 0) {
+            arr[row][col - 1] = 0;
+            --col;
+        }
+        else break;
+    }
+}
+
+void removeZerosFromRight(int arr[][5], int row, int col) {
+    while (col < 5 && row < 5) {
+        if (arr[row][col] == 0) ++col;
+        else break;
+    }
+    // move to the last non-zero element in this row
+    while (col < 5 && row < 5) {
+        if (arr[row][col]!= 0) {
+            arr[row][col + 1] = 0;
+            ++col;
+        }
+        else break;
+    }
+}
+
+void mergeRows(int arr[][5], int startRow, int endRow) {
+    for (int curCol = 0; curCol < 5; ++curCol) {
+        int val = arr[startRow][curCol];
+        for (int nextRow = startRow + 1; nextRow <= endRow; ++nextRow) {
+            if (val!= arr[nextRow][curCol]) {
+                val = -1;
+                break;
+            }
+        }
+        if (val > 0) {
+            for (int nextRow = startRow + 1; nextRow <= endRow; ++nextRow) {
+                arr[nextRow][curCol] = 0;
+            }
+        }
+    }
+}
+
+void processOneRow(int arr[][5], int row) {
+    int leftMostNonZeroCol = 5;
+    for (int col = 0; col < 5; ++col) {
+        if (arr[row][col]!= 0) {
+            leftMostNonZeroCol = min(leftMostNonZeroCol, col);
+            break;
+        }
+    }
+    fillZeroToLeft(arr, row, leftMostNonZeroCol);
+    removeZerosFromRight(arr, row, leftMostNonZeroCol);
+}
+
+void processAllRows(int arr[][5]) {
+    for (int row = 0; row < 5; ++row) {
+        processOneRow(arr, row);
+    }
+    for (int row = 0; row < 4; ++row) {
+        mergeRows(arr, row, row + 1);
+    }
+}
+
+int main() {
+    int testCase[][5] = {{0, 0, 3, 3, 3}, {5, 0, 0, 0, 0}, {0, 0, 0, 4, 0}, {0, 2, 2, 0, 0}, {0, 0, 9, 9, 9}};
+    printArray(testCase);
+    processAllRows(testCase);
+    printArray(testCase);
+    return 0;
+}
+
+
+###########################################################
+Result:
+solution: [[3, 3, 3, 0, 0], [5, 0, 0, 0, 0], [4, 0, 0, 0, 0], [2, 2, 0, 0, 0], [9, 9, 9, 0, 0]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.03167420814479638
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

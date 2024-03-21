@@ -1,0 +1,119 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [[0, 0, 6, 0, 0, 0], [0, 0, 0, 8, 8, 0], [2, 0, 0, 0, 0, 0], [5, 0, 5, 5, 0, 0], [0, 9, 0, 9, 0, 9], [0, 0, 1, 0, 0, 0]]
+output: [[6, 0, 0, 0, 0, 0], [8, 8, 0, 0, 0, 0], [2, 0, 0, 0, 0, 0], [5, 5, 5, 0, 0, 0], [9, 9, 9, 0, 0, 0], [1, 0, 0, 0, 0, 0]]
+
+Example_2:
+input: [[0, 0, 0, 0, 0, 0], [1, 0, 1, 0, 0, 1], [0, 6, 0, 6, 6, 0], [0, 0, 0, 2, 0, 0], [0, 0, 0, 0, 0, 0], [5, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0], [6, 6, 6, 0, 0, 0], [2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [5, 0, 0, 0, 0, 0]]
+
+Example_3:
+input: [[0, 0, 0, 0, 0], [0, 2, 0, 0, 0], [0, 0, 0, 8, 0], [9, 9, 9, 0, 0], [0, 0, 0, 5, 5]]
+output: [[0, 0, 0, 0, 0], [2, 0, 0, 0, 0], [8, 0, 0, 0, 0], [9, 9, 9, 0, 0], [5, 5, 0, 0, 0]]
+
+Test case:
+input: [[0, 0, 0, 7], [0, 1, 1, 1], [5, 0, 5, 5], [0, 0, 0, 2]]
+
+###########################################################
+Sample Outputs:
+output: [[0, 0, 0, 7], [1, 1, 1, 1], [5, 5, 5, 5], [2, 0, 0, 0]]
+*/
+
+#include <iostream>
+using namespace std;
+
+void printArray(int arr[][6]) {
+    for (int i = 0; i < 6; ++i) {
+        cout << "[";
+        for (int j = 0; j < 6; ++j) {
+            if (arr[i][j] == -1) continue;
+            cout << arr[i][j];
+            if (j!= 5) cout << ", ";
+        }
+        cout << "]\n";
+    }
+}
+
+void fillZero(int arr[][6], int x, int y) {
+    // Fill the zeroes in a direction until we find an obstacle or reach the border.
+    while (x >= 0 && x < 6 && y >= 0 && y < 6 && arr[x][y] == 0) {
+        arr[x][y] = -1;
+        if (x > 0) --x;
+        else if (y > 0) {
+            x = 5;
+            --y;
+        }
+        else break;
+    }
+    // Move to the next row and repeat the process.
+    if (x + 1 < 6) fillZero(arr, x + 1, y);
+    else if (y + 1 < 6) {
+        x = 0;
+        fillZero(arr, x, y + 1);
+    }
+}
+
+void moveLeft(int arr[][6], int x, int y) {
+    // Save the value of the cell that will be overwritten by the current one.
+    int temp = arr[x][y - 1];
+    // Overwrite it with the current value.
+    arr[x][y - 1] = arr[x][y];
+    // If the saved value is not zero then add it to the current value.
+    if (temp!= 0) arr[x][y] += temp;
+}
+
+void mergeCells(int arr[][6]) {
+    // First pass: Find all cells that can be merged.
+    for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < 5; ++j) {
+            if (arr[i][j] == 0 || arr[i][j] == -1) continue;
+            if (arr[i][j + 1] == arr[i][j]) {
+                arr[i][j] *= 2;
+                arr[i][j + 1] = 0;
+            }
+        }
+    }
+    // Second pass: Merge them.
+    for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < 5; ++j) {
+            if (arr[i][j] == 0 || arr[i][j] == -1) continue;
+            if (arr[i][j + 1] == 0) moveLeft(arr, i, j);
+        }
+    }
+    // Third pass: Remove zeros from the array.
+    fillZero(arr, 0, 0);
+}
+
+int main() {
+    int testCases[][6] = {{0, 0, 6, 0, 0, 0}, {0, 0, 0, 8, 8, 0}, {2, 0, 0, 0, 0, 0}, {5, 0, 5, 5, 0, 0},
+                           {0, 9, 0, 9, 0, 9}, {0, 0, 1, 0, 0, 0}};
+    printArray(testCases);
+    mergeCells(testCases);
+    cout << "\n\n";
+    printArray(testCases);
+
+    return 0;
+}
+
+
+###########################################################
+Result:
+solution: [[7, 0, 0, 0], [1, 1, 1, 0], [5, 5, 5, 0], [2, 0, 0, 0]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.03333333333333333
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

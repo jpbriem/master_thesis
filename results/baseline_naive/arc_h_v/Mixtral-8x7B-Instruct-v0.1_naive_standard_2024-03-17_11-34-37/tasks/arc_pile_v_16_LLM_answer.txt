@@ -1,0 +1,245 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [[0, 8, 0, 0, 5], [6, 8, 0, 9, 5], [0, 0, 0, 9, 0], [6, 0, 0, 0, 0], [0, 0, 0, 9, 0]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 9, 0], [6, 8, 0, 9, 5], [6, 8, 0, 9, 5]]
+
+Example_2:
+input: [[1, 0, 0, 0], [0, 8, 0, 0], [0, 8, 0, 0], [0, 0, 2, 6]]
+output: [[0, 0, 0, 0], [0, 0, 0, 0], [0, 8, 0, 0], [1, 8, 2, 6]]
+
+Example_3:
+input: [[0, 4, 0, 0, 6, 0], [0, 4, 8, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 4, 0, 5, 0, 0], [0, 0, 8, 5, 0, 7], [0, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 4, 0, 0, 0, 0], [0, 4, 8, 5, 0, 0], [0, 4, 8, 5, 6, 7]]
+
+Test case:
+input: [[7, 0, 0, 0], [0, 0, 3, 0], [7, 0, 3, 5], [7, 2, 0, 5]]
+
+###########################################################
+Sample Outputs:
+output: [[7, 0, 0, 0], [0, 0, 3, 0], [7, 2, 3, 5], [7, 2, 3, 5]]
+*/
+
+#include <iostream>
+using namespace std;
+
+void printBoard(int board[][5]) {
+    for (int i = 0; i < 5; ++i) {
+        cout << "[";
+        for (int j = 0; j < 5; ++j) {
+            if (board[i][j] == -1) continue;
+            cout << " " << board[i][j];
+        }
+        cout << " ]" << endl;
+    }
+}
+
+bool isValid(int board[][5], int row, int col, int num) {
+    // check the same column
+    for (int i = 0; i < 5; ++i) {
+        if (board[i][col] == num) return false;
+    }
+
+    // check the same block
+    int startRow = row - row % 3, startCol = col - col % 3;
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            if (board[startRow + i][startCol + j] == num) return false;
+        }
+    }
+
+    // check the same row
+    for (int i = 0; i < 5; ++i) {
+        if (board[row][i] == num) return false;
+    }
+
+    return true;
+}
+
+bool solveSudoku(int board[][5], int row, int col) {
+    if (row >= 5 && col >= 5) return true;
+
+    if (col >= 5) {
+        row++;
+        col = 0;
+    }
+
+    if (board[row][col]!= 0) return solveSudoku(board, row, col + 1);
+
+    for (int num = 1; num <= 9; ++num) {
+        if (!isValid(board, row, col, num)) continue;
+
+        board[row][col] = num;
+        bool solved = solveSudoku(board, row, col + 1);
+        if (solved) return true;
+
+        board[row][col] = 0;
+    }
+
+    return false;
+}
+
+void copyBoard(int src[][5], int dest[][5]) {
+    for (int i = 0; i < 5; ++i) {
+        memcpy(src[i], dest[i], sizeof(dest[i]));
+    }
+}
+
+void fillEmptyCells(int board[][5], int emptyCells[][2]) {
+    int count = 0;
+    for (int i = 0; i < 5; ++i) {
+        for (int j = 0; j < 5; ++j) {
+            if (board[i][j] == 0) {
+                emptyCells[count][0] = i;
+                emptyCells[count][1] = j;
+                count++;
+            }
+        }
+    }
+}
+
+void swapRows(int board[][5], int a, int b) {
+    int tmp[5];
+    for (int i = 0; i < 5; ++i) {
+        tmp[i] = board[a][i];
+        board[a][i] = board[b][i];
+        board[b][i] = tmp[i];
+    }
+}
+
+void swapColumns(int board[][5], int a, int b) {
+    int tmp[5];
+    for (int i = 0; i < 5; ++i) {
+        tmp[i] = board[i][a];
+        board[i][a] = board[i][b];
+        board[i][b] = tmp[i];
+    }
+}
+
+void rotateBlock(int board[][5], int x, int y) {
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            swapRows(board, x + i, y + j);
+        }
+    }
+
+    swapColumns(board, x, y);
+    swapColumns(board, x + 1, y + 1);
+    swapColumns(board, x + 2, y + 2);
+}
+
+void flipHorizontal(int board[][5], int x, int y) {
+    for (int i = 0; i < 3; ++i) {
+        swapRows(board, x + i, y + 2 - i);
+    }
+}
+
+void flipVertical(int board[][5], int x, int y) {
+    for (int i = 0; i < 3; ++i) {
+        swapColumns(board, x + i, y + 2 - i);
+    }
+}
+
+void findSymmetry(int board[][5], int emptyCells[][2], int symmCount, int &symmIndex) {
+    if (symmIndex >= symmCount) return;
+
+    int newBoard[5][5];
+    copyBoard(newBoard, board);
+
+    switch (symmIndex) {
+        case 0:
+            rotateBlock(newBoard, 0, 0);
+            break;
+        case 1:
+            rotateBlock(newBoard, 0, 3);
+            break;
+        case 2:
+            rotateBlock(newBoard, 3, 0);
+            break;
+        case 3:
+            rotateBlock(newBoard, 3, 3);
+            break;
+        case 4:
+            flipHorizontal(newBoard, 0, 0);
+            break;
+        case 5:
+            flipHorizontal(newBoard, 3, 0);
+            break;
+        case 6:
+            flipVertical(newBoard, 0, 0);
+            break;
+        case 7:
+            flipVertical(newBoard, 0, 3);
+            break;
+    }
+
+    int newEmptyCells[8][2];
+    fillEmptyCells(newBoard, newEmptyCells);
+
+    bool found = false;
+    for (int i = 0; i < 8; ++i) {
+        if (emptyCells[i][0] == newEmptyCells[i][0] && emptyCells[i][1] == newEmptyCells[i][1]) {
+            found = true;
+            break;
+        }
+    }
+
+    if (found) {
+        solveSudoku(newBoard, 0, 0);
+        copyBoard(board, newBoard);
+    }
+
+    findSymmetry(board, emptyCells, symmCount, symmIndex + 1);
+}
+
+void solveSudokuWithSymmetries(int board[][5]) {
+    int emptyCells[8][2];
+    fillEmptyCells(board, emptyCells);
+
+    if (emptyCells[0][0] == 0 || emptyCells[0][1] == 0) {
+        solveSudoku(board, 0, 0);
+        return;
+    }
+
+    findSymmetry(board, emptyCells, 8, 0);
+}
+
+int main() {
+    int testCases[][5][5] = {
+        {{0, 8, 0, 0, 5}, {6, 8, 0, 9, 5}, {0, 0, 0, 9, 0}, {6, 0, 0, 0, 0}, {0, 0, 0, 9, 0}},
+        {{1, 0, 0, 0}, {0, 8, 0, 0}, {0, 8, 0, 0}, {0, 0, 2, 6}},
+        {{0, 4, 0, 0, 6, 0}, {0, 4, 8, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 4, 0, 5, 0, 0}, {0, 0, 8, 5, 0, 7}, {0, 0, 0, 0, 0, 0}}
+    };
+
+    for (int i = 0; i < 3; ++i) {
+        cout << "Test Case #" << i + 1 << endl;
+        printBoard(testCases[i]);
+        solveSudokuWithSymmetries(testCases[i]);
+        printBoard(testCases[i]);
+        cout << endl;
+    }
+
+    return 0;
+}
+
+
+###########################################################
+Result:
+solution: [[0, 0, 0, 0], [7, 0, 0, 0], [7, 0, 3, 5], [7, 2, 3, 5]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.03088803088803089
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

@@ -1,0 +1,198 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [[0, 0, 0, 0, 0], [0, 7, 0, 0, 0], [0, 7, 0, 0, 0], [0, 7, 1, 0, 0], [0, 0, 1, 0, 0]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 7, 0, 0, 0], [0, 7, 1, 0, 0], [0, 7, 1, 0, 0]]
+
+Example_2:
+input: [[4, 0, 0, 0, 0], [4, 0, 0, 8, 0], [0, 0, 0, 8, 0], [0, 0, 0, 0, 0], [4, 0, 0, 8, 0]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 0, 0, 8, 0], [4, 0, 0, 8, 0], [4, 0, 0, 8, 0]]
+
+Example_3:
+input: [[4, 0, 0, 0, 0], [0, 0, 0, 9, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 1], [4, 3, 8, 9, 1]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 0, 0, 9, 1], [4, 3, 8, 9, 1]]
+
+Test case:
+input: [[0, 3, 7, 4, 0, 0], [0, 3, 0, 0, 2, 0], [0, 3, 7, 4, 0, 0], [9, 0, 0, 4, 2, 0], [9, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 6]]
+
+###########################################################
+Sample Outputs:
+output: [[0, 3, 7, 4, 0, 0], [0, 3, 7, 4, 2, 0], [0, 3, 7, 4, 2, 0], [9, 0, 0, 4, 2, 0], [9, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 6]]
+*/
+
+#include <iostream>
+using namespace std;
+
+void printArray(int arr[][5]) {
+    for (int i = 0; i < 5; ++i) {
+        cout << "[";
+        for (int j = 0; j < 5; ++j) {
+            if (j!= 0) cout << ", ";
+            cout << arr[i][j];
+        }
+        cout << "]" << endl;
+    }
+}
+
+void fillUp(int arr[][5], int startRow, int endRow, int col) {
+    for (int row = startRow; row <= endRow; ++row) {
+        arr[row][col] = 7;
+    }
+}
+
+void fillDown(int arr[][5], int startRow, int endRow, int col) {
+    for (int row = startRow; row >= endRow; --row) {
+        arr[row][col] = 7;
+    }
+}
+
+void fillLeft(int arr[][5], int startCol, int endCol, int row) {
+    for (int col = startCol; col <= endCol; ++col) {
+        arr[row][col] = 7;
+    }
+}
+
+void fillRight(int arr[][5], int startCol, int endCol, int row) {
+    for (int col = startCol; col >= endCol; --col) {
+        arr[row][col] = 7;
+    }
+}
+
+void solve(int arr[][5]) {
+    // find first non-zero element and its column index
+    bool foundFirstNonZero = false;
+    int firstNonZeroRow = -1, firstNonZeroCol = -1;
+    for (int row = 0; row < 5 &&!foundFirstNonZero; ++row) {
+        for (int col = 0; col < 5; ++col) {
+            if (arr[row][col] > 0) {
+                foundFirstNonZero = true;
+                firstNonZeroRow = row;
+                firstNonZeroCol = col;
+                break;
+            }
+        }
+    }
+
+    // no non-zero elements in the array
+    if (!foundFirstNonZero) return;
+
+    // check all rows above current one
+    for (int row = 0; row < firstNonZeroRow; ++row) {
+        if (arr[row][firstNonZeroCol] == 0) {
+            fillUp(arr, row, firstNonZeroRow - 1, firstNonZeroCol);
+        } else if (arr[row][firstNonZeroCol]!= 7) {
+            fillUp(arr, row, firstNonZeroRow - 1, firstNonZeroCol);
+            fillDown(arr, firstNonZeroRow + 1, 4, firstNonZeroCol);
+        }
+    }
+
+    // check all columns to the left of current one
+    for (int col = 0; col < firstNonZeroCol; ++col) {
+        if (arr[firstNonZeroRow][col] == 0) {
+            fillLeft(arr, col, firstNonZeroCol - 1, firstNonZeroRow);
+        } else if (arr[firstNonZeroRow][col]!= 7) {
+            fillLeft(arr, col, firstNonZeroCol - 1, firstNonZeroRow);
+            fillRight(arr, firstNonZeroCol + 1, 4, firstNonZeroRow);
+        }
+    }
+
+    // check all rows below current one
+    for (int row = firstNonZeroRow + 1; row < 5; ++row) {
+        if (arr[row][firstNonZeroCol] == 0) {
+            fillDown(arr, firstNonZeroRow + 1, row, firstNonZeroCol);
+        } else if (arr[row][firstNonZeroCol]!= 7) {
+            fillDown(arr, firstNonZeroRow + 1, row, firstNonZeroCol);
+            fillUp(arr, 0, firstNonZeroRow - 1, firstNonZeroCol);
+        }
+    }
+
+    // check all columns to the right of current one
+    for (int col = firstNonZeroCol + 1; col < 5; ++col) {
+        if (arr[firstNonZeroRow][col] == 0) {
+            fillRight(arr, firstNonZeroCol + 1, col, firstNonZeroRow);
+        } else if (arr[firstNonZeroRow][col]!= 7) {
+            fillRight(arr, firstNonZeroCol + 1, col, firstNonZeroRow);
+            fillLeft(arr, 0, firstNonZeroCol - 1, firstNonZeroRow);
+        }
+    }
+}
+
+int main() {
+    int testCases = 3;
+    int inputArrs[][5][5] = {{
+                                 {0, 0, 0, 0, 0},
+                                 {0, 7, 0, 0, 0},
+                                 {0, 7, 0, 0, 0},
+                                 {0, 7, 1, 0, 0},
+                                 {0, 0, 1, 0, 0}
+                             },
+                             {
+                                 {4, 0, 0, 0, 0},
+                                 {4, 0, 0, 8, 0},
+                                 {0, 0, 0, 8, 0},
+                                 {0, 0, 0, 0, 0},
+                                 {4, 0, 0, 8, 0}
+                             },
+                             {
+                                 {4, 0, 0, 0, 0},
+                                 {0, 0, 0, 9, 0},
+                                 {0, 0, 0, 0, 0},
+                                 {0, 0, 0, 0, 1},
+                                 {4, 3, 8, 9, 1}
+                             }};
+
+    int outputArrs[][5][5] = {{
+                                   {0, 0, 0, 0, 0},
+                                   {0, 0, 0, 0, 0},
+                                   {0, 7, 0, 0, 0},
+                                   {0, 7, 1, 0, 0},
+                                   {0, 7, 1, 0, 0}
+                               },
+                               {
+                                   {0, 0, 0, 0, 0},
+                                   {0, 0, 0, 0, 0},
+                                   {4, 0, 0, 8, 0},
+                                   {4, 0, 0, 8, 0},
+                                   {4, 0, 0, 8, 0}
+                               },
+                               {
+                                   {0, 0, 0, 0, 0},
+                                   {0, 0, 0, 0, 0},
+                                   {0, 0, 0, 0, 0},
+                                   {4, 0, 0, 9, 1},
+                                   {4, 3, 8, 9, 1}
+                               }};
+
+    for (int t = 0; t < testCases; ++t) {
+        solve(inputArrs[t]);
+        cout << "Input:" << endl;
+        printArray(inputArrs[t]);
+        cout << "Output:" << endl;
+        printArray(outputArrs[t]);
+        cout << endl;
+    }
+
+    return 0;
+}
+
+
+###########################################################
+Result:
+solution: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 3, 0, 4, 0, 0], [9, 3, 7, 4, 2, 0], [9, 3, 7, 4, 2, 6]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.02888086642599278
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

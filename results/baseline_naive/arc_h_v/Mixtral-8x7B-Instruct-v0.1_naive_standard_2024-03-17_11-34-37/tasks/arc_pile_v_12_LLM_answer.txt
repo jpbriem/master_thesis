@@ -1,0 +1,120 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [[0, 0, 7, 2, 0, 0], [0, 0, 0, 2, 6, 1], [9, 8, 0, 0, 0, 1], [9, 8, 0, 0, 6, 0], [0, 0, 0, 2, 0, 0], [9, 0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [9, 0, 0, 2, 0, 0], [9, 8, 0, 2, 6, 1], [9, 8, 7, 2, 6, 1]]
+
+Example_2:
+input: [[0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 4, 0], [8, 0, 0, 4, 0], [0, 0, 0, 4, 0]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 4, 0], [0, 0, 1, 4, 0], [8, 0, 1, 4, 0]]
+
+Example_3:
+input: [[0, 0, 5, 0, 0], [0, 0, 0, 0, 1], [0, 0, 5, 0, 1], [0, 0, 5, 0, 0], [0, 0, 0, 0, 0]]
+output: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 5, 0, 0], [0, 0, 5, 0, 1], [0, 0, 5, 0, 1]]
+
+Test case:
+input: [[0, 0, 4, 0, 0, 0], [3, 0, 0, 0, 0, 0], [0, 9, 0, 5, 0, 8], [3, 9, 0, 0, 7, 0], [0, 0, 4, 5, 7, 8], [3, 0, 4, 0, 7, 8]]
+
+###########################################################
+Sample Outputs:
+output: [[0, 0, 0, 0, 0, 0], [3, 0, 0, 0, 0, 0], [0, 9, 0, 5, 0, 8], [3, 9, 0, 0, 7, 0], [0, 0, 4, 5, 7, 8], [3, 0, 4, 0, 7, 8]]
+*/
+
+#include <iostream>
+using namespace std;
+
+void printBoard(int board[][6]) {
+    for (int i = 0; i < 6; ++i) {
+        cout << "[";
+        for (int j = 0; j < 6; ++j) {
+            if (board[i][j] == -1) continue;
+            cout << " " << board[i][j];
+        }
+        cout << " ]" << endl;
+    }
+}
+
+bool isValidMove(int board[][6], int row, int col) {
+    // check out of bound
+    if (row >= 6 || col >= 6) return false;
+
+    // check cell value
+    if (board[row][col]!= 0 && board[row][col]!= -1) return false;
+
+    // check left and up cells
+    if (col > 0 && board[row][col-1] == -1) return false;
+    if (row > 0 && board[row-1][col] == -1) return false;
+
+    return true;
+}
+
+bool fillCells(int board[][6], int& numFilled, int targetNum) {
+    bool filled = false;
+    for (int row = 0; row < 6; ++row) {
+        for (int col = 0; col < 6; ++col) {
+            if (!isValidMove(board, row, col)) continue;
+
+            board[row][col] = targetNum;
+            numFilled++;
+            filled = true;
+
+            if (numFilled == targetNum) return true;
+
+            if (fillCells(board, numFilled, targetNum)) return true;
+
+            numFilled--;
+            board[row][col] = 0;
+        }
+    }
+
+    return false;
+}
+
+bool solveSudoku(int board[][6]) {
+    int numFilled = 0;
+    for (int row = 0; row < 6; ++row) {
+        for (int col = 0; col < 6; ++col) {
+            if (board[row][col]!= -1) numFilled++;
+        }
+    }
+
+    if (numFilled == 36) return true;
+
+    for (int targetNum = 1; targetNum <= 6; ++targetNum) {
+        if (fillCells(board, numFilled, targetNum)) return true;
+    }
+
+    return false;
+}
+
+int main() {
+    int testCase[][6] = {{0, 0, 7, 2, 0, 0}, {0, 0, 0, 2, 6, 1}, {9, 8, 0, 0, 0, 1}, {9, 8, 0, 0, 6, 0}, {0, 0, 0, 2, 0, 0}, {9, 0, 0, 0, 0, 0}};
+    printBoard(testCase);
+    cout << "\n\n";
+    solveSudoku(testCase);
+    printBoard(testCase);
+
+    return 0;
+}
+
+
+###########################################################
+Result:
+solution: [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [3, 0, 4, 0, 7, 8], [3, 9, 4, 5, 7, 8], [3, 9, 4, 5, 7, 8]]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.03137254901960784
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

@@ -1,0 +1,115 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]
+output: [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0]
+
+Example_2:
+input: [0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1]
+output: [0, 3, 3, 3, 3, 3, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1]
+
+Example_3:
+input: [0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 1, 1, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+
+Test case:
+input: [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 3, 3, 0, 0, 1, 1, 1, 1, 1, 0, 3, 3, 3, 0, 0, 0, 0]
+*/
+
+public class Solution {
+    public int[] countSmaller(int[] nums) {
+        if (nums == null || nums.length == 0) return new int[0];
+        int len = nums.length;
+        int[] res = new int[len];
+        TreeNode root = buildTree(nums);
+        for (int i = len - 1; i >= 0; i--) {
+            res[i] = getRank(root, nums[i], Integer.MIN_VALUE, Integer.MAX_VALUE);
+            update(root, nums[i]);
+        }
+        return res;
+    }
+
+    private void update(TreeNode node, int val) {
+        if (node == null) return;
+        if (val < node.val) swap(node.left, node.right);
+        if (node.val == val) {
+            node.count++;
+        } else {
+            node.lessThanLeft = update(node.lessThanLeft, val);
+            node.moreThanRight = update(node.moreThanRight, val);
+            node.val = val;
+            node.count = node.lessThanLeft.count + node.moreThanRight.count + 1;
+        }
+    }
+
+    private int getRank(TreeNode node, int target, int low, int high) {
+        if (low > target || high < target) return 0;
+        if (target <= low && high <= target) return node.lessThanLeft.count + node.count;
+        return getRank(node.lessThanLeft, target, low, Math.min(high, node.val)) +
+               getRank(node.moreThanRight, target, Math.max(low, node.val), high);
+    }
+
+    private TreeNode buildTree(int[] arr) {
+        List<Integer> list = new ArrayList<>();
+        for (int n : arr) list.add(n);
+        Collections.sort(list);
+        return buildTreeHelper(list, 0, list.size() - 1);
+    }
+
+    private TreeNode buildTreeHelper(List<Integer> list, int left, int right) {
+        if (left > right) return null;
+        int mid = left + (right - left) / 2;
+        TreeNode node = new TreeNode();
+        node.val = list.get(mid);
+        node.lessThanLeft = buildTreeHelper(list, left, mid - 1);
+        node.moreThanRight = buildTreeHelper(list, mid + 1, right);
+        return node;
+    }
+
+    private void swap(TreeNode a, TreeNode b) {
+        if (a!= null && b!= null) {
+            int tmp = a.val;
+            a.val = b.val;
+            b.val = tmp;
+        }
+    }
+}
+
+class TreeNode {
+    int val;
+    int count;
+    TreeNode lessThanLeft;
+    TreeNode moreThanRight;
+
+    TreeNode() {}
+
+    TreeNode(int _val) {
+        this.val = _val;
+        this.count = 1;
+    }
+}
+
+
+###########################################################
+Result:
+solution: [0, 0, 0, 3, 3, 3, 3, 3, 3, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0]
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.27236315086782376
+
+cat_success_cnt: 8
+
+cat_success_rate: 0.16326530612244897
+

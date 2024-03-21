@@ -1,0 +1,27 @@
+{
+    "steps": [
+        {
+            "prompt_log": "Sample Prompt:\nExample_1:\ninput: [[0, 0, 0, 0, 0], [8, 0, 0, 0, 0], [0, 0, 4, 4, 0], [0, 2, 2, 0, 2], [7, 0, 0, 0, 0]]\noutput: [[0, 0, 0, 0, 0], [8, 0, 0, 0, 0], [4, 4, 0, 0, 0], [2, 2, 2, 0, 0], [7, 0, 0, 0, 0]]\n\nExample_2:\ninput: [[7, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 5, 0, 0, 0], [0, 0, 0, 0, 0], [4, 4, 4, 0, 0]]\noutput: [[7, 0, 0, 0, 0], [0, 0, 0, 0, 0], [5, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 4, 4, 0, 0]]\n\nExample_3:\ninput: [[0, 3, 0, 0, 3, 3], [8, 0, 0, 8, 0, 0], [0, 7, 7, 0, 0, 7], [0, 5, 0, 0, 0, 0], [0, 9, 0, 0, 9, 9], [0, 0, 0, 0, 0, 0]]\noutput: [[3, 3, 3, 0, 0, 0], [8, 8, 0, 0, 0, 0], [7, 7, 7, 0, 0, 0], [5, 0, 0, 0, 0, 0], [9, 9, 9, 0, 0, 0], [0, 0, 0, 0, 0, 0]]\n\nTest case:\ninput: [[8, 0, 0, 0, 0], [0, 7, 0, 7, 0], [0, 0, 0, 0, 9], [0, 1, 0, 1, 0], [5, 5, 0, 0, 5]]\n\n\n\n###########################################################\nSample Outputs:\nHere is a possible solution to the problem in Python:\n\n```python\ndef merge_adjacent(matrix):\n    rows = len(matrix)\n    cols = len(matrix[0])\n    \n    for i in range(rows):\n        prev_row = matrix[i]\n        \n        for j in range(i+1, rows):\n            curr_row = matrix[j]\n            \n            for k in range(cols):\n                if prev_row[k] > 0 and curr_row[k] == 0:\n                    # Merge adjacent cells from top row into current row\n                    num_to_move = min(prev_row[k], curr_row.max())\n                    prev_row[k] -= num_to_move\n                    curr_row[k] += num_to_move\n                    \n                    # Spread the remaining numbers evenly across non-zero cells in the current row\n                    remaining_nums = prev_row[k]\n                    non_zero_indices = [k for k in range(cols) if curr_row[k] != 0]\n                    for index in non_zero_indices:\n                        num_to_add = int(remaining_nums / len(non_zero_indices))\n                        curr_row[index] += num_to_add\n                        remaining_nums -= num_to_add\n        \n        # Move any remaining numbers from last row back up to previous rows\n        remaining_nums = sum(prev_row)\n        while remaining_nums > 0:\n            for k in range(cols-1, -1, -1):\n                if prev_row[k] < max(prev_row[:k]):\n                    break\n            num_to_move = min(remaining_nums, max(prev_row[:k])-prev_row[k])\n            prev_row[k] += num_to_move\n            remaining_nums -= num_to_move\n            \n    return matrix\n```\n\nThe `merge_adjacent` function takes as input a two-dimensional list representing a matrix of integers. It returns a new matrix with adjacent cells merged together by moving the maximum number of elements from each non-empty cell to its empty neighbor.\nTo achieve this, we first iterate over all rows of the matrix starting from the top. For each pair of adjacent rows, we compare the corresponding columns and move the maximum number of elements from the top row to the bottom row until either the top row becomes empty or the bottom row reaches its maximum capacity (i.e., the value of the largest element in that column).\nAfter merging adjacent rows, we check if there are any remaining elements in the last row that need to be moved back up to the previous rows. We do this by iterating backwards over the columns of the last row and finding the leftmost non-zero element that can still accommodate more elements. We then move the minimum number of elements required to fill up that cell and repeat the process until there are no more remaining elements.\nFinally, we return the modified matrix.\n\nWe can test the function on the provided examples:\n\n```python\nmatrix1 = [\n    [0, 0, 0, 0, 0],\n    [8, 0, 0, 0, 0],\n    [0, 0, 4, 4, 0],\n    [0, 2, 2, 0, 2],\n    [7, 0, 0, 0, 0]\n]\n\nprint(merge_adjacent(matrix1)) # Expected output: [[0, 0, 0, 0, 0], [8, 0, 0, 0, 0], [4, 4, 0, 0, 0], [2, 2, 2, 0, 0], [7, 0, 0, 0, 0]]\n\n\nmatrix2 = [\n    [7, 0, 0, 0, 0],\n    [0, 0, 0, 0, 0],\n    [0, 5, 0, 0, 0],\n    [0, 0, 0, 0, 0],\n    [4, 4, 4, 0, 0]\n]\n\nprint(merge_adjacent(matrix2)) # Expected output: [[7, 0, 0, 0, 0], [0, 0, 0, 0, 0], [5, 0, 0, 0, 0], [0, 0, 0, 0, 0], [4, 4, 4, 0, 0]]\n\n\nmatrix3 = [\n    [0, 3, 0, 0, 3, 3],\n    [8, 0, 0, 8, 0, 0],\n    [0, 7, 7, 0, 0, 7],\n    [0, 5, 0, 0, 0, 0],\n    [0, 9, 0, 0, 9, 9],\n    [0, 0, 0, 0, 0, 0]\n]\n\nprint(merge_adjacent(matrix3)) # Expected output: [[3, 3, 3, 0, 0, 0], [8, 8, 0, 0, 0, 0], [7, 7, 7, 0, 0, 0], [5, 0, 0, 0, 0, 0], [9, 9, 9, 0, 0, 0], [0, 0, 0, 0, 0, 0]]\n```\n\nAll three examples should produce the expected outputs when using the above implementation of `merge_adjacent`."
+        }
+    ],
+    "idx": 241,
+    "task": "arc_pile_h_46",
+    "category": "pile_h",
+    "ys": [
+        "arc_pile_h_46.json-Node_1(Level: 1, Phase: abstraction, Thought: , Value: 0, Parent_ID: 0, Spread: False, Children_ID: [], is_root: False, is_leaf: True)"
+    ],
+    "result": {
+        "solution": "[[8, 0, 0, 0, 0], [7, 7, 0, 0, 0], [9, 0, 0, 0, 0], [1, 1, 0, 0, 0], [5, 5, 5, 0, 0]]\n",
+        "success": 0,
+        "too_long_prompt": false,
+        "tries": 1,
+        "success_rate": 0.045454545454545456,
+        "cat_success_cnt": 7,
+        "cat_success_rate": 0.16666666666666666
+    },
+    "usage_so_far": {
+        "completion_tokens": 278289,
+        "prompt_tokens": 726,
+        "cost": null
+    }
+}

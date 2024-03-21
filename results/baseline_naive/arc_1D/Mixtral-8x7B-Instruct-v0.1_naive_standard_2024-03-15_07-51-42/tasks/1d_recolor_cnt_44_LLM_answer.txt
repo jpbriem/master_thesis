@@ -1,0 +1,115 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [0, 0, 0, 2, 2, 0, 0, 0, 2, 0, 0, 0, 2, 2, 2, 0, 0, 0, 2, 2, 0, 0, 0]
+output: [0, 0, 0, 3, 3, 0, 0, 0, 7, 0, 0, 0, 1, 1, 1, 0, 0, 0, 3, 3, 0, 0, 0]
+
+Example_2:
+input: [0, 2, 0, 0, 0, 2, 2, 2, 0, 2, 2, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0]
+output: [0, 7, 0, 0, 0, 1, 1, 1, 0, 3, 3, 0, 7, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0]
+
+Example_3:
+input: [0, 0, 2, 2, 0, 0, 0, 2, 2, 2, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 2, 0, 0]
+output: [0, 0, 3, 3, 0, 0, 0, 1, 1, 1, 0, 0, 0, 7, 0, 0, 7, 0, 0, 0, 7, 0, 0]
+
+Test case:
+input: [0, 0, 2, 2, 0, 2, 2, 2, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 2, 2, 0, 0, 0]
+
+###########################################################
+Sample Outputs:
+output: [0, 0, 3, 3, 0, 5, 5, 5, 0, 0, 7, 0, 0, 9, 9, 0, 0, 11, 11, 11, 0, 0, 0]
+*/
+
+#include <iostream>
+using namespace std;
+
+void printArray(int arr[], int n) {
+    for (int i = 0; i < n; i++) {
+        cout << arr[i] << " ";
+    }
+    cout << endl;
+}
+
+// Function to find the number of consecutive zeros and non-zeros in an array.
+pair<int, int> countConsecutiveZerosAndNonZero(int arr[], int n) {
+    pair<int, int> p;
+    int zeroCount = 0, nonZeroCount = 0;
+
+    // Loop through the array and increment the counter accordingly.
+    for (int i = 0; i < n; i++) {
+        if (arr[i] == 0) {
+            zeroCount++;
+        } else {
+            nonZeroCount++;
+        }
+    }
+
+    // Return a pair containing the counts of zeros and non-zeros.
+    p = make_pair(zeroCount, nonZeroCount);
+    return p;
+}
+
+// Function to replace each group of zeros with its length followed by the sum of elements in the next group of non-zeros.
+void replaceGroupsWithSum(int arr[], int n) {
+    pair<int, int> p;
+    int tempArr[n];
+
+    // Copy the original array into a temporary array.
+    for (int i = 0; i < n; i++) {
+        tempArr[i] = arr[i];
+    }
+
+    // Find the lengths of groups of zeros and non-zeros.
+    p = countConsecutiveZerosAndNonZero(tempArr, n);
+
+    // Replace each group of zeros with its length followed by the sum of elements in the next group of non-zeros.
+    int j = 0, k = 0, lenZeroGroup = p.first, lenNonZeroGroup = p.second;
+
+    while (k < n) {
+        if (lenZeroGroup > 0 && tempArr[j] == 0) {
+            arr[k++] = lenZeroGroup;
+            lenZeroGroup--;
+            j++;
+        } else if (lenNonZeroGroup > 0 && tempArr[j]!= 0) {
+            arr[k++] = -tempArr[j++];
+            lenNonZeroGroup--;
+        } else {
+            p = countConsecutiveZerosAndNonZero(&tempArr[j], n - j);
+            lenZeroGroup = p.first;
+            lenNonZeroGroup = p.second;
+            j += p.first + p.second;
+        }
+    }
+}
+
+// Driver code.
+int main() {
+    int input[] = {0, 0, 2, 2, 0, 2, 2, 2, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 2, 2, 0, 0, 0};
+    int n = sizeof(input)/sizeof(input[0]);
+
+    replaceGroupsWithSum(input, n);
+    printArray(input, n);
+
+    return 0;
+}
+
+
+###########################################################
+Result:
+solution: [0, 0, 3, 3, 0, 1, 1, 1, 0, 0, 7, 0, 0, 3, 3, 0, 0, 1, 1, 1, 0, 0, 0]
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.2582278481012658
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

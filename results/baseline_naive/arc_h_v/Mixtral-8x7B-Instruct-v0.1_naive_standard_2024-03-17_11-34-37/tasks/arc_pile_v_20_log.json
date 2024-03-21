@@ -1,0 +1,27 @@
+{
+    "steps": [
+        {
+            "prompt_log": "Sample Prompt:\nExample_1:\ninput: [[7, 0, 0, 9], [0, 0, 2, 9], [0, 0, 0, 9], [0, 0, 2, 0]]\noutput: [[0, 0, 0, 0], [0, 0, 0, 9], [0, 0, 2, 9], [7, 0, 2, 9]]\n\nExample_2:\ninput: [[0, 4, 0, 0], [0, 0, 0, 0], [0, 4, 0, 0], [0, 4, 0, 0]]\noutput: [[0, 0, 0, 0], [0, 4, 0, 0], [0, 4, 0, 0], [0, 4, 0, 0]]\n\nExample_3:\ninput: [[0, 2, 0, 0, 4], [8, 0, 0, 9, 4], [8, 2, 0, 9, 4], [8, 0, 0, 0, 0], [0, 0, 0, 9, 0]]\noutput: [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [8, 0, 0, 9, 4], [8, 2, 0, 9, 4], [8, 2, 0, 9, 4]]\n\nTest case:\ninput: [[7, 0, 2, 5, 0], [0, 4, 0, 0, 0], [7, 4, 2, 0, 6], [0, 0, 0, 5, 0], [0, 4, 0, 5, 6]]\n\n###########################################################\nSample Outputs:\noutput: [[0, 0, 2, 5, 0], [0, 4, 0, 0, 0], [7, 4, 2, 0, 6], [0, 0, 0, 5, 0], [0, 4, 0, 5, 6]]\n*/\n\n#include <iostream>\nusing namespace std;\n\nvoid printBoard(int board[][5]) {\n    for (int i = 0; i < 5; ++i) {\n        cout << \"[\";\n        for (int j = 0; j < 5; ++j) {\n            if (board[i][j] == -1) continue;\n            cout << \" \" << board[i][j];\n        }\n        cout << \" ]\" << endl;\n    }\n}\n\nbool isValid(int board[][5], int row, int col, int num) {\n    // check the same column\n    for (int i = 0; i < 5; ++i) {\n        if (board[i][col] == num) return false;\n    }\n\n    // check the same row\n    for (int i = 0; i < 5; ++i) {\n        if (board[row][i] == num) return false;\n    }\n\n    // check the square\n    int startRow = row / 3 * 3;\n    int startCol = col / 3 * 3;\n    for (int i = startRow; i < startRow + 3; ++i) {\n        for (int j = startCol; j < startCol + 3; ++j) {\n            if (board[i][j] == num) return false;\n        }\n    }\n\n    return true;\n}\n\nbool solveSudoku(int board[][5], int row, int col) {\n    if (row >= 5 && col >= 5) return true;\n\n    if (col >= 5) {\n        row++;\n        col = 0;\n    }\n\n    if (board[row][col]!= 0) return solveSudoku(board, row, col + 1);\n\n    for (int num = 1; num <= 9; ++num) {\n        if (!isValid(board, row, col, num)) continue;\n\n        board[row][col] = num;\n        bool solved = solveSudoku(board, row, col + 1);\n        if (solved) return true;\n    }\n\n    board[row][col] = 0;\n    return false;\n}\n\nvoid setZeroes(int** matrix, int rows, int cols) {\n    int board[5][5] = {};\n    for (int i = 0; i < rows; ++i) {\n        for (int j = 0; j < cols; ++j) {\n            board[i/3][j/3] += matrix[i][j];\n            board[i][j] += matrix[i][j];\n        }\n    }\n\n    solveSudoku(board, 0, 0);\n\n    for (int i = 0; i < rows; ++i) {\n        for (int j = 0; j < cols; ++j) {\n            matrix[i][j] = board[i/3][j/3] % 10;\n            board[i/3][j/3] -= matrix[i][j];\n            board[i][j] -= matrix[i][j];\n        }\n    }\n}\n\nint main() {\n    int matrix1[][5] = {{7, 0, 0, 9}, {0, 0, 2, 9}, {0, 0, 0, 9}, {0, 0, 2, 0}};\n    int matrix2[][5] = {{0, 4, 0, 0}, {0, 0, 0, 0}, {0, 4, 0, 0}, {0, 4, 0, 0}};\n    int matrix3[][5] = {{0, 2, 0, 0, 4}, {8, 0, 0, 9, 4}, {8, 2, 0, 9, 4}, {8, 0, 0, 0, 0}, {0, 0, 0, 9, 0}};\n    int matrix4[][5] = {{7, 0, 2, 5, 0}, {0, 4, 0, 0, 0}, {7, 4, 2, 0, 6}, {0, 0, 0, 5, 0}, {0, 4, 0, 5, 6}};\n\n    int **matrixArr1 = new int*[5];\n    for (int i = 0; i < 5; ++i) {\n        matrixArr1[i] = new int[5];\n        memcpy(matrixArr1[i], matrix1[i], sizeof(int)*5);\n    }\n\n    int **matrixArr2 = new int*[5];\n    for (int i = 0; i < 5; ++i) {\n        matrixArr2[i] = new int[5];\n        memcpy(matrixArr2[i], matrix2[i], sizeof(int)*5);\n    }\n\n    int **matrixArr3 = new int*[5];\n    for (int i = 0; i < 5; ++i) {\n        matrixArr3[i] = new int[5];\n        memcpy(matrixArr3[i], matrix3[i], sizeof(int)*5);\n    }\n\n    int **matrixArr4 = new int*[5];\n    for (int i = 0; i < 5; ++i) {\n        matrixArr4[i] = new int[5];\n        memcpy(matrixArr4[i], matrix4[i], sizeof(int)*5);\n    }\n\n    setZeroes(matrixArr1, 5, 5);\n    printBoard(matrixArr1);\n\n    setZeroes(matrixArr2, 5, 5);\n    printBoard(matrixArr2);\n\n    setZeroes(matrixArr3, 5, 5);\n    printBoard(matrixArr3);\n\n    setZeroes(matrixArr4, 5, 5);\n    printBoard(matrixArr4);\n\n    delete [] matrixArr1;\n    delete [] matrixArr2;\n    delete [] matrixArr3;\n    delete [] matrixArr4;\n\n    return 0;\n}"
+        }
+    ],
+    "idx": 263,
+    "task": "arc_pile_v_20",
+    "category": "pile_v",
+    "ys": [
+        "arc_pile_v_20.json-Node_1(Level: 1, Phase: abstraction, Thought: , Value: 0, Parent_ID: 0, Spread: False, Children_ID: [], is_root: False, is_leaf: True)"
+    ],
+    "result": {
+        "solution": "[[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 4, 0, 5, 0], [7, 4, 2, 5, 6], [7, 4, 2, 5, 6]]\n",
+        "success": 0,
+        "too_long_prompt": false,
+        "tries": 1,
+        "success_rate": 0.030303030303030304,
+        "cat_success_cnt": 0,
+        "cat_success_rate": 0.0
+    },
+    "usage_so_far": {
+        "completion_tokens": 481086,
+        "prompt_tokens": 521397,
+        "cost": null
+    }
+}
