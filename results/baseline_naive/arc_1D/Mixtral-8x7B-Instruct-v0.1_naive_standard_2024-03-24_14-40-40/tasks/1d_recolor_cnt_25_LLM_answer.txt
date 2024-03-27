@@ -1,0 +1,95 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['a', 'a', 'e', 'e', 'e', 'a', 'a', 'e', 'e', 'a', 'a', 'e', 'a']
+output: ['a', 'a', 'g', 'g', 'g', 'a', 'a', 'c', 'c', 'a', 'a', 'i', 'a']
+
+Example_2:
+input: ['a', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'a', 'e', 'a', 'a']
+output: ['a', 'g', 'g', 'g', 'a', 'a', 'a', 'c', 'c', 'a', 'i', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'e', 'a', 'a', 'a', 'e', 'e', 'a', 'a', 'e', 'e', 'e']
+output: ['a', 'a', 'i', 'a', 'a', 'a', 'c', 'c', 'a', 'a', 'g', 'g', 'g']
+
+Test case:
+input: ['a', 'a', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a']
+
+###########################################################
+Sample Outputs:
+output: ['a', 'a', 'g', 'g', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a']
+*/
+
+// Solution 1:
+class Solution {
+public:
+    vector<char> findReplaceString(vector<char>& s, vector<int>& indices, vector<string>& sources, vector<string>& targets) {
+        int n = s.size();
+        vector<pair<int, pair<int, string>>> v; // <index, <start, target>>
+        for (int i = 0; i < indices.size(); ++i) {
+            if (s.substr(indices[i], sources[i].length()) == sources[i])
+                v.push_back({indices[i], {i, targets[i]}});
+        }
+        sort(v.begin(), v.end());
+        vector<char> res;
+        for (int i = 0; i < n; ++i) {
+            bool found = false;
+            for (auto &p : v) {
+                if (p.first == i) {
+                    res.push_back(p.second.second[i - p.first]);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) res.push_back(s[i]);
+        }
+        return res;
+    }
+};
+
+// Solution 2:
+class Solution {
+public:
+    vector<char> findReplaceString(vector<char>& s, vector<int>& indices, vector<string>& sources, vector<string>& targets) {
+        vector<tuple<bool, int, string>> v;
+        for (int i = 0; i < indices.size(); ++i) {
+            if (s.substr(indices[i], sources[i].length())!= sources[i]) continue;
+            v.emplace_back(true, i, targets[i]);
+        }
+        sort(v.begin(), v.end(), [](const auto& a, const auto& b){return get<1>(a) < get<1>(b);});
+        vector<char> res;
+        for (int i = 0; i < s.size(); ++i) {
+            bool found = false;
+            for (auto &t : v) {
+                if (get<1>(t) == i) {
+                    res.insert(res.end(), get<2>(t).begin(), get<2>(t).end());
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) res.push_back(s[i]);
+        }
+        return res;
+    }
+};
+
+
+###########################################################
+Result:
+solution: ['a', 'a', 'c', 'c', 'a', 'a', 'a', 'g', 'g', 'g', 'a', 'a', 'a']
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.2535760728218466
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.05263157894736842
+

@@ -81,7 +81,8 @@ def get_values(args, task, current_node, cache_value=True):
     # valuation
     for child in current_node.children:  # each partial output
         if child.LLM_answer in local_value_cache:  # avoid duplicate candidates
-            value = 0
+            value = -1
+            value_prompt = task.value_prompt_wrap(child, task.steps) #  call to save thought in node
             value_prompt = "No Valuation - Duplicate candidate"
         else:    
             value, value_prompt = get_value(args, task, child, cache_value=cache_value)

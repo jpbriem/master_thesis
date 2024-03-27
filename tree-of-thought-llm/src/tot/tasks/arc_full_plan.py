@@ -110,75 +110,48 @@ class ARCTask(Task):
         output_keys = [output_key] + [k for k in potential_keys if k != output_key]
         # change solution in np array
         solution_grid = grid_to_2D_nparray(solution)
-        is_success = objects_correct = False
+        is_success = False
         for output in outputs:
             output = output.LLM_answer
             try_cnt += 1 
             # if using object representation, check if objects are correct
-            try:
-                if self.args.input_representation == "objects" and "transformed_objects" in output_format and "test_case_output_dimension" in output_format and not objects_correct:
-                    if task_name not in self.object_representation_success: # TODO: works currently only if we have just one try
-                        self.object_representation_success[task_name] = 0
-                    if category not in self.object_representation_cat_success:
-                        self.object_representation_cat_success[category] = 0
-                        self.object_representation_cat_failures[category] = 0
-                    test_output_dimension = extract_json_value(output, output_format, "test_case_output_dimension")
-                    test_output_objects = extract_json_value(output, output_format, "transformed_objects")
-                    output_objects = extract_dicts_from_string(test_output_objects)
-                    grid = task_json["test"][0]["output"]
-                    gt_dimension = [len(grid), len(grid[0])]
-                    if CHANGE_REPRESENTATION:
-                        bg_color = NEW_REPRESENTATION[0]
-                    else:
-                        bg_color = 0
-                    gt_output_objects = find_objects(self.path.split("/")[-1], task_name, grid, bg_color)
-                    objects_correct = compare_object_lists(output_objects, gt_output_objects)
-                    print("objects:", objects_correct)
-                    dimension_correct = compare_dimensions(test_output_dimension, gt_dimension)
-                    print("dimension:", dimension_correct)
-                    objects_correct = objects_correct and dimension_correct
-            except:
-                pass
-            try:
-                # extract answer and check if correct
-                test_output_grid = extract_json_value(output, output_format, output_keys) 
-                if test_output_grid:
-                    test_output_grid = grid_to_2D_nparray(test_output_grid)
-                    is_success = np.array_equal(test_output_grid, solution_grid)
-                    if is_success:
-                        break     
-            except:
-                pass
-            # second, if not successful, check if solution string is in output string
-            print("Check if solution string is in output string")
-            #  remove second brackets for 1D ARC tasks
-            if solution_grid.shape[0] == 1:
-                solution = solution.strip()
-                if "[[" in solution[:2]:
-                    solution = solution[1:]
-                if "]]" in solution[-2:]:
-                    solution = solution[:-1]
-            is_success = re.sub(r'\s+', '', solution).strip() in re.sub(r'\s+', '', output).strip()
-            if is_success:
-                self.solved_tasks_str_comparison.append(task_name)
-                break     
+            if self.args.input_representation == "objects":
+                try:
+                    # extract answer and check if correct
+                    output_object_description = extract_json_value(output, output_format, output_keys) 
+                    test_output_grid = create_grid_from_objects(output_object_description, CHANGE_REPRESENTATION, NEW_REPRESENTATION, task=self.path.split("/")[-1])
+                    if test_output_grid:
+                        test_output_grid = grid_to_2D_nparray(test_output_grid)
+                        is_success = np.array_equal(test_output_grid, solution_grid)
+                        if is_success:
+                            break  
+                except:
+                    pass
+            else: 
+                try:
+                    # extract answer and check if correct
+                    test_output_grid = extract_json_value(output, output_format, output_keys) 
+                    if test_output_grid:
+                        test_output_grid = grid_to_2D_nparray(test_output_grid)
+                        is_success = np.array_equal(test_output_grid, solution_grid)
+                        if is_success:
+                            break     
+                except:
+                    pass
+                # second, if not successful, check if solution string is in output string
+                print("Check if solution string is in output string")
+                #  remove second brackets for 1D ARC tasks
+                if solution_grid.shape[0] == 1:
+                    solution = solution.strip()
+                    if "[[" in solution[:2]:
+                        solution = solution[1:]
+                    if "]]" in solution[-2:]:
+                        solution = solution[:-1]
+                is_success = re.sub(r'\s+', '', solution).strip() in re.sub(r'\s+', '', output).strip()
+                if is_success:
+                    self.solved_tasks_str_comparison.append(task_name)
+                    break     
         
-        # log object repres. success
-        object_info = None
-        if self.args.input_representation == "objects":
-            self.object_representation_success[task_name] += objects_correct    
-            if self.object_representation_success[task_name] == 1:
-                self.object_representation_success_cnt += 1
-                self.object_representation_cat_success[category] += 1
-            else:
-                self.object_representation_cat_failures[category] += 1
-            if self.object_representation_success[task_name] > 0:
-                self.solved_tasks_object_representation.append((task_name, self.object_representation_success[task_name]))
-            n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
-            n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
-            object_info = {'success': self.object_representation_success[task_name], 'success_rate': self.object_representation_success_cnt / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.object_representation_cat_success[category], 'cat_success_rate': self.object_representation_cat_success[category] / (self.object_representation_cat_success[category] + self.object_representation_cat_failures[category]) if self.object_representation_cat_success[category] + self.object_representation_cat_failures[category] > 0 else 0}
-
-
         # log the success if not revision
         if is_revision:
             node.thought = test_output_grid.tolist()
@@ -197,8 +170,6 @@ class ARCTask(Task):
             n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
             n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
             info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': False, 'tries': try_cnt, 'success_rate': self.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
-            if object_info:
-                info.update({"object_info": object_info})
         return info
     
     def test_output_naive(self, idx: int=0, outputs: list=[""], prompt_modules: dict=None, dataset: str="arc"):

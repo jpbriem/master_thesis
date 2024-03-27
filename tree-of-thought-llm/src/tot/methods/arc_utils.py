@@ -778,7 +778,78 @@ def compare_dimensions(test_output_dimension, gt_dimension):
         if test_output_dimension == gt_dimension:
             return True 
     return False
+
+# create grid from object description
+def create_grid_from_objects(output_object_description, CHANGE_REPRESENTATION, NEW_REPRESENTATION, task):
+    if ("test_case_output_dimension" not in output_object_description) | ("transformed_objects" not in output_object_description):
+        return None
+    try:
+        test_output_dimension = output_object_description["test_case_output_dimension"]
+        test_output_objects = output_object_description["transformed_objects"]
+        output_objects = extract_dicts_from_string(test_output_objects)
     
+        if isinstance(test_output_dimension, str):
+            array_start = test_output_dimension.find("[")
+            array_end = test_output_dimension.rfind("]")
+            test_output_dimension = test_output_dimension[array_start:array_end+1] 
+            test_output_dimension = ast.literal_eval(test_output_dimension)
+
+                
+        # Initialize the grid
+        rows = int(test_output_dimension[0])
+        cols = int(test_output_dimension[1])
+        if CHANGE_REPRESENTATION:
+            grid = [[NEW_REPRESENTATION[0] for _ in range(cols)] for _ in range(rows)]
+        else:
+            grid = [[0 for _ in range(cols)] for _ in range(rows)]
+
+        if task == "arc_1D":
+            # Place objects on the grid
+            for obj in output_objects:
+                color = None
+                start = None
+                end = None
+                coordinates = None
+                if "color" in obj:
+                    color = obj["color"]
+                if "start_index" in obj:
+                    start = obj["start_index"]
+                if "end_index" in obj:
+                    end = obj["end_index"]
+                if color is not None and start is not None and end is not None:
+                    for i in range(start, end + 1):
+                        grid[0][i] = color
+                if "coordinates" in obj:
+                    coordinates = obj["coordinates"]
+                if color is not None and coordinates is not None:                
+                    for i, coord in enumerate(coordinates):
+                        row = coord[0]
+                        col = coord[1]
+                        if isinstance(color, list):
+                            grid[row][col] = color[i]
+                        else:
+                            grid[row][col] = color
+            return grid
+        else:
+            # Place objects on the grid
+            for obj in output_objects:
+                color = None
+                coordinates = None
+                if "color" in obj:
+                    color = obj["color"]
+                if "coordinates" in obj:
+                    coordinates = obj["coordinates"]
+                if color is not None and coordinates is not None:
+                    for i, coord in enumerate(coordinates):
+                        row = coord[0]
+                        col = coord[1]
+                        if isinstance(color, list):
+                            grid[row][col] = color[i]
+                        else:
+                            grid[row][col] = color
+            return grid      
+    except:
+        return None 
 # get context out of json
 def get_context(task_name, task_json, delimiter, with_intro=True, use_object_representation=None):
     if with_intro:
@@ -1119,7 +1190,7 @@ def grid_to_2D_nparray(grid):
             # check if 1D, then add extra dimension
             if len(arr.shape) == 1:
                 arr = np.expand_dims(arr, axis=0)            
-            return arr
+            return arr.astype(str)
         except:
             error = f"Error while converting grid of type {type(grid)} to nparray: " + str(grid)
             return error

@@ -1,0 +1,117 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['a', 'a', 'a', 'c', 'c', 'c', 'c', 'a', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'a', 'a', 'c', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'j', 'j', 'j', 'j', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'h', 'a', 'a', 'h', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'a', 'c', 'a', 'c', 'c', 'c', 'a']
+output: ['a', 'a', 'a', 'j', 'j', 'j', 'j', 'j', 'j', 'a', 'a', 'h', 'h', 'h', 'h', 'h', 'a', 'h', 'a', 'h', 'h', 'h', 'a']
+
+Example_3:
+input: ['a', 'c', 'c', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'c', 'c', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'c', 'c', 'a']
+output: ['a', 'j', 'j', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'h', 'a', 'h', 'h', 'h', 'a', 'a', 'h', 'h', 'h', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'c', 'a']
+
+###########################################################
+Sample Outputs:
+output: ['a', 'a', 'a', 'j', 'j', 'j', 'j', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'h', 'h', 'a']
+*/
+
+// Solution 1:
+class Solution {
+    public String[] replace(String[] input) {
+        if (input == null || input.length < 2) return input;
+
+        int aCount = 0, jCount = 0, hCount = 0;
+        for (int i = 0; i < input.length; i++) {
+            if (input[i].equals("a")) aCount++;
+            else if (input[i].equals("c")) {
+                while (++i < input.length &&!input[i].equals("a"));
+                i--;
+                jCount += aCount / 3;
+                hCount += aCount % 3;
+                aCount = 0;
+            }
+        }
+
+        // edge cases
+        if (aCount > 0) {
+            jCount += aCount / 3;
+            hCount += aCount % 3;
+        }
+
+        String[] output = new String[input.length];
+        for (int i = 0; i < input.length; i++) {
+            if (input[i].equals("a")) {
+                if (aCount <= 3) output[i] = "a";
+                else if (aCount % 3 == 0) output[i] = "j";
+                else output[i] = "h";
+                aCount--;
+            } else output[i] = input[i];
+        }
+
+        return output;
+    }
+}
+
+// Solution 2:
+class Solution {
+    public String[] replace(String[] input) {
+        if (input == null || input.length < 2) return input;
+
+        StringBuilder sb = new StringBuilder();
+        int count = 0;
+        for (int i = 0; i < input.length; i++) {
+            if (!input[i].equals("c")) {
+                sb.append(input[i]);
+                count++;
+            }
+            if (count == 3 || i == input.length - 1) {
+                if (count == 3) {
+                    if (sb.charAt(0) == 'a') {
+                        sb.setCharAt(0, 'j');
+                        if (sb.charAt(1) == 'a') {
+                            sb.setCharAt(1, 'j');
+                            sb.setCharAt(2, 'h');
+                        } else {
+                            sb.setCharAt(1, 'h');
+                        }
+                    } else {
+                        sb.setCharAt(0, 'h');
+                    }
+                }
+                for (int j = 0; j < sb.length(); j++) {
+                    input[i - sb.length() + j] = "" + sb.charAt(j);
+                }
+                sb.setLength(0);
+                count = 0;
+            }
+        }
+
+        return input;
+    }
+}
+
+
+###########################################################
+Result:
+solution: ['a', 'a', 'a', 'j', 'j', 'j', 'j', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'h', 'h', 'h', 'a', 'a', 'a', 'j', 'j', 'a']
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.24438902743142144
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

@@ -1,0 +1,95 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['a', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'c', 'a', 'a', 'c', 'a', 'a', 'c', 'a']
+output: ['a', 'a', 'i', 'i', 'i', 'a', 'a', 'b', 'b', 'a', 'a', 'j', 'a', 'a', 'j', 'a']
+
+Example_2:
+input: ['a', 'c', 'c', 'a', 'c', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'c', 'a', 'a', 'a']
+output: ['a', 'b', 'b', 'a', 'j', 'a', 'i', 'i', 'i', 'a', 'a', 'b', 'b', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'c', 'c', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'a', 'c', 'a', 'c', 'c']
+output: ['a', 'b', 'b', 'a', 'a', 'a', 'i', 'i', 'i', 'a', 'a', 'a', 'j', 'a', 'b', 'b']
+
+Test case:
+input: ['a', 'a', 'c', 'c', 'a', 'a', 'a', 'c', 'c', 'c', 'a', 'a', 'c', 'a', 'a', 'a']
+
+###########################################################
+Sample Outputs:
+output: ['a', 'a', 'i', 'i', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'j', 'a', 'a', 'a']
+*/
+
+// Solution 1:
+class Solution {
+public:
+    vector<char> findReplaceString(vector<char>& s, vector<int>& indices, vector<string>& sources, vector<string>& targets) {
+        int n = s.size();
+        vector<pair<int, pair<int, string>>> v; // <index, (source length, target)>
+        for (int i = 0; i < indices.size(); ++i) {
+            if (s.substr(indices[i], sources[i].length()) == sources[i])
+                v.push_back({indices[i], {sources[i].length(), targets[i]}});
+        }
+        sort(v.begin(), v.end());
+        vector<char> res;
+        for (int i = 0; i < n; ++i) {
+            bool found = false;
+            for (auto &p : v) {
+                if (p.first == i) {
+                    res.push_back(p.second.second[i - p.first]);
+                    i += p.second.first - 1;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) res.push_back(s[i]);
+        }
+        return res;
+    }
+};
+
+// Solution 2:
+class Solution {
+public:
+    vector<char> findReplaceString(vector<char>& s, vector<int>& indices, vector<string>& sources, vector<string>& targets) {
+        int n = s.size();
+        vector<tuple<bool, int, string>> v(n);
+        fill(v.begin(), v.end(), make_tuple(false, 0, ""));
+        for (int i = 0; i < indices.size(); ++i) {
+            auto t = make_tuple(true, indices[i], sources[i]);
+            v[indices[i]] = t;
+            if (indices[i] + sources[i] < n && get<0>(v[indices[i] + sources[i]]) && s.substr(indices[i], sources[i]) == sources[i])
+                v[indices[i] + sources[i]] = t;
+        }
+        vector<char> res;
+        for (int i = 0; i < n; ++i) {
+            if (get<0>(v[i])) {
+                res.insert(res.end(), targets[i].begin(), targets[i].end());
+            } else {
+                res.push_back(s[i]);
+            }
+        }
+        return res;
+    }
+};
+
+
+###########################################################
+Result:
+solution: ['a', 'a', 'b', 'b', 'a', 'a', 'a', 'i', 'i', 'i', 'a', 'a', 'j', 'a', 'a', 'a']
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.25390625
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.05555555555555555
+

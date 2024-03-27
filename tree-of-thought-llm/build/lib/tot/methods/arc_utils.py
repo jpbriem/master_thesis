@@ -178,8 +178,12 @@ def replace_quotes_in_text(res, json_format):
     # add some potential artificially created keys from the model
     keys += ["choice", "test_case", "test case", "test_output", "test output", "test input", "test_input"]
 
+    # correct backslashes "\_"
+    res = res.replace("\_", "_")
+
     # do some regex to remove unwanted line breakes
     res = res.replace("\n", " ")
+    
     # check if this is already enough procesing:
     try: 
         json.loads(res)
@@ -192,7 +196,8 @@ def replace_quotes_in_text(res, json_format):
 
     # replace any color name enclosed in double quotation marks to single quotation marks
     # pattern = r'"([^\s"]+)"'
-    pattern = r'"((?:(?!np\.array)[^"\s])+)"'
+    
+    pattern = r'"((?:(?!np\.array|numpy\.array)[^"\s])+)"'
     res = re.sub(pattern, r"'\1'", res)
     pattern = r'(\': \s*)\'(\w+)\'(, \s*\')'
     res = re.sub(pattern, r'\1"\2"\3', res)
@@ -239,9 +244,10 @@ def replace_quotes_in_text(res, json_format):
     res = re.sub(pattern, "", res)
 
     # in case the model outputs the string "np.array" to indicate such an object
-    pattern = r'"np\.array\(([^)]*?)\)"'
+    res = res.replace("import numpy as np", "")
+    pattern = r'"(?:np|numpy)\.array\(([^)]*?)\)"'
     res = re.sub(pattern, r'\1', res)
-    pattern = r'np\.array\(([^)]*?)\)'
+    pattern = r'(?:np|numpy)\.array\(([^)]*?)\)'
     res = re.sub(pattern, r'"\1"', res)
 
     # In case any output is an array but with letters w/o double quotes
@@ -281,7 +287,7 @@ def get_json_from_text(string, json_format):
             if previous_segment:
                 json_segment = json_segment[:indices[i+1][0]+1] + previous_segment + json_segment[indices[i+1][1]+1:]
             try:
-                x = json.loads(json_segment)
+                json_segment = json.loads(json_segment)
             except:
                 json_segment = replace_quotes_in_text(json_segment, json_format)
             previous_segment = json_segment
@@ -338,6 +344,13 @@ def extract_json_value(string, json_format, keys):
                 data = data[next_key]
             break
     # Return the value for the given key or entire dictionar if not found
+    if isinstance(data, str):
+        # in case the model outputs the string "np.array" to indicate such an object
+        data = data.replace("import numpy as np", "")
+        pattern = r'"(?:np|numpy)\.array\(([^)]*?)\)"'
+        data = re.sub(pattern, r'\1', data)
+        pattern = r'(?:np|numpy)\.array\(([^)]*?)\)'
+        data = re.sub(pattern, r'\1', data)
     return data
 
 def extract_dict_keys(d, target, keys=set(), found=False):
@@ -368,13 +381,13 @@ def get_int_from_dict_value(d, key):
     return value
 
 def get_thought(LLM_answer, prompt_modules, current_step, isRevision=False):
-    all_json_keys = extract_dict_keys(prompt_modules, "output_format")
+    # all_json_keys = extract_dict_keys(prompt_modules, "output_format")
     if isRevision:
         output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
     else:
         output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
     thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
-    thought_data = extract_json_value(LLM_answer, all_json_keys, thought_key)
+    thought_data = extract_json_value(LLM_answer, output_format, thought_key)
     if isinstance(thought_data, dict):
         thought = " ".join(thought_key.split("_")) + ":"
         for key, value in thought_data.items():
@@ -742,8 +755,6 @@ def compare_object_lists(list1, list2):
                     list2.remove(obj2)
                     found_match = True
                     break
-                print(obj1["coordinates"], obj2["coordinates"])
-                print(obj1["color"], obj2["color"])
                 
         # If no match is found for any object, return False
         if not found_match:
@@ -1084,6 +1095,9 @@ def grid_to_2D_nparray(grid):
                     error = "No 2D-array found in final output string: " + grid
                     return error
                 print("No 2D-array found, trying to add extra bracket: [..]")
+                array_start = grid.find("[")
+                array_end = grid.rfind("]")
+                grid = grid[array_start:array_end+1]
                 grid = "[" + grid.strip() + "]"
             else:
                 break

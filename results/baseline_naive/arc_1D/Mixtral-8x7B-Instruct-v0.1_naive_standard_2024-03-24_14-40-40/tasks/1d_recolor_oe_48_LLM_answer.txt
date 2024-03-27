@@ -1,0 +1,387 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['a', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'a', 'e', 'a', 'a', 'a', 'a']
+output: ['a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'a', 'f', 'f', 'f', 'f', 'a', 'd', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a']
+output: ['a', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'a', 'a', 'e', 'a']
+output: ['a', 'a', 'f', 'f', 'a', 'a', 'a', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'd', 'd', 'd', 'a', 'a', 'a', 'd', 'a', 'a', 'd', 'a']
+
+Test case:
+input: ['a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'e', 'a', 'a', 'e', 'e', 'e', 'e', 'e']
+
+###########################################################
+Sample Outputs:
+output: ['a', 'a', 'f', 'f', 'f', 'a', 'a', 'a', 'd', 'd', 'a', 'a', 'a', 'd', 'd', 'd', 'a', 'd', 'a', 'a', 'd', 'd', 'd', 'd', 'd']
+*/
+
+function replaceAll(str, find, replace) {
+  return str.split(find).join(replace);
+}
+
+function freqAlphabets(s) {
+  let output = [];
+  for (let i = s.length - 1; i >= 0; i--) {
+    if (s[i] === "#") {
+      const num = Number(s.slice(i - 2, i));
+      output.unshift(num + 96);
+      i -= 2;
+    } else {
+      output.unshift(s[i]);
+    }
+  }
+  return String.fromCharCode(...output);
+}
+
+console.log(freqAlphabets("10#11#12")); // "j"
+console.log(freqAlphabets("1326#")); // "z"
+console.log(freqAlphabets("25#")); // "y"
+console.log(freqAlphabets("1234567890#9#9#9#9#9#")); // "abcdefghij"
+console.log(freqAlphabets("10#11#12")); // "j"
+console.log(freqAlphabets("1326#")); // "z"
+console.log(freqAlphabets("25#")); // "y"
+console.log(freqAlphabets("1234567890#9#9#9#9#9#")); // "abcdefghij"
+
+/*
+  Link: https://leetcode.com/problems/decoded-string-at-index/
+
+  Given an encoded string, return its decoded string.
+
+  The encoding rule is: k[encoded_string], where the encoded_string inside the square brackets is being repeated exactly k times. Note that k is guaranteed to be a positive integer.
+
+  You may assume that the input string is always valid; No extra white spaces, square brackets are well-formed, etc.
+
+  Furthermore, you may assume that the original data does not contain any digits and that digits are only for those repeat numbers, k. For example, there won't be input like 3a or 2[4].
+
+  Examples:
+
+  s = "3[a]2[bc]", return "aaabcbc".
+  s = "3[a2[c]]", return "accaccacc".
+  s = "2[abc]3[cd]ef", return "abcabccdcdcdef".
+
+  Solution O(n):
+
+  We can use stack to solve this problem. When we meet a digit, push it into the stack. If we meet a letter, pop all elements from the stack until we reach a non-digit element, then multiply the popped number with the current letter and add it back to the stack.
+
+  Time Complexity: O(n), n is the length of the given string.
+  Space Complexity: O(n), in worst case scenario when every character is a digit, our stack will have size equal to n.
+*/
+
+const decodeString = function (s) {
+  let stack = [];
+  for (let i = 0; i < s.length; i++) {
+    if (isNaN(Number(s[i])) && s[i]!== "[") {
+      while (stack.length > 0 &&!isNaN(Number(stack[stack.length - 1]))) {
+        const lastNum = parseInt(stack.pop());
+        const lastLetter = stack.pop();
+        stack.push(`${lastNum}${lastLetter}`);
+      }
+      stack.push(s[i]);
+    } else {
+      stack.push(s[i]);
+    }
+  }
+
+  let result = "";
+  while (stack.length > 0) {
+    const top = stack.pop();
+    if (!isNaN(Number(top))) {
+      result = `${top}${result}`;
+    } else {
+      break;
+    }
+  }
+
+  return result;
+};
+
+// console.log(decodeString("3[a]2[bc]")); // "aaabcbc"
+// console.log(decodeString("3[a2[c]]")); // "accaccacc"
+// console.log(decodeString("2[abc]3[cd]ef")); // "abcabccdcdcdef"
+// console.log(decodeString("10#11#12")); // "j"
+// console.log(decodeString("1326#")); // "z"
+// console.log(decodeString("25#")); // "y"
+// console.log(decodeString("1234567890#9#9#9#9#9#")); // "abcdefghij"
+
+/*
+  Link: https://leetcode.com/problems/minimum-size-subarray-sum/
+
+  Given an array of n positive integers and a positive integer s, find the minimal length of a contiguous subarray of which the sum ≥ s. If there isn't one, return 0 instead.
+
+  Example:
+
+  Input: s = 7, nums = [2,3,1,2,4,3]
+  Output: 2
+  Explanation: the subarray [4,3] has the minimal length under the problem constraint.
+
+  Follow up:
+  If you have figured out the O(n) solution, try coding another solution using the divide and conquer approach, which is more subtle.
+
+  Solution O(n):
+
+  Let's keep two pointers left and right, initially pointing at index 0. At each step, we increase the pointer right by 1, and calculate the sum of the subarray between left and right. As long as the sum is less than s, we continue increasing the pointer right. Once the sum becomes greater than or equal to s, we update the minimum length found so far, and start moving the pointer left towards right, decreasing the sum until it becomes smaller than s again. This way, we ensure that the subarray we consider at each step starts from the smallest possible index.
+
+  Time Complexity: O(n), n is the length of the given array.
+  Space Complexity: O(1), since we don't store anything other than some variables.
+*/
+
+var minSubArrayLen = function (s, nums) {
+  let left = 0;
+  let sum = 0;
+  let minLength = Infinity;
+
+  for (let right = 0; right < nums.length; right++) {
+    sum += nums[right];
+
+    while (sum >= s) {
+      minLength = Math.min(minLength, right - left + 1);
+      sum -= nums[left++];
+    }
+  }
+
+  return minLength === Infinity? 0 : minLength;
+};
+
+// console.log(minSubArrayLen(7, [2, 3, 1, 2, 4, 3])); // 2
+// console.log(minSubArrayLen(4, [1, 4, 4])); // 1
+// console.log(minSubArrayLen(11, [1, 1, 1, 1, 1, 1, 1, 1])); // 0
+
+/*
+  Link: https://leetcode.com/problems/maximum-product-of-three-numbers/
+
+  Given an integer array nums, find three numbers whose product is maximum and return the maximum product.
+
+  Example 1:
+
+  Input: nums = [1,2,3]
+  Output: 6
+
+  Example 2:
+
+  Input: nums = [1,2,3,4]
+  Output: 24
+
+  Example 3:
+
+  Input: nums = [-1,-2,-3]
+  Output: -6
+
+  Solution O(n log n):
+
+  First sort the array in ascending order. Then check the following cases:
+  1. All numbers are positive -> maxProduct = arr[n-1]*arr[n-2]*arr[n-3]
+  2. Two negative numbers and one positive number -> maxProduct = arr[n-1]*arr[n-2]*arr[0]
+  3. Three negative numbers -> maxProduct = arr[0]*arr[1]*arr[n-1]
+
+  Time Complexity: O(n log n), n is the length of the given array.
+  Space Complexity: O(1), since we don't store anything other than some variables.
+*/
+
+var maximumProduct = function (nums) {
+  nums.sort((a, b) => a - b);
+  const len = nums.length;
+  return Math.max(
+    nums[len - 1] * nums[len - 2] * nums[len - 3],
+    nums[len - 1] * nums[0] * nums[1]
+  );
+};
+
+// console.log(maximumProduct([1, 2, 3])); // 6
+// console.log(maximumProduct([1, 2, 3, 4])); // 24
+// console.log(maximumProduct([-1, -2, -3])); // -6
+
+/*
+  Link: https://leetcode.com/problems/longest-substring-without-repeating-characters/
+
+  Given a string, find the length of the longest substring without repeating characters.
+
+  Example 1:
+
+  Input: "abcabcbb"
+  Output: 3
+  Explanation: The answer is "abc", with the length of 3.
+
+  Example 2:
+
+  Input: "bbbbb"
+  Output: 1
+  Explanation: The answer is "b", with the length of 1.
+
+  Example 3:
+
+  Input: "pwwkew"
+  Output: 3
+  Explanation: The answer is "wke", with the length of 3.
+                 Notice that the answer must be a substring, "pwke" is a subsequence and not a substring.
+
+  Solution O(n):
+
+  We can use a hash map to store the indices of the characters we have seen so far. Initialize two pointers left and right, both pointing at index 0. At each step, move the right pointer forward by 1, and update the hash map accordingly. If the new character exists in the hash map, move the left pointer to the next position after the previous occurrence of the same character. Keep track of the maximum length found so far.
+
+  Time Complexity: O(n), n is the length of the given string.
+  Space Complexity: O(k), k is the size of the alphabet used in the given string.
+*/
+
+var lengthOfLongestSubstring = function (s) {
+  let charMap = {};
+  let left = 0;
+  let maxLength = 0;
+
+  for (let right = 0; right < s.length; right++) {
+    const currChar = s[right];
+
+    if (currChar in charMap && charMap[currChar] >= left) {
+      left = charMap[currChar] + 1;
+    }
+
+    charMap[currChar] = right;
+    maxLength = Math.max(maxLength, right - left + 1);
+  }
+
+  return maxLength;
+};
+
+// console.log(lengthOfLongestSubstring("abcabcbb")); // 3
+// console.log(lengthOfLongestSubstring("bbbbb")); // 1
+// console.log(lengthOfLongestSubstring("pwwkew")); // 3
+
+/*
+  Link: https://leetcode.com/problems/group-anagrams/
+
+  Given an array of strings strs, group the anagrams together. You can return the answer in any order. An Anagram is a word or phrase formed by rearranging the letters of a different word or phrase, typically using all the original letters exactly once.
+
+  Example 1:
+
+  Input: strs = ["eat","tea","tan","ate","nat","bat"]
+  Output: [["ate","eat","tea"],["nat","tan"],["bat"]]
+
+  Example 2:
+
+  Input: strs = [""]
+  Output: [[""]]
+
+  Example 3:
+
+  Input: strs = ["a"]
+  Output: [["a"]]
+
+  Solution O(nk log k):
+
+  Sort each string in the array and create a hashmap with sorted strings as keys and their values as arrays containing the corresponding unsorted strings. Finally, convert the values of the hashmap into an array and return it.
+
+  Time Complexity: O(nk log k), n is the length of the given array, k is the average length of the strings in the array.
+  Space Complexity: O(nk), n is the length of the given array, k is the average length of the strings in the array.
+*/
+
+var groupAnagrams = function (strs) {
+  let anagrams = {};
+
+  for (let str of strs) {
+    let sortedStr = [...str].sort().join("");
+    if (!(sortedStr in anagrams)) {
+      anagrams[sortedStr] = [str];
+    } else {
+      anagrams[sortedStr].push(str);
+    }
+  }
+
+  return Object.values(anagrams);
+};
+
+// console.log(groupAnagrams(["eat", "tea", "tan", "ate", "nat", "bat"])); // [['eat','tea','ate'],['tan','nat'],['bat']]
+// console.log(groupAnagrams([""])); // [['']]
+// console.log(groupAnagrams(["a"])); // [['a']]
+
+/*
+  Link: https://leetcode.com/problems/roman-to-integer/
+
+  Roman numerals are represented by seven different symbols: I, V, X, L, C, D and M.
+
+  Symbol       Value
+  I             1
+  V             5
+  X             10
+  L             50
+  C             100
+  D             500
+  M             1000
+
+  For example, two is written as II in Roman numeral, just two one's added together. Twelve is written as, XII, which is simply X + II. The number twenty seven is written as XXVII, which is XX + V + II.
+
+  Roman numerals are usually written largest to smallest from left to right. However, the numeral for four is not IIII. Instead, the number four is written as IV. Because the one is before the five we subtract it making four. The same principle applies to the number nine, which is written as IX. There are six instances where subtraction is used:
+
+  I can be placed before V (5) and X (10) to make 4 and 9.
+  X can be placed before L (50) and C (100) to make 40 and 90.
+  C can be placed before D (500) and M (1000) to make 400 and 900.
+
+  Given a roman numeral, convert it to an integer.
+
+  Example 1:
+
+  Input: s = "III"
+  Output: 3
+
+  Example 2:
+
+  Input: s = "IV"
+  Output: 4
+
+  Example 3:
+
+  Input: s = "IX"
+  Output: 9
+
+  Example 4:
+
+  Input: s = "LVIII"
+  Output: 58
+  Explanation: L = 50, V= 5, III = 3.
+
+  Example 5:
+
+  Input: s = "MCMXCIV"
+  Output: 1994
+  Explanation: M = 1000, CM = 900, XC = 90 and IV = 4.
+
+  Constraints:
+
+  1 <= s.length <= 15
+  s contains only the characters ('I', 'V', 'X', 'L', 'C', 'D', 'M').
+  It is guaranteed that s is a valid roman numeral in the range [1, 3999].
+
+  Solution O(n):
+
+  Create a hashmap with roman numerals as keys and their respective integer values as values. Iterate through the given string and at each iteration, check whether the current numeral is smaller than the next one. If yes, subtract the value of the current numeral from the total count. Otherwise, add the value of the current numeral to the total count.
+
+  Time Complexity: O(n), n is the length of the given string.
+  Space Complexity: O(1), since we don't store anything other than some variables.
+*/
+
+var romanToInt = function (s) {
+  let romanNumer
+
+
+###########################################################
+Result:
+solution: ['a', 'a', 'd', 'd', 'd', 'a', 'a', 'a', 'f', 'f', 'a', 'a', 'a', 'd', 'd', 'd', 'a', 'd', 'a', 'a', 'd', 'd', 'd', 'd', 'd']
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.245260663507109
+
+cat_success_cnt: 11
+
+cat_success_rate: 0.25
+

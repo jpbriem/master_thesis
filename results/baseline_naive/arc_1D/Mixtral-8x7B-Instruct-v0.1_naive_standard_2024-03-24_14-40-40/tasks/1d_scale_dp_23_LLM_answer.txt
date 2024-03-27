@@ -1,0 +1,110 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['a', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'a', 'f']
+output: ['a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'f']
+
+Example_2:
+input: ['d', 'd', 'd', 'd', 'd', 'a', 'a', 'a', 'f', 'a', 'a']
+output: ['d', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'f', 'a', 'a']
+
+Example_3:
+input: ['a', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'f', 'a', 'a']
+output: ['a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'f', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'd', 'd', 'd', 'd', 'd', 'a', 'a', 'f', 'a']
+
+###########################################################
+Sample Outputs:
+output: ['a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'f', 'a']
+*/
+
+// Solution 1:
+const removeDuplicateLetters = (s) => {
+  const stack = [];
+  const countMap = {};
+  for (let i = 0; i < s.length; i++) {
+    countMap[s[i]] = (countMap[s[i]] || 0) + 1;
+  }
+  for (let char of s) {
+    if (!stack.includes(char)) {
+      while (
+        stack.length &&
+        stack[stack.length - 1] > char &&
+        countMap[stack[stack.length - 1]]--
+      ) {
+        stack.pop();
+      }
+      stack.push(char);
+    } else {
+      countMap[char]--;
+    }
+  }
+  return stack.join('');
+};
+
+// Solution 2:
+/*
+  We can use a hashmap to keep track of the last occurrence of each character in the string, and then iterate through the string again from left to right. For each character, we check whether it is smaller than the top element of our stack. If so, we pop elements off the stack until either the stack becomes empty or the top element is greater than or equal to the current character. Then, we push the current character onto the stack. Finally, we update the last occurrence of this character in our hashmap.
+
+  Time Complexity: O(n), where n is the length of the input string.
+  Space Complexity: O(k), where k is the number of unique characters in the input string.
+*/
+
+const removeDuplicateLetters = (s) => {
+  // Create an object to store the last index of each character
+  const lastIndices = {};
+  let minLastIndex = Infinity;
+  for (let i = 0; i < s.length; i++) {
+    lastIndices[s[i]] = i;
+    minLastIndex = Math.min(minLastIndex, lastIndices[s[i]]);
+  }
+
+  // Initialize a stack with the first character
+  const stack = [s[minLastIndex]];
+
+  // Iterate over the remaining characters
+  for (let i = minLastIndex + 1; i < s.length; i++) {
+    const currChar = s[i];
+    const topChar = stack[stack.length - 1];
+
+    // Check if the current character should be added to the stack
+    if (currChar < topChar) {
+      // Pop elements off the stack until the top element is greater than or equal to the current character
+      while (stack.length && stack[stack.length - 1] > currChar) {
+        stack.pop();
+      }
+
+      // Add the current character to the stack
+      stack.push(currChar);
+    }
+
+    // Update the last index of the current character
+    lastIndices[currChar] = i;
+  }
+
+  // Convert the stack to a string and return it
+  return stack.join('');
+};
+
+
+###########################################################
+Result:
+solution: ['a', 'a', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'f', 'a']
+
+success: 1
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.24682814302191464
+
+cat_success_cnt: 6
+
+cat_success_rate: 0.35294117647058826
+

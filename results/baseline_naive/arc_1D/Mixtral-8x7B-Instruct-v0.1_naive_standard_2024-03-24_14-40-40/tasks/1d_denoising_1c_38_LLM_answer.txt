@@ -1,0 +1,103 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['a', 'a', 'a', 'e', 'a', 'a', 'a', 'e', 'a', 'a', 'a', 'e', 'a', 'a', 'e', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'e', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'b', 'a', 'a', 'a', 'a', 'b', 'a', 'a', 'b', 'a', 'a', 'a', 'b', 'a', 'a', 'a']
+output: ['a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'a', 'a', 'i', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'i', 'a', 'a', 'a', 'a', 'i', 'a', 'a', 'a']
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'c', 'a', 'a']
+
+###########################################################
+Sample Outputs:
+output: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+*/
+
+// Solution 1:
+class Solution {
+    public String[] findLongestChain(String[] words) {
+        if (words == null || words.length == 0) return new String[0];
+        Arrays.sort(words, (w1, w2) -> Integer.compare(w1.length(), w2.length()));
+        List<String> res = new ArrayList<>();
+        for (int i = 0; i < words.length; i++) {
+            int j = binarySearch(res, words[i]);
+            if (j == -1) res.add(words[i]);
+            else res.set(j, words[i]);
+        }
+        return res.toArray(new String[res.size()]);
+    }
+
+    private int binarySearch(List<String> list, String target) {
+        int left = 0, right = list.size();
+        while (left < right) {
+            int mid = left + (right - left) / 2;
+            if (list.get(mid).compareTo(target) >= 0) right = mid;
+            else left = mid + 1;
+        }
+        if (left > 0 && list.get(left - 1).compareTo(target) <= 0) return left - 1;
+        return -1;
+    }
+}
+
+// Solution 2:
+class Solution {
+    public String[] findLongestChain(String[] words) {
+        if (words == null || words.length == 0) return new String[0];
+        Map<Integer, PriorityQueue<String>> map = new HashMap<>();
+        for (String word : words) {
+            int len = word.length();
+            if (!map.containsKey(len)) map.put(len, new PriorityQueue<>());
+            map.get(len).offer(word);
+        }
+        List<String> res = new ArrayList<>();
+        for (Map.Entry<Integer, PriorityQueue<String>> entry : map.entrySet()) {
+            PriorityQueue<String> queue = entry.getValue();
+            while (!queue.isEmpty()) {
+                String cur = queue.poll();
+                int idx = binarySearch(res, cur);
+                if (idx == -1) res.add(cur);
+                else res.set(idx, cur);
+            }
+        }
+        return res.toArray(new String[res.size()]);
+    }
+
+    private int binarySearch(List<String> list, String target) {
+        int left = 0, right = list.size();
+        while (left < right) {
+            int mid = left + (right - left) / 2;
+            if (list.get(mid).compareTo(target) >= 0) right = mid;
+            else left = mid + 1;
+        }
+        if (left > 0 && list.get(left - 1).compareTo(target) <= 0) return left - 1;
+        return -1;
+    }
+}
+
+
+###########################################################
+Result:
+solution: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.2727272727272727
+
+cat_success_cnt: 9
+
+cat_success_rate: 0.2727272727272727
+

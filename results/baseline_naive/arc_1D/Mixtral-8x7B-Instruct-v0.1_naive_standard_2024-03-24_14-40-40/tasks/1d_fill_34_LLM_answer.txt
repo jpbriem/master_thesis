@@ -1,0 +1,127 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['a', 'a', 'f', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'f', 'a', 'a']
+output: ['a', 'a', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'h', 'a', 'a']
+output: ['a', 'a', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'a', 'a']
+
+Example_3:
+input: ['c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', 'a', 'a', 'a', 'a']
+output: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['h', 'a', 'a', 'a', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+###########################################################
+Sample Outputs:
+output: ['h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+*/
+
+// Solution 1:
+const replaceAll = (str, find, replace) => {
+    return str.replace(new RegExp(find, "g"), replace);
+}
+
+const freqQuery = arr => {
+    let countMap = {}; // map of counts to their frequency
+    let result = [];
+
+    for (let i = 0; i < arr.length; i++) {
+        const [op, num] = arr[i];
+
+        if (op === 1) {
+            const currentCount = countMap[num] || 0;
+            countMap[num] = currentCount + 1;
+        } else if (op === 2) {
+            const currentCount = countMap[num] || 0;
+            if (currentCount > 0) {
+                countMap[num] = currentCount - 1;
+            }
+        } else {
+            const queryNum = Object.keys(countMap).filter(key => countMap[key] === num)[0];
+            if (queryNum!== undefined) {
+                result.push(1);
+            } else {
+                result.push(0);
+            }
+        }
+    }
+
+    return result;
+};
+
+/*
+Time Complexity: O(n)
+Space Complexity: O(n)
+*/
+
+// Solution 2:
+const freqQuery = arr => {
+    let countMap = new Map(); // map of numbers to their frequencies
+    let freqMap = new Map(); // map of frequencies to their number of occurrences
+    let result = [];
+
+    for (let i = 0; i < arr.length; i++) {
+        const [op, num] = arr[i];
+
+        if (op === 1) {
+            const currentFreq = countMap.get(num) || 0;
+            countMap.set(num, currentFreq + 1);
+
+            const currentFreqCount = freqMap.get(currentFreq) || 0;
+            freqMap.set(currentFreq, currentFreqCount - 1);
+
+            const newFreqCount = freqMap.get(currentFreq + 1) || 0;
+            freqMap.set(currentFreq + 1, newFreqCount + 1);
+        } else if (op === 2) {
+            const currentFreq = countMap.get(num) || 0;
+            if (currentFreq > 0) {
+                countMap.set(num, currentFreq - 1);
+
+                const currentFreqCount = freqMap.get(currentFreq) || 0;
+                freqMap.set(currentFreq, currentFreqCount - 1);
+
+                const newFreqCount = freqMap.get(currentFreq - 1) || 0;
+                freqMap.set(currentFreq - 1, newFreqCount + 1);
+            }
+        } else {
+            const queryNum = Array.from(freqMap.entries()).filter(([k, v]) => k === num)[0][0];
+            if (queryNum!== undefined) {
+                result.push(1);
+            } else {
+                result.push(0);
+            }
+        }
+    }
+
+    return result;
+};
+
+/*
+Time Complexity: O(n)
+Space Complexity: O(n)
+*/
+
+
+###########################################################
+Result:
+solution: ['h', 'h', 'h', 'h', 'h', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a']
+
+success: 1
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.3875968992248062
+
+cat_success_cnt: 11
+
+cat_success_rate: 0.3793103448275862
+

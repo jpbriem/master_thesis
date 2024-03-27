@@ -74,8 +74,8 @@ REVISIONS = []
 # REVISIONS.append("main") 
 # MODEL_NAMES.append("Qwen/Qwen-14B-Chat-Int4") # Too small context length
 # REVISIONS.append("main")
-MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
-REVISIONS.append("main") 
+# MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
+# REVISIONS.append("main") 
 
 # Falcon 
 # MODEL_NAMES.append("TheBloke/Falcon-7B-Instruct-GPTQ") # TODO: Run all tests )
@@ -88,8 +88,8 @@ REVISIONS.append("main")
 ##### Proprietary #####
 # MODEL_NAMES.append('gpt-4-1106-preview')
 # REVISIONS.append('')
-# MODEL_NAMES.append('gpt-3.5-turbo-1106')
-# REVISIONS.append('')
+MODEL_NAMES.append('gpt-3.5-turbo-1106')
+REVISIONS.append('')
 
 
 #################### automatic completion of parameters ####################
@@ -107,8 +107,10 @@ for model in MODEL_NAMES:
     # change max_token of context
     if "gpt-4-1106-preview" in model.lower():
         config["max_token"] = 128000
+        config["model_config"]["temperature"] = 0.7
     elif "gpt-3.5-turbo-1106" in model.lower():
         config["max_token"] = 16385
+        config["model_config"]["temperature"] = 0.7
     elif "Qwen".lower() in model.lower():
         config["model_config"]["temperature"] = 0.7
         if "Qwen-7B".lower() in model.lower():
@@ -127,11 +129,11 @@ for model in MODEL_NAMES:
 
 DELIMITER = {
     "arc": {
-        "item": ", ", # TODO: add apostroph if needed
+        "item": "', '", # TODO: add apostroph if needed
         "grid_start": "[",
-        "grid_end": "]]\n", # include end of last row # TODO: add apostroph if needed
-        "row_start": "[", # TODO: add apostroph if needed
-        "row_end": "], ", # except for last row # TODO: add apostroph if needed
+        "grid_end": "']]\n", # include end of last row # TODO: add apostroph if needed
+        "row_start": "['", # TODO: add apostroph if needed
+        "row_end": "'], ", # except for last row # TODO: add apostroph if needed
         "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
         "example_end": "\n",
         "task_start": "Test case:\n",

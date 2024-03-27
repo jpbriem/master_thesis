@@ -2,7 +2,6 @@ import os
 import re
 from tot.tasks.base import Task, DATA_PATH
 from tot.prompts.arc import *   
-from tot.models import gpt
 from tot.methods.arc_utils import *
 from tot.methods import arc_utils
 from tot.methods.arc_config import * 
@@ -27,6 +26,7 @@ class ARCTask(Task):
         """
         super().__init__()
         self.path = os.path.join(DATA_PATH, 'arc')
+        self.args = None
         self.data, self.names, self.categories = load_arc_tasks(self.path)
         self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
         self.stops = [None]*self.steps # TODO: adjust to prompt! 
@@ -110,16 +110,43 @@ class ARCTask(Task):
         output_keys = [output_key] + [k for k in potential_keys if k != output_key]
         # change solution in np array
         solution_grid = grid_to_2D_nparray(solution)
+        is_success = objects_correct = False
         for output in outputs:
             output = output.LLM_answer
             try_cnt += 1 
+            # if using object representation, check if objects are correct
+            try:
+                if self.args.input_representation == "objects" and "transformed_objects" in output_format and "test_case_output_dimension" in output_format and not objects_correct:
+                    if task_name not in self.object_representation_success: # TODO: works currently only if we have just one try
+                        self.object_representation_success[task_name] = 0
+                    if category not in self.object_representation_cat_success:
+                        self.object_representation_cat_success[category] = 0
+                        self.object_representation_cat_failures[category] = 0
+                    test_output_dimension = extract_json_value(output, output_format, "test_case_output_dimension")
+                    test_output_objects = extract_json_value(output, output_format, "transformed_objects")
+                    output_objects = extract_dicts_from_string(test_output_objects)
+                    grid = task_json["test"][0]["output"]
+                    gt_dimension = [len(grid), len(grid[0])]
+                    if CHANGE_REPRESENTATION:
+                        bg_color = NEW_REPRESENTATION[0]
+                    else:
+                        bg_color = 0
+                    gt_output_objects = find_objects(self.path.split("/")[-1], task_name, grid, bg_color)
+                    objects_correct = compare_object_lists(output_objects, gt_output_objects)
+                    print("objects:", objects_correct)
+                    dimension_correct = compare_dimensions(test_output_dimension, gt_dimension)
+                    print("dimension:", dimension_correct)
+                    objects_correct = objects_correct and dimension_correct
+            except:
+                pass
             try:
                 # extract answer and check if correct
                 test_output_grid = extract_json_value(output, output_format, output_keys) 
-                test_output_grid = grid_to_2D_nparray(test_output_grid)
-                is_success = np.array_equal(test_output_grid, solution_grid)
-                if is_success:
-                    break     
+                if test_output_grid:
+                    test_output_grid = grid_to_2D_nparray(test_output_grid)
+                    is_success = np.array_equal(test_output_grid, solution_grid)
+                    if is_success:
+                        break     
             except:
                 pass
             # second, if not successful, check if solution string is in output string
@@ -135,6 +162,22 @@ class ARCTask(Task):
             if is_success:
                 self.solved_tasks_str_comparison.append(task_name)
                 break     
+        
+        # log object repres. success
+        object_info = None
+        if self.args.input_representation == "objects":
+            self.object_representation_success[task_name] += objects_correct    
+            if self.object_representation_success[task_name] == 1:
+                self.object_representation_success_cnt += 1
+                self.object_representation_cat_success[category] += 1
+            else:
+                self.object_representation_cat_failures[category] += 1
+            if self.object_representation_success[task_name] > 0:
+                self.solved_tasks_object_representation.append((task_name, self.object_representation_success[task_name]))
+            n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
+            n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
+            object_info = {'success': self.object_representation_success[task_name], 'success_rate': self.object_representation_success_cnt / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.object_representation_cat_success[category], 'cat_success_rate': self.object_representation_cat_success[category] / (self.object_representation_cat_success[category] + self.object_representation_cat_failures[category]) if self.object_representation_cat_success[category] + self.object_representation_cat_failures[category] > 0 else 0}
+
 
         # log the success if not revision
         if is_revision:
@@ -154,7 +197,8 @@ class ARCTask(Task):
             n_tasks_too_long_prompts = sum([len(v) for k, v in self.too_long_prompts_no_output.items()])
             n_tasks_error = sum([len(v) for k, v in self.tasks_failed_solving.items()])
             info = {'solution': str(solution), 'success': self.success[task_name], 'too_long_prompt': False, 'tries': try_cnt, 'success_rate': self.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.cat_success[category], 'cat_success_rate': self.cat_success[category] / (self.cat_success[category] + self.cat_failures[category]) if self.cat_success[category] + self.cat_failures[category] > 0 else 0}
-        
+            if object_info:
+                info.update({"object_info": object_info})
         return info
     
     def test_output_naive(self, idx: int=0, outputs: list=[""], prompt_modules: dict=None, dataset: str="arc"):
@@ -190,6 +234,7 @@ class ARCTask(Task):
         # add potential keys, in case model used a slightly different one
         potential_keys = ["output", "test_output", "Output", "Test_output", "Test_Output", "Test output", "test output"]
         output_keys = [output_key] + [k for k in potential_keys if k != output_key]
+        # change solution in np array
         solution_grid = grid_to_2D_nparray(solution)
         is_success = objects_correct = False
         for output in outputs:
@@ -197,7 +242,7 @@ class ARCTask(Task):
             try_cnt += 1 
             # if using object representation, check if objects are correct
             try:
-                if "transformed_objects" in output_format and "test_case_output_dimension" in output_format and not objects_correct:
+                if self.args.input_representation == "objects" and "transformed_objects" in output_format and "test_case_output_dimension" in output_format and not objects_correct:
                     if task_name not in self.object_representation_success: # TODO: works currently only if we have just one try
                         self.object_representation_success[task_name] = 0
                     if category not in self.object_representation_cat_success:
@@ -239,14 +284,14 @@ class ARCTask(Task):
                     solution = solution[1:]
                 if "]]" in solution[-2:]:
                     solution = solution[:-1]
-            is_success = re.sub(r'\s+', ' ', solution).strip() in re.sub(r'\s+', ' ', output).strip()
+            is_success = re.sub(r'\s+', '', solution).strip() in re.sub(r'\s+', '', output).strip()
             if is_success:
                 self.solved_tasks_str_comparison.append(task_name)
                 break   
                         
         # log object repres. success
         object_info = None
-        if "transformed_objects" in output_format:
+        if self.args.input_representation == "objects":
             self.object_representation_success[task_name] += objects_correct    
             if self.object_representation_success[task_name] == 1:
                 self.object_representation_success_cnt += 1
@@ -260,7 +305,7 @@ class ARCTask(Task):
             object_info = {'success': self.object_representation_success[task_name], 'success_rate': self.object_representation_success_cnt / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': self.object_representation_cat_success[category], 'cat_success_rate': self.object_representation_cat_success[category] / (self.object_representation_cat_success[category] + self.object_representation_cat_failures[category]) if self.object_representation_cat_success[category] + self.object_representation_cat_failures[category] > 0 else 0}
 
         # log overall success
-        self.success[task_name] += is_success    
+        self.success[task_name] += int(is_success)    
         if self.success[task_name] == 1:
             self.full_success += 1
             self.cat_success[category] += 1
@@ -406,9 +451,10 @@ class ARCTask(Task):
             prompt_modules = ARCTask.prompt_modules
         final_value = 0
         cnt_outputs = 0 # counter for number of outputs w valid value
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["evaluation"], "output_format")
+        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["evaluation"], "output_format")
+        output_format = prompt_modules[str(current_step)]["evaluation"]["output_format"]
         for value_output in value_outputs:
-            value_output = get_json_from_text(value_output, output_keys)
+            value_output = get_json_from_text(value_output, output_format)
             if isinstance(value_output, str): # error in json parsin
                 continue
             cnt_examples = 0 # counter for number of examples w valid value
@@ -475,10 +521,10 @@ class ARCTask(Task):
         if prompt_modules is None:
             prompt_modules = ARCTask.prompt_modules
         current_step = node.level - 1 # -1 bc. node is the child of the node under revision
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["analysis"], "output_format")   
+        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["analysis"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
         thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
-        thought_data = extract_json_value(output[0], output_keys, thought_key)
+        thought_data = extract_json_value(output[0], output_format, thought_key)
         if isinstance(thought_data, dict):
             thought = ""
             for key, value in thought_data.items():
@@ -534,10 +580,10 @@ class ARCTask(Task):
         if prompt_modules is None:
             prompt_modules = ARCTask.prompt_modules
         current_step = node.level - 2 # -2 bc. node is the grand child of the node under revision
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
+        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
         thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
-        thought_data = extract_json_value(output[0], output_keys, thought_key)
+        thought_data = extract_json_value(output[0], output_format, thought_key)
         if isinstance(thought_data, dict):
             thought = ""
             for key, value in thought_data.items():
@@ -558,10 +604,10 @@ class ARCTask(Task):
             prompt_modules = ARCTask.prompt_modules
         replacement_log = ""
         current_step = revision_node.level
-        output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
+        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
         thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
-        thought_data = extract_json_value(node.LLM_answer, output_keys, thought_key)
+        thought_data = extract_json_value(node.LLM_answer, output_format, thought_key)
         if isinstance(thought_data, dict):
             for i, (key, value) in enumerate(reversed(thought_data.items()), 1):
                 thought = f'\n{" ".join(key.split("_"))}: {value}'                

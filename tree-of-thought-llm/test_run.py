@@ -14,19 +14,19 @@ from tot.methods.arc_utils import check_model_selection
 
 ########## ARC ##########
 args = argparse.Namespace(
-    continue_run="Qwen-72B-Chat-Int4_naive_standard_2024-03-20_19-21-44", # TODO: Bisher noch nicht für Object result infos!!!
+    # continue_run="", # TODO: Bisher noch nicht für Object result infos!!!
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
-    use_api=True,                       # TODO: Use API?!
-    task='arc',                       # TODO: Set task!
-    # task='arc_1D', 
+    use_api=False,                       # TODO: Use API?!
+    # task='arc',                       # TODO: Set task!
+    task='arc_1D', 
     # task = 'arc_h_v',
-    input_representation = None,    # TODO: set input representation
-    # input_representation = 'objects',
-    naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
+    # input_representation = None,    # TODO: set input representation
+    input_representation = 'objects',
+    naive_run=False,                    # TODO: Naive run? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
-    prompt_sample='standard',                # TODO: Set prompt sample: cot - standard!
+    prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy',
@@ -85,9 +85,9 @@ def run(args):
 
     # solve the task
     indices = list(range(0, len(task), 1))      # TODO: check if correct!
-    # random.seed(42)
-    # random.shuffle(indices)
-    # count = 0 # TODO: delete!!!
+    random.seed(42)
+    random.shuffle(indices)
+    count = 0 # TODO: delete!!!
     if hasattr(args, 'continue_run'):
         intermediate_state = json.load(open(directory+'/all_tasks_log.json'))
         reset_usage(new_completion_tokens=intermediate_state[-1]["usage_so_far"]["completion_tokens"], new_prompt_tokens=intermediate_state[-1]["usage_so_far"]["prompt_tokens"])
@@ -158,10 +158,10 @@ def run(args):
         # if np.prod(np.array(t["test"][0]["input"]).shape) < 10:
         #     print(len(t["test"][0]["input"]))
         # if 'pile_h' in task_name: # TODO: delete!!! 
-        # if "scale" in task_name or "move_1p" in task_name or "flip" in task_name: # TODO: delete!!!
-        #     count += 1 # TODO: delete!!!
-        # else:
-        #     continue
+        if "pcopy" in task_name or "recolor" in task_name: # TODO: delete!!!
+            count += 1 # TODO: delete!!!
+        else:
+            continue
         # if not task_name+".json" in solved_gpt4:#+multi_colour: # TODO delete!!!
         #     continue
         if not task_already_tried:

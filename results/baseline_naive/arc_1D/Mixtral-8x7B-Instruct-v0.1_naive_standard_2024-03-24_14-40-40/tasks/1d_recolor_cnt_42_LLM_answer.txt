@@ -1,0 +1,145 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['a', 'a', 'b', 'a', 'a', 'b', 'b', 'a', 'b', 'b', 'b', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+output: ['a', 'a', 'i', 'a', 'a', 'g', 'g', 'a', 'e', 'e', 'e', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'b', 'a', 'b', 'b', 'b', 'a', 'a', 'b', 'b', 'a', 'a', 'a', 'b', 'b', 'a', 'a', 'a', 'a']
+output: ['a', 'i', 'a', 'e', 'e', 'e', 'a', 'a', 'g', 'g', 'a', 'a', 'a', 'g', 'g', 'a', 'a', 'a', 'a']
+
+Example_3:
+input: ['a', 'b', 'a', 'b', 'b', 'b', 'a', 'b', 'b', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'a', 'a', 'a']
+output: ['a', 'i', 'a', 'e', 'e', 'e', 'a', 'g', 'g', 'a', 'a', 'a', 'e', 'e', 'e', 'a', 'a', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'b', 'a', 'a', 'b', 'b', 'a', 'a', 'b', 'b', 'b', 'a', 'b', 'a', 'a', 'b', 'b', 'b']
+
+###########################################################
+Sample Outputs:
+output: ['a', 'a', 'i', 'a', 'a', 'g', 'g', 'a', 'a', 'g', 'g', 'g', 'a', 'g', 'a', 'a', 'g', 'g', 'g']
+*/
+
+// Solution 1:
+class Solution {
+    public String[] replace(String[] arr) {
+        if (arr == null || arr.length <= 0) return new String[0];
+
+        int countA = 0, countB = 0;
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i].equals("a")) countA++;
+            else countB++;
+        }
+
+        // no need to change anything
+        if (countB == 0) return arr;
+
+        String[] res = new String[arr.length];
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i].equals("a")) {
+                if (countB > 0 && countA >= 2) {
+                    res[i] = "i";
+                    countB--;
+                    countA -= 2;
+                } else {
+                    res[i] = "a";
+                }
+            } else {
+                res[i] = "b";
+            }
+        }
+
+        int indexG = 0;
+        for (int i = 0; i < res.length; i++) {
+            if (res[i].equals("b") && countB > 0) {
+                res[i] = "g";
+                countB--;
+            } else if (res[i].equals("i")) {
+                res[i] = "a";
+                indexG++;
+                while (indexG < res.length && res[indexG].equals("g")) {
+                    indexG++;
+                }
+                if (indexG < res.length && res[indexG].equals("a")) {
+                    res[indexG] = "i";
+                }
+            }
+        }
+
+        return res;
+    }
+}
+
+// Solution 2:
+class Solution {
+    public String[] replace(String[] arr) {
+        if (arr == null || arr.length <= 0) return new String[0];
+
+        StringBuilder sb = new StringBuilder();
+        int countA = 0, countB = 0;
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i].equals("a")) countA++;
+            else countB++;
+            sb.append(arr[i]);
+        }
+
+        // no need to change anything
+        if (countB == 0) return arr;
+
+        List<Integer> listI = new ArrayList<>();
+        List<Integer> listG = new ArrayList<>();
+        int curCountA = 0;
+        for (int i = 0; i < sb.length(); i++) {
+            char c = sb.charAt(i);
+            if (c == 'a') {
+                curCountA++;
+                if (curCountA >= 2 && countB > 0) {
+                    listI.add(i);
+                    countB--;
+                    curCountA -= 2;
+                }
+            } else if (c == 'b' && countB > 0) {
+                listG.add(i);
+                countB--;
+            }
+        }
+
+        for (int i = 0; i < listI.size(); i++) {
+            arr[listI.get(i)] = "i";
+            int j = listI.get(i);
+            while (j + 1 < arr.length && arr[j+1].equals("g")) {
+                j++;
+            }
+            if (j + 1 < arr.length && arr[j+1].equals("a")) {
+                arr[j+1] = "i";
+            }
+        }
+
+        for (int i = 0; i < listG.size(); i++) {
+            arr[listG.get(i)] = "g";
+        }
+
+        return arr;
+    }
+}
+
+
+###########################################################
+Result:
+solution: ['a', 'a', 'i', 'a', 'a', 'g', 'g', 'a', 'a', 'e', 'e', 'e', 'a', 'i', 'a', 'a', 'e', 'e', 'e']
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.24746192893401014
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.02631578947368421
+

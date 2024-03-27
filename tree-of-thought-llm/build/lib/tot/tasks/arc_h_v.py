@@ -2,7 +2,6 @@ import os
 import re
 from tot.tasks.base import Task, DATA_PATH
 from tot.prompts.arc import *
-from tot.models import gpt
 from tot.tasks.arc_full_plan import ARCTask
 from tot.methods.arc_utils import *
 from tot.methods.tree_nodes import Node
@@ -24,6 +23,7 @@ class ARC_h_v(ARCTask):
         several subfolders by task type
         """
         self.path = os.path.join(DATA_PATH, 'arc_h_v')
+        self.args = None
         self.data, self.names, self.categories = load_arc_tasks(self.path, "arc_h_v")
         self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
         self.stops = [None]*self.steps # TODO: adjust to prompt! 

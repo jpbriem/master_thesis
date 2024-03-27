@@ -49,7 +49,29 @@ def solve(args, task, idx, to_print=True):
             ps = np.array([n.value for n in new_ys]) / sum([n.value for n in new_ys])
             selected_best_nodes = np.random.choice(new_ys, size=args.n_select_sample, p=ps, replace=False).tolist()
         elif args.method_select == 'greedy':
-            selected_best_nodes = sorted(new_ys, key=lambda n: n.value, reverse=True)[:args.n_select_sample]
+            sorted_new_ys = sorted(new_ys, key=lambda n: n.value, reverse=True)
+            if args.n_select_sample > 1:
+                # check if multiple nodes have the highest value and are from different branches
+                highest_value = sorted_new_ys[0].value
+                highest_valued_nodes = [node for node in sorted_new_ys if node.value == highest_value]
+                other_valued_nodes = [node for node in sorted_new_ys if node.value != highest_value]
+                parent_ids = [node.parent.nodeID for node in highest_valued_nodes]
+                if len(set(parent_ids)) > 1: # multiple branches
+                    selected_best_nodes = []
+                    for i in range(args.n_select_sample):
+                        if len(highest_valued_nodes) == 0:
+                            break
+                        if i%2:
+                            selected_best_nodes.append(highest_valued_nodes.pop(-1))
+                        else:
+                            selected_best_nodes.append(highest_valued_nodes.pop(0))
+                    if len(selected_best_nodes) < args.n_select_sample:
+                        selected_best_nodes += other_valued_nodes[:args.n_select_sample - len(selected_best_nodes)]
+                else:
+                    selected_best_nodes = sorted_new_ys[:args.n_select_sample]
+            else:
+                selected_best_nodes = sorted_new_ys[:args.n_select_sample]
+
 
         # if needed, update children nodes: phase & spreading
         for child in selected_best_nodes:

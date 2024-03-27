@@ -24,6 +24,7 @@ class ARC_1D(ARCTask):
         several subfolders by task type
         """    
         self.path = os.path.join(DATA_PATH, 'arc_1D')
+        self.args = None
         self.data, self.names, self.categories = load_arc_tasks(self.path, "arc_1D")
         self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
         self.stops = [None]*self.steps # TODO: adjust to prompt! 

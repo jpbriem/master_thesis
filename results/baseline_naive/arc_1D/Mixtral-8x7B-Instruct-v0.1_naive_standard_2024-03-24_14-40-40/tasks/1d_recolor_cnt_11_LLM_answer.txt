@@ -1,0 +1,147 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['a', 'j', 'a', 'a', 'j', 'j', 'a', 'a', 'a', 'j', 'j', 'j', 'a', 'j', 'a', 'a', 'a', 'j', 'j', 'a', 'a', 'a']
+output: ['a', 'h', 'a', 'a', 'g', 'g', 'a', 'a', 'a', 'f', 'f', 'f', 'a', 'h', 'a', 'a', 'a', 'g', 'g', 'a', 'a', 'a']
+
+Example_2:
+input: ['a', 'a', 'j', 'j', 'j', 'a', 'a', 'j', 'j', 'a', 'a', 'a', 'j', 'a', 'a', 'j', 'j', 'j', 'a', 'j', 'j', 'a']
+output: ['a', 'a', 'f', 'f', 'f', 'a', 'a', 'g', 'g', 'a', 'a', 'a', 'h', 'a', 'a', 'f', 'f', 'f', 'a', 'g', 'g', 'a']
+
+Example_3:
+input: ['a', 'j', 'j', 'j', 'a', 'a', 'j', 'a', 'a', 'a', 'j', 'j', 'a', 'a', 'j', 'j', 'a', 'j', 'j', 'j', 'a', 'a']
+output: ['a', 'f', 'f', 'f', 'a', 'a', 'h', 'a', 'a', 'a', 'g', 'g', 'a', 'a', 'g', 'g', 'a', 'f', 'f', 'f', 'a', 'a']
+
+Test case:
+input: ['a', 'a', 'j', 'j', 'j', 'a', 'a', 'j', 'a', 'a', 'a', 'j', 'j', 'a', 'a', 'a', 'j', 'j', 'a', 'a', 'a', 'a']
+
+###########################################################
+Sample Outputs:
+output: ['a', 'a', 'f', 'f', 'f', 'a', 'a', 'g', 'a', 'a', 'a', 'h', 'h', 'a', 'a', 'a', 'g', 'g', 'a', 'a', 'a', 'a']
+*/
+
+// Solution 1:
+class Solution {
+    public String[] replace(String[] arr) {
+        if (arr == null || arr.length < 2) return arr;
+
+        int aCount = 0, hCount = 0, fCount = 0, gCount = 0;
+        for (int i = 0; i < arr.length; i++) {
+            switch (arr[i]) {
+                case "a":
+                    aCount++;
+                    break;
+                case "j":
+                    hCount += aCount > 0? 1 : 0;
+                    fCount += aCount >= 3? 1 : 0;
+                    gCount += aCount >= 5? 1 : 0;
+                    aCount = 0;
+                    break;
+            }
+        }
+
+        // last group of a's
+        hCount += aCount > 0? 1 : 0;
+        fCount += aCount >= 3? 1 : 0;
+        gCount += aCount >= 5? 1 : 0;
+
+        String[] res = new String[arr.length];
+        for (int i = 0; i < arr.length; i++) {
+            switch (arr[i]) {
+                case "a":
+                    res[i] = aCount >= 5? "e" : aCount >= 3? "d" : aCount >= 1? "c" : "";
+                    break;
+                case "j":
+                    res[i] = hCount-- > 0? "h" : fCount-- > 0? "f" : gCount-- > 0? "g" : "";
+                    break;
+            }
+            aCount--;
+        }
+
+        return res;
+    }
+}
+
+// Solution 2:
+class Solution {
+    public String[] replace(String[] arr) {
+        if (arr == null || arr.length < 2) return arr;
+
+        StringBuilder sb = new StringBuilder();
+        int countA = 0;
+        for (String s : arr) {
+            if ("a".equals(s)) {
+                countA++;
+            } else {
+                while (countA >= 5) {
+                    sb.append("e");
+                    countA -= 5;
+                }
+                while (countA >= 3) {
+                    sb.append("d");
+                    countA -= 3;
+                }
+                while (countA >= 1) {
+                    sb.append("c");
+                    countA -= 1;
+                }
+                if ("j".equals(s)) {
+                    int numJ = Math.max(0, countA / 3);
+                    while (numJ-- > 0) {
+                        sb.append("f");
+                    }
+                    numJ = Math.max(0, countA / 2);
+                    while (numJ-- > 0) {
+                        sb.append("g");
+                    }
+                    numJ = Math.max(0, countA - 1);
+                    while (numJ-- > 0) {
+                        sb.append("h");
+                    }
+                }
+                countA = 0;
+            }
+        }
+        while (countA >= 5) {
+            sb.append("e");
+            countA -= 5;
+        }
+        while (countA >= 3) {
+            sb.append("d");
+            countA -= 3;
+        }
+        while (countA >= 1) {
+            sb.append("c");
+            countA -= 1;
+        }
+
+        String[] result = new String[arr.length];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = sb.toString().substring(0, 1);
+            sb.deleteCharAt(0);
+        }
+
+        return result;
+    }
+}
+
+
+###########################################################
+Result:
+solution: ['a', 'a', 'f', 'f', 'f', 'a', 'a', 'h', 'a', 'a', 'a', 'g', 'g', 'a', 'a', 'a', 'g', 'g', 'a', 'a', 'a', 'a']
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.2572944297082228
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+
