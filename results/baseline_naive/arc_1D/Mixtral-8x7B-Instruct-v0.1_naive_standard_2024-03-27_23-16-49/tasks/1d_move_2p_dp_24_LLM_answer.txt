@@ -1,0 +1,105 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', 'c', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'c', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', 'c', '.', '.', '.']
+output: ['.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'c', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', 'c', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'c', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', 'c', '.', '.', '.']
+
+###########################################################
+Sample Outputs:
+output: ['.', '.', '.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'c', '.', '.', '.']
+*/
+
+public class Solution {
+    public String pushDominoes(String dominoes) {
+        int len = dominoes.length();
+        char[] arr = new char[len];
+        Arrays.fill(arr, '.');
+        for (int i = 0; i < len; ++i) {
+            if (dominoes.charAt(i)!= '.') {
+                arr[i] = dominoes.charAt(i);
+            }
+        }
+        // left and right are the index of last non-dot character on the left and right side respectively
+        int left = -1, right = -1;
+        boolean isLeftPush = false;
+        for (int i = 0; i < len; ++i) {
+            if (arr[i] == '.') continue;
+            if (left == -1 && arr[i] == 'R') {
+                left = i;
+            } else if (left >= 0 && arr[i] == 'L') {
+                // we need to check whether there's a dot between left and i
+                int j = left + 1;
+                while (j < i) {
+                    if (arr[j++] == '.') break;
+                }
+                if (j == i) {
+                    // no dot in between
+                    if (!isLeftPush) {
+                        // first time seeing L after R
+                        isLeftPush = true;
+                    } else {
+                        // second time seeing L after R
+                        // this means that all characters from left+1 to i should be pushed to the left
+                        for (int k = left + 1; k <= i; ++k) {
+                            arr[k] = arr[k] == '.'? 'L' : 'R';
+                        }
+                    }
+                }
+                left = -1;
+            } else if (left >= 0 && arr[i] == 'R') {
+                // we need to check whether there's a dot between left and i
+                int j = left + 1;
+                while (j < i) {
+                    if (arr[j++] == '.') break;
+                }
+                if (j == i) {
+                    // no dot in between
+                    if (!isLeftPush) {
+                        // first time seeing R after L
+                        isLeftPush = true;
+                    } else {
+                        // second time seeing R after L
+                        // this means that all characters from left+1 to i should be pushed to the right
+                        for (int k = left + 1; k <= i; ++k) {
+                            arr[k] = arr[k] == '.'? 'R' : 'L';
+                        }
+                    }
+                }
+                left = -1;
+            }
+        }
+        return new String(arr);
+    }
+}
+
+
+###########################################################
+Result:
+solution: ['.', '.', '.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'c', '.', '.', '.']
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.2607655502392344
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

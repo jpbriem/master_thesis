@@ -1,0 +1,108 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['g', 'g', 'g', 'g', 'g', 'a', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'i', 'e', 'g', 'g', 'e', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'a', 'b', 'e', 'e', 'e', 'e', 'c', 'e', 'c', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'g', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'a', 'd', 'd', 'd', 'd', '.', '.', '.']
+output: ['.', '.', '.', '.', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'g', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.']
+
+###########################################################
+Sample Outputs:
+output: ['.', '.', '.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.']
+*/
+
+// Solution 1:
+class Solution {
+    public String[] findLongestChain(String[] words) {
+        if (words == null || words.length == 0) return new String[0];
+        Arrays.sort(words, (w1, w2) -> Integer.compare(w1.length(), w2.length()));
+        List<String> res = new ArrayList<>();
+        for (int i = 0; i < words.length; i++) {
+            int j = binarySearch(res, words[i]);
+            if (j == -1) res.add(words[i]);
+            else res.set(j, words[i]);
+        }
+        return res.toArray(new String[0]);
+    }
+
+    private int binarySearch(List<String> list, String target) {
+        int left = 0, right = list.size() - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            if (list.get(mid).compareTo(target) >= 0) right = mid - 1;
+            else left = mid + 1;
+        }
+        return left;
+    }
+}
+
+// Solution 2:
+class Solution {
+    public String[] findLongestChain(String[] words) {
+        if (words == null || words.length == 0) return new String[0];
+        Map<Integer, List<String>> map = new HashMap<>();
+        for (String word : words) {
+            int len = word.length();
+            List<String> list = map.computeIfAbsent(len, k -> new ArrayList<>());
+            list.add(word);
+        }
+        List<String> res = new ArrayList<>();
+        for (Map.Entry<Integer, List<String>> entry : map.entrySet()) {
+            Collections.sort(entry.getValue(), (w1, w2) -> compare(w1, w2));
+            for (String word : entry.getValue()) {
+                int idx = binarySearch(res, word);
+                if (idx == -1) res.add(word);
+                else res.set(idx, word);
+            }
+        }
+        return res.toArray(new String[0]);
+    }
+
+    private int binarySearch(List<String> list, String target) {
+        int left = 0, right = list.size() - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            if (list.get(mid).compareTo(target) >= 0) right = mid - 1;
+            else left = mid + 1;
+        }
+        return left;
+    }
+
+    private int compare(String s1, String s2) {
+        int n1 = s1.length(), n2 = s2.length();
+        for (int i = 0; i < Math.min(n1, n2); i++) {
+            if (s1.charAt(i)!= s2.charAt(i)) return s1.charAt(i) - s2.charAt(i);
+        }
+        return n1 - n2;
+    }
+}
+
+
+###########################################################
+Result:
+solution: ['.', '.', '.', '.', '.', '.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', '.']
+
+success: 1
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.20270270270270271
+
+cat_success_cnt: 11
+
+cat_success_rate: 0.4583333333333333
+

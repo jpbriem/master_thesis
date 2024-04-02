@@ -1,0 +1,122 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['g', 'a', 'a', 'a', 'a', 'a', '.', '.', '.', '.', '.', '.', '.']
+output: ['a', 'a', 'a', 'a', 'a', 'g', '.', '.', '.', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', 'd', 'h', 'h', 'h', 'h', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'h', 'h', 'h', 'h', 'd', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', '.', 'd', 'e', 'e', 'e', 'e', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', 'e', 'e', 'e', 'e', 'd', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', 'g', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.']
+
+###########################################################
+Sample Outputs:
+output: ['.', '.', '.', 'f', 'f', 'f', 'g', '.', '.', '.', '.', '.', '.']
+*/
+
+// Solution 1:
+class Solution {
+    public String[] rearrange(String[] input) {
+        if (input == null || input.length < 2) return input;
+
+        int len = input.length, maxIndex = -1, count = 0;
+        for (int i = 0; i < len; ++i) {
+            if (input[i].equals(".")) continue;
+            if (count > 0 && maxIndex!= i) break;
+            maxIndex = i;
+            count++;
+        }
+
+        // no need to swap
+        if (maxIndex == len-1) return input;
+
+        int start = maxIndex + 1;
+        while (start < len &&!input[start].equals(".")) start++;
+
+        // all elements are the same
+        if (start >= len) return input;
+
+        boolean flag = true;
+        for (int i = start+1; i < len; ++i) {
+            if (!input[i].equals(".") && flag) {
+                char tmp = input[i].charAt(0);
+                int j = i;
+                while (j > start && input[j-1].equals(".")) {
+                    input[j] = input[j-1];
+                    --j;
+                }
+                input[j] = Character.toString(tmp);
+                flag = false;
+            } else if (!input[i].equals(".")) {
+                char tmp = input[i].charAt(0);
+                int j = i;
+                while (j > start && input[j-1].charAt(0)!= tmp) {
+                    input[j] = input[j-1];
+                    --j;
+                }
+                input[j] = Character.toString(tmp);
+            }
+        }
+
+        return input;
+    }
+}
+
+// Solution 2:
+class Solution {
+    public String[] rearrange(String[] input) {
+        if (input == null || input.length < 2) return input;
+
+        List<Integer> list = new ArrayList<>();
+        for (int i = 0; i < input.length; ++i) {
+            if (!input[i].equals(".")) list.add(i);
+        }
+
+        if (list.size() <= 1) return input;
+
+        Collections.sort(list, (x, y) -> Integer.compare(y, x));
+
+        for (int i = 0; i < list.size(); ++i) {
+            if (list.get(i) == 0) continue;
+            int j = list.get(i);
+            while (--j > 0 && input[j].equals(".")) {}
+            if (input[j].equals(".")) continue;
+            char tmp = input[j].charAt(0);
+            int k = j;
+            while (k > 0 && input[k-1].equals(".")) {
+                input[k] = input[k-1];
+                --k;
+            }
+            input[k] = Character.toString(tmp);
+        }
+
+        return input;
+    }
+}
+
+
+###########################################################
+Result:
+solution: ['.', '.', '.', 'f', 'f', 'f', 'g', '.', '.', '.', '.', '.', '.']
+
+success: 1
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.3212121212121212
+
+cat_success_cnt: 11
+
+cat_success_rate: 0.7333333333333333
+

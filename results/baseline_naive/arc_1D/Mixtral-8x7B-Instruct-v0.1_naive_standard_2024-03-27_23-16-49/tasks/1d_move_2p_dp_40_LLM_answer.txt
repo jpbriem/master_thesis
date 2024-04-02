@@ -1,0 +1,112 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', '.', '.', 'g', '.', '.']
+output: ['.', '.', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'g', '.', '.']
+
+Example_2:
+input: ['c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', '.', '.', 'g', '.', '.', '.']
+output: ['.', '.', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'c', 'g', '.', '.', '.']
+
+Example_3:
+input: ['.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', '.', '.', 'g', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'g', '.', '.', '.', '.', '.', '.']
+
+Test case:
+input: ['.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', '.', '.', 'g', '.', '.']
+
+###########################################################
+Sample Outputs:
+output: ['.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'g', '.', '.']
+*/
+
+// Solution 1:
+class Solution {
+    public String pushDominoes(String dominoes) {
+        int len = dominoes.length();
+        char[] arr = new char[len];
+        Arrays.fill(arr, '.');
+        for (int i = 0; i < len; ++i) {
+            if (dominoes.charAt(i)!= '.') {
+                arr[i] = dominoes.charAt(i);
+            }
+        }
+        // left and right are the index of last non-dot on the left and right side respectively
+        int left = -1, right = len;
+        for (int i = 0; i < len; ++i) {
+            if (arr[i] == 'L' && left == -1) {
+                left = i;
+            } else if (arr[i] == 'R' && right == len) {
+                right = i;
+            }
+            if (left >= 0 && right <= len) {
+                int l = Math.max(left, 0), r = Math.min(right, len);
+                while (l < r) {
+                    arr[l] = 'L';
+                    arr[r - 1] = 'R';
+                    --r;
+                    ++l;
+                }
+                left = -1;
+                right = len;
+            }
+        }
+        return new String(arr);
+    }
+}
+
+// Solution 2:
+class Solution {
+    public String pushDominoes(String dominoes) {
+        StringBuilder sb = new StringBuilder();
+        int n = dominoes.length(), pre = 0;
+        for (int i = 0; i < n; ++i) {
+            if (dominoes.charAt(i) == '.' || dominoes.charAt(i) == 'L') {
+                continue;
+            }
+            int cur = i + 1;
+            while (cur < n && dominoes.charAt(cur) == '.') {
+                ++cur;
+            }
+            if (cur == n || dominoes.charAt(cur) == 'R') {
+                sb.append("R".repeat(Math.max(0, i - pre)));
+                pre = i + 1;
+            } else {
+                int next = cur + 1;
+                while (next < n && dominoes.charAt(next) == '.') {
+                    ++next;
+                }
+                int dist = (next - cur) / 2;
+                sb.append(".");
+                sb.append("L".repeat(dist));
+                sb.append("R".repeat(dist));
+                pre = next;
+            }
+        }
+        if (pre < n) {
+            sb.append(".".repeat(n - pre));
+        }
+        return sb.toString();
+    }
+}
+
+
+###########################################################
+Result:
+solution: ['.', '.', '.', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'g', '.', '.']
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.25229357798165136
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.027777777777777776
+

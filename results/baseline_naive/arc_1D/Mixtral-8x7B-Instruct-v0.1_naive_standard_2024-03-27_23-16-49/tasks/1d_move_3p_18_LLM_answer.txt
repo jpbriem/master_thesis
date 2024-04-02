@@ -1,0 +1,121 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.', '.', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'g', 'g', 'g', 'g', '.']
+
+Example_2:
+input: ['f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.']
+output: ['.', '.', '.', 'f', 'f', 'f', 'f', 'f', 'f', '.', '.', '.', '.', '.', '.', '.', '.']
+
+Example_3:
+input: ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.', '.', '.', '.']
+output: ['.', '.', '.', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', '.']
+
+Test case:
+input: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', '.', '.', '.', '.']
+
+###########################################################
+Sample Outputs:
+output: ['.', '.', '.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', '.', '.', '.', '.']
+*/
+
+public class Solution {
+    public String[] pushDominoes(String dominoes) {
+        int len = dominoes.length();
+        char[] arr = new char[len];
+        for (int i = 0; i < len; ++i) {
+            if (dominoes.charAt(i) == '.' || dominoes.charAt(i) == 'R') {
+                arr[i] = 'R';
+            } else {
+                arr[i] = 'L';
+            }
+        }
+
+        // find the first L and then update all R to its left
+        for (int i = 0, j = -1; i < len && (j = indexOfLeft(arr, i))!= -1; ) {
+            int k = j + 1;
+            while (k < len && arr[k] == 'R') {
+                arr[k] = 'F';
+                k++;
+            }
+            if (k >= len) break;
+            int dist = k - j - 1;
+            for (int m = j - 1; m >= 0 && arr[m] == 'R'; m--) {
+                arr[m] = 'F';
+            }
+            for (int n = 0; n <= dist / 2; n++) {
+                arr[j - n] = 'L';
+                arr[k + n] = 'R';
+            }
+            i = k + 1;
+        }
+
+        // find the last R and then update all L to its right
+        for (int i = len - 1, j = -1; i >= 0 && (j = indexOfRight(arr, i))!= -1; ) {
+            int k = j - 1;
+            while (k >= 0 && arr[k] == 'L') {
+                arr[k] = 'F';
+                k--;
+            }
+            if (k < 0) break;
+            int dist = j - k - 1;
+            for (int m = i + 1; m < len && arr[m] == 'L'; m++) {
+                arr[m] = 'F';
+            }
+            for (int n = 0; n <= dist / 2; n++) {
+                arr[k + n] = 'R';
+                arr[j - n] = 'L';
+            }
+            i = k - 1;
+        }
+
+        // convert F back to.
+        for (int i = 0; i < len; ++i) {
+            if (arr[i] == 'F') {
+                arr[i] = '.';
+            }
+        }
+
+        return Arrays.toString(arr).replaceAll("[\\[\\],]", "").split(", ");
+    }
+
+    private int indexOfLeft(char[] arr, int start) {
+        for (int i = start; i < arr.length; ++i) {
+            if (arr[i] == 'L') {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int indexOfRight(char[] arr, int end) {
+        for (int i = end; i >= 0; --i) {
+            if (arr[i] == 'R') {
+                return i;
+            }
+        }
+        return -1;
+    }
+}
+
+
+###########################################################
+Result:
+solution: ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'd', 'd', 'd', '.']
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.24945770065075923
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.09090909090909091
+

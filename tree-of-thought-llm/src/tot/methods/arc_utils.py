@@ -690,6 +690,12 @@ def extract_dicts_from_string(input_string):
         if "object_1" in [k.lower() for k in list(input_string.keys())]:
             input_string = str(input_string)[1:-1] # without curly brackets
         input_string = str(input_string)
+    elif isinstance(input_string, list):
+        for i, element in enumerate(input_string):
+            if isinstance(element, dict):
+                if (f"object_{i}" in [k.lower() for k in list(element.keys())]) | (f"object_{i+1}" in [k.lower() for k in list(element.keys())]):
+                    input_string[i] = str(element)[1:-1]
+        input_string = str(input_string)
     else:
         input_string = str(input_string)
         

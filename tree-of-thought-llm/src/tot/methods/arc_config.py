@@ -4,7 +4,7 @@ from langchain.prompts import PromptTemplate
 GPU = '5,6,7'
 
 #################### Prompt ####################
-CHANGE_REPRESENTATION = False
+CHANGE_REPRESENTATION = True
 NEW_REPRESENTATION = [".", "a", "b", "c", "d", "e", "f", "g", "h", "i"]
 
 #################### Model ####################
@@ -74,8 +74,8 @@ REVISIONS = []
 # REVISIONS.append("main") 
 # MODEL_NAMES.append("Qwen/Qwen-14B-Chat-Int4") # Too small context length
 # REVISIONS.append("main")
-# MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
-# REVISIONS.append("main") 
+MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
+REVISIONS.append("main") 
 
 # Falcon 
 # MODEL_NAMES.append("TheBloke/Falcon-7B-Instruct-GPTQ") # TODO: Run all tests )
@@ -88,8 +88,8 @@ REVISIONS = []
 ##### Proprietary #####
 # MODEL_NAMES.append('gpt-4-1106-preview')
 # REVISIONS.append('')
-MODEL_NAMES.append('gpt-3.5-turbo-1106')
-REVISIONS.append('')
+# MODEL_NAMES.append('gpt-3.5-turbo-1106')
+# REVISIONS.append('')
 
 
 #################### automatic completion of parameters ####################

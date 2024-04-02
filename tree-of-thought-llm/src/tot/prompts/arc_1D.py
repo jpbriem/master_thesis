@@ -200,14 +200,14 @@ prompt_modules = {
 					'object_number': 'regarding the first example, analyze if and how the number of objects changed from input to output',
 					# 'object_analysis': 'make an in-depth analysis and compare the input and output objects, focus on color, position, size',
 					'object_analysis': 'regarding the first example, describe the differences between the input and output objects, be precise and say WHAT changed HOW, focus on color, position, size',
-					'conditions': 'regarding the first example, why do certain objects change? Search for conditions in the input, based on object colors, positions, and sizes, that determine the changes!',
-     
+					'conditions': 'regarding the first example, why do certain objects change? Search for conditions in the input that determine the changes, focus on object colors, positions, and sizes!',
+
      				# 'object_relations': 'can you identify relationships between objects from the input that became objects from the output?',
 					# 'object_transformation': 'based on the input, how can we determine the output object\'s color, position, and size? Focus on conditions explaining the transformation',
 					},
 				'Example_2': {...},
 				'overall_pattern': { 
-					'conditions': 'why do objects change? Search for conditions in the input based on object colors, positions, and sizes!',
+        			'conditions': 'regarding all examples, why do certain objects change? Search for conditions in the inputs that determine the changes, focus on object colors, positions, and sizes!',
 					'overall_pattern': 'define general rules to transform any input into its output based only on the input. Specify WHAT type of object changes, WHY it changes, and HOW. Be specific!',
      				},
                 },
@@ -230,18 +230,18 @@ prompt_modules = {
 		'spread': False,
 		'phase': 'abstraction',
   		'generation': {
-			"instruct_task": f'\n\nYour task is to give detailed transformation steps that are generally applicable to all examples to transform the input sequence into its output sequence.',
+			"instruct_task": f'\n\nYour task is to give detailed transformation steps that are generally applicable to all examples to transform the input into its output.',
 			"output_format": {
 				'conditions': 'list all relevant conditions regarding the input that determine the transformation',
-				'transformation_steps': 'create a list of detailed transformation steps that are generally applicable to transform a given input sequence into its output sequence, focus on conditions. Be specific!',
+				'transformation_steps': 'create a list of detailed transformation steps that are generally applicable to transform a given input into its output, focus on conditions. Be specific!',
    		 		},
 			},
 		'evaluation': {
-			"instruct_previous_thoughts": f'\nMoreover, you are given a list of detailed transformation steps that transform an input sequence into its output sequence.',
+			"instruct_previous_thoughts": f'\nMoreover, you are given a list of detailed transformation steps that transform an input into its output.',
 			"instruct_task": f'\n\nEvaluate the given transformation steps and analyze if they correctly describe the transformation for all examples. Be as critical as possible with all details!',
 			"output_format": {
                 'Example_1': {
-                    'transformation_analysis': 'Regarding the first example, analyze if the transformation steps correctly transform the input sequence into its output sequence.',
+                    'transformation_analysis': 'Regarding the first example, analyze if the transformation steps correctly transform the input into its output.',
                     'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the transformation steps as integer.'
                     },
                 'Example_2': {...},
@@ -254,11 +254,11 @@ prompt_modules = {
   		'generation': {
         	"instruct_task": f'\n\nMoreover, you are given a new test case with a new input. Your task is to transform the test input into its test output.',
 			"output_format": {
-				'input_description': 'regarding the test input, describe the objects in the input sequence, focusing on size, position, color.',
+				'input_description': 'regarding the test input, describe the objects in the input, focusing on size, position, color.',
                	'transformation': 'apply the transformation steps and describe in natural language how the objects should look like in the test output, focusing on size, position, color',
 				'output': {
-					'transformed_objects': 'Describe the transformed objects for the test output by following the format in the test case input.',
 					'test_case_output_dimension': 'state the dimension of the test case output [rows, columns] as list of integers',
+					'transformed_objects': 'Describe the transformed objects for the test output by following the format in the test case input.',
 					},
      			#'test_case_output': 'Create the test case output pixel sequence with the transformed objects as numpy array, e.g. \"[0, 0, ..., 0]\". Use zero-indexing for the object positions and fill unoccupied cells with the background color!'
                 },   

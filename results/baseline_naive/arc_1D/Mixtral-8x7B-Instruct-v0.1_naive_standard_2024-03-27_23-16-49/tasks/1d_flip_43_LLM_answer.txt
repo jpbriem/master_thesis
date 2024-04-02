@@ -1,0 +1,109 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: ['.', '.', 'b', 'd', 'd', 'd', 'd', 'd', '.', '.', '.', '.']
+output: ['.', '.', 'd', 'd', 'd', 'd', 'd', 'b', '.', '.', '.', '.']
+
+Example_2:
+input: ['.', '.', '.', '.', '.', '.', 'd', 'g', 'g', 'g', '.', '.']
+output: ['.', '.', '.', '.', '.', '.', 'g', 'g', 'g', 'd', '.', '.']
+
+Example_3:
+input: ['.', '.', '.', 'e', 'g', 'g', 'g', 'g', '.', '.', '.', '.']
+output: ['.', '.', '.', 'g', 'g', 'g', 'g', 'e', '.', '.', '.', '.']
+
+Test case:
+input: ['.', '.', '.', '.', 'a', 'b', 'b', 'b', 'b', '.', '.', '.']
+
+###########################################################
+Sample Outputs:
+output: ['.', '.', '.', '.', 'b', 'b', 'b', 'b', 'a', '.', '.', '.']
+*/
+
+// Solution 1:
+class Solution {
+    public String[] rearrange(String[] input) {
+        if (input == null || input.length < 4) return input;
+
+        int len = input.length, left = 0, right = len - 1;
+        while (left < right) {
+            // move the first non-'.' from left to right
+            while (left < len && input[left].equals(".")) ++left;
+            // move the last non-'.' from right to left
+            while (right >= 0 && input[right].equals(".")) --right;
+            if (left < right) swap(input, left++, right--);
+        }
+
+        for (int i = 0; i + 1 < len; i += 2) {
+            if (!input[i].equals(".") &&!input[i].equals(input[i+1])) {
+                swap(input, i, findFirstNonDotIndex(input, i));
+            }
+        }
+
+        return input;
+    }
+
+    private void swap(String[] arr, int a, int b) {
+        String tmp = arr[a];
+        arr[a] = arr[b];
+        arr[b] = tmp;
+    }
+
+    private int findFirstNonDotIndex(String[] arr, int start) {
+        for (int i = start; i < arr.length; ++i) {
+            if (!arr[i].equals(".")) return i;
+        }
+        throw new IllegalArgumentException();
+    }
+}
+
+// Solution 2:
+class Solution {
+    public String[] rearrange(String[] input) {
+        if (input == null || input.length < 4) return input;
+
+        List<Integer> list = new ArrayList<>();
+        for (int i = 0; i < input.length; ++i) {
+            if (!input[i].equals(".")) list.add(i);
+        }
+
+        Collections.sort(list, (x, y) -> {
+            char c1 = input[x], c2 = input[y];
+            if (c1!= c2) return c2 - c1;
+            else return x - y;
+        });
+
+        for (int i = 0; i < list.size() / 2; ++i) {
+            swap(input, list.get(i), list.get(list.size() - 1 - i));
+        }
+
+        return input;
+    }
+
+    private void swap(String[] arr, int a, int b) {
+        String tmp = arr[a];
+        arr[a] = arr[b];
+        arr[b] = tmp;
+    }
+}
+
+
+###########################################################
+Result:
+solution: ['.', '.', '.', '.', 'b', 'b', 'b', 'b', 'a', '.', '.', '.']
+
+success: 1
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.36507936507936506
+
+cat_success_cnt: 27
+
+cat_success_rate: 0.6923076923076923
+
