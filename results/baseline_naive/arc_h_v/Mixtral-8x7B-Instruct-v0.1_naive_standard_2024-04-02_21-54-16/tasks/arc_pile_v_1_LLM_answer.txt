@@ -1,0 +1,82 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [['c', '.', '.', '.', 'd', '.'], ['.', '.', 'a', '.', '.', '.'], ['.', '.', '.', '.', 'd', '.'], ['c', '.', 'a', '.', '.', '.'], ['c', '.', '.', 'h', '.', '.'], ['.', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['c', '.', '.', '.', '.', '.'], ['c', '.', 'a', '.', 'd', '.'], ['c', '.', 'a', 'h', 'd', '.']]
+
+Example_2:
+input: [['.', 'd', '.', 'g'], ['.', 'd', '.', 'g'], ['.', '.', '.', 'g'], ['.', 'd', 'c', '.']]
+output: [['.', '.', '.', '.'], ['.', 'd', '.', 'g'], ['.', 'd', '.', 'g'], ['.', 'd', 'c', 'g']]
+
+Example_3:
+input: [['.', '.', 'b', 'e'], ['.', '.', '.', 'e'], ['.', '.', 'b', '.'], ['.', '.', '.', 'e']]
+output: [['.', '.', '.', '.'], ['.', '.', '.', 'e'], ['.', '.', 'b', 'e'], ['.', '.', 'b', 'e']]
+
+Test case:
+input: [['.', '.', '.', '.', '.', '.'], ['h', '.', '.', 'b', '.', '.'], ['.', '.', '.', '.', 'c', '.'], ['.', '.', '.', 'b', '.', 'a'], ['.', 'g', 'f', '.', 'c', '.'], ['.', 'g', '.', 'b', '.', '.']]
+
+###########################################################
+Sample Outputs:
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', 'g', 'f', '.', 'c', '.'], ['.', 'h', 'g', 'b', 'c', 'a']]
+*/
+
+// Solution 1:
+class Solution {
+    public List<List<Character>> updateBoard(List<List<Character>> board, int[] click) {
+        if (board.get(click[0]).get(click[1]) == 'M') return new ArrayList<>();
+        dfs(board, click[0], click[1]);
+        return board;
+    }
+
+    private void dfs(List<List<Character>> board, int x, int y) {
+        if (x < 0 || x >= board.size() || y < 0 || y >= board.get(0).size()) return;
+        if (board.get(x).get(y)!= '.') return;
+        char c = getAdjacentBombCount(board, x, y);
+        if (c > 0) {
+            board.get(x).set(y, c);
+            return;
+        }
+        board.get(x).set(y, 'B');
+        for (int i = -1; i <= 1; ++i) {
+            for (int j = -1; j <= 1; ++j) {
+                if (i == 0 && j == 0) continue;
+                dfs(board, x + i, y + j);
+            }
+        }
+    }
+
+    private char getAdjacentBombCount(List<List<Character>> board, int x, int y) {
+        int count = 0;
+        for (int i = -1; i <= 1; ++i) {
+            for (int j = -1; j <= 1; ++j) {
+                if (i == 0 && j == 0) continue;
+                int nx = x + i, ny = y + j;
+                if (nx < 0 || nx >= board.size() || ny < 0 || ny >= board.get(0).size()) continue;
+                if (board.get(nx).get(ny) == 'M' || board.get(nx).get(ny) == 'X') count++;
+            }
+        }
+        return count > 0? (char)(count + '0') : '.';
+    }
+}
+
+
+###########################################################
+Result:
+solution: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', 'b', '.', '.'], ['.', 'g', '.', 'b', 'c', '.'], ['h', 'g', 'f', 'b', 'c', 'a']]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.011904761904761904
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

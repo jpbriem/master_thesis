@@ -1,0 +1,156 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [['.', 'h', '.', '.', 'e'], ['f', 'h', '.', 'i', 'e'], ['.', '.', '.', 'i', '.'], ['f', '.', '.', '.', '.'], ['.', '.', '.', 'i', '.']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', '.', 'i', '.'], ['f', 'h', '.', 'i', 'e'], ['f', 'h', '.', 'i', 'e']]
+
+Example_2:
+input: [['a', '.', '.', '.'], ['.', 'h', '.', '.'], ['.', 'h', '.', '.'], ['.', '.', 'b', 'f']]
+output: [['.', '.', '.', '.'], ['.', '.', '.', '.'], ['.', 'h', '.', '.'], ['a', 'h', 'b', 'f']]
+
+Example_3:
+input: [['.', 'd', '.', '.', 'f', '.'], ['.', 'd', 'h', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', 'd', '.', 'e', '.', '.'], ['.', '.', 'h', 'e', '.', 'g'], ['.', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', 'd', '.', '.', '.', '.'], ['.', 'd', 'h', 'e', '.', '.'], ['.', 'd', 'h', 'e', 'f', 'g']]
+
+Test case:
+input: [['g', '.', '.', '.'], ['.', '.', 'c', '.'], ['g', '.', 'c', 'e'], ['g', 'b', '.', 'e']]
+
+###########################################################
+Sample Outputs:
+output: [[.,.,.,.], [.,., c,.], [., b, c, e], [g, b, c, e]]
+*/
+
+// Solution 1:
+class Solution {
+    public List<List<String>> findWords(char[][] board, String[] words) {
+        Trie trie = new Trie();
+        for (String word : words) {
+            trie.insert(word);
+        }
+        int m = board.length;
+        if (m == 0) return Collections.emptyList();
+        int n = board[0].length;
+        List<List<String>> res = new ArrayList<>();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                dfs(board, i, j, "", trie, res);
+            }
+        }
+        return res;
+    }
+
+    private void dfs(char[][] board, int x, int y, String str, Trie node, List<List<String>> res) {
+        char ch = board[x][y];
+        if (ch == '#' || node.children[ch - 'a'] == null) return;
+        str += ch;
+        if (node.children[ch - 'a'].isEnd) {
+            res.add(Arrays.asList(str));
+            node.children[ch - 'a'].isEnd = false; // avoid duplicates
+        }
+        char tmp = board[x][y];
+        board[x][y] = '#';
+        if (x > 0) dfs(board, x-1, y, str, node.children[ch - 'a'], res);
+        if (x + 1 < board.length) dfs(board, x+1, y, str, node.children[ch - 'a'], res);
+        if (y > 0) dfs(board, x, y-1, str, node.children[ch - 'a'], res);
+        if (y + 1 < board[0].length) dfs(board, x, y+1, str, node.children[ch - 'a'], res);
+        board[x][y] = tmp;
+    }
+}
+
+class TrieNode {
+    Map<Character, TrieNode> children;
+    boolean isEnd;
+    public TrieNode() {
+        this.children = new HashMap<>();
+        this.isEnd = false;
+    }
+}
+
+class Trie {
+    TrieNode root;
+    /** Initialize your data structure here. */
+    public Trie() {
+        this.root = new TrieNode();
+    }
+
+    /** Inserts a word into the trie. */
+    public void insert(String word) {
+        TrieNode curr = root;
+        for (char ch : word.toCharArray()) {
+            if (!curr.children.containsKey(ch)) {
+                curr.children.put(ch, new TrieNode());
+            }
+            curr = curr.children.get(ch);
+        }
+        curr.isEnd = true;
+    }
+}
+
+// Solution 2:
+class Solution {
+    public List<List<String>> findWords(char[][] board, String[] words) {
+        Trie trie = new Trie();
+        for (String word : words) {
+            trie.insert(word);
+        }
+        int m = board.length;
+        if (m == 0) return Collections.emptyList();
+        int n = board[0].length;
+        List<List<String>> res = new ArrayList<>();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                dfs(board, i, j, "", trie, res);
+            }
+        }
+        return res;
+    }
+
+    private void dfs(char[][] board, int x, int y, String str, Trie trie, List<List<String>> res) {
+        char ch = board[x][y];
+        if (ch == '#' ||!trie.children.containsKey(ch)) return;
+        str += ch;
+        Trie subTrie = trie.children.get(ch);
+        if (subTrie.end) {
+            res.add(Arrays.asList(str));
+            subTrie.end = false; // avoid duplicates
+        }
+        char tmp = board[x][y];
+        board[x][y] = '#';
+        if (x > 0) dfs(board, x-1, y, str, subTrie, res);
+        if (x + 1 < board.length) dfs(board, x+1, y, str, subTrie, res);
+        if (y > 0) dfs(board, x, y-1, str, subTrie, res);
+        if (y + 1 < board[0].length) dfs(board, x, y+1, str, subTrie, res);
+        board[x][y] = tmp;
+    }
+}
+
+class Trie {
+    Trie child;
+    boolean end;
+    public Trie() {
+        this.child = new Trie[26];
+        this.end = false;
+    }
+}
+
+
+###########################################################
+Result:
+solution: [['.', '.', '.', '.'], ['g', '.', '.', '.'], ['g', '.', 'c', 'e'], ['g', 'b', 'c', 'e']]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.011583011583011582
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

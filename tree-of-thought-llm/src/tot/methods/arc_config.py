@@ -52,8 +52,8 @@ REVISIONS = []
 # REVISIONS.append("gptq-4bit-32g-actorder_True")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-Instruct-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
 # REVISIONS.append("main")
-# MODEL_NAMES.append("mistralai/Mixtral-8x7B-v0.1")
-# REVISIONS.append("main")
+MODEL_NAMES.append("mistralai/Mixtral-8x7B-v0.1")
+REVISIONS.append("main")
 # MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
 # REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
@@ -74,8 +74,8 @@ REVISIONS = []
 # REVISIONS.append("main") 
 # MODEL_NAMES.append("Qwen/Qwen-14B-Chat-Int4") # Too small context length
 # REVISIONS.append("main")
-MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
-REVISIONS.append("main") 
+# MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
+# REVISIONS.append("main") 
 
 # Falcon 
 # MODEL_NAMES.append("TheBloke/Falcon-7B-Instruct-GPTQ") # TODO: Run all tests )

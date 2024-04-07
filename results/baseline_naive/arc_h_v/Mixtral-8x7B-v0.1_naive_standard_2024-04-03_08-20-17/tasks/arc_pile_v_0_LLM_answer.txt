@@ -1,0 +1,83 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [['e', 'b', '.', 'i'], ['.', 'b', '.', 'i'], ['.', 'b', 'c', '.'], ['.', '.', '.', 'i']]
+output: [['.', '.', '.', '.'], ['.', 'b', '.', 'i'], ['.', 'b', '.', 'i'], ['e', 'b', 'c', 'i']]
+
+Example_2:
+input: [['c', '.', '.', 'b'], ['.', 'e', '.', 'b'], ['c', 'e', 'a', 'b'], ['c', '.', 'a', '.']]
+output: [['.', '.', '.', '.'], ['c', '.', '.', 'b'], ['c', 'e', 'a', 'b'], ['c', 'e', 'a', 'b']]
+
+Example_3:
+input: [['e', '.', 'h', '.', '.', '.'], ['.', '.', '.', '.', '.', 'a'], ['.', '.', 'h', '.', 'd', '.'], ['e', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'd', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['e', '.', 'h', '.', 'd', '.'], ['e', '.', 'h', '.', 'd', 'a']]
+
+Test case:
+input: [['.', 'c', '.', 'b'], ['.', 'c', 'h', 'b'], ['.', '.', 'h', 'b'], ['f', '.', 'h', '.']]
+
+###########################################################
+Sample Outputs:
+output: [[.,., h, b], [., c, h, b], [., c, h, b], [f,, h, ]]
+```
+
+Comment: What is the expected output for `[[".", "c", ".", "b"], [".", "c", "h", "b"], [".", ".", "h", "b"], ["f", ".", "h", "."]]`? I'm not sure what you mean by *the first row and column are filled with dots*. Do you want to fill in all empty cells of a given letter (like your example) or just one cell per letter like my testcase above. Also please add some more examples that cover different cases so we can see how it should work exactly. Thanks! :)
+
+## Answer (0)
+
+You could use this function which takes an array as input parameter and returns another 2D-array where each element contains either its original value if there was no dot around it or else the most frequent character found among adjacent elements :
+
+```
+function replace(arr){
+    var res = [];
+    arr.forEach((row, i) => { // iterate over rows
+        let r = [], j;
+        for(j=0 ; j<row.length ; ++j){ // iterate over columns
+            const val = row[j];
+            if(!val ||!res[i]){ // skip non existing values & initialize new lines
+                r.push('.');
+                continue;
+            }
+            const count = {};
+            for(let k=-1 ; k<=1 ; ++k){ // check surrounding characters on same line
+                if(r[j+k] === undefined &&!(k===0))continue;
+                if(count[r[j+k]])++count[r[j+k]];
+                else count[r[j+k]] = 1;
+            }
+            for(let l=-1 ; l<=1 ; ++l){ // check surrouding characters from previous/next lines
+                if(res[i+l] === undefined &&!(l===0))continue;
+                if(count[res[i+l][j+l]])++count[res[i+l][j+l]];
+                else count[res[i+l][j+l]] = 1;
+            }
+            r.push(Object.keys(count).reduce((p,v)=>Math.max(p,count[v]), -Infinity));
+        }
+        res.push(r);
+    });
+    return res;
+}
+console.log(replace([['e', 'b', '.', 'i'], ['.', 'b', '.', 'i'], ['.', 'b', 'c', '.'], ['.', '.', '.', 'i']]));
+console.log(replace([['c', '.', '.', 'b'], ['.', 'e', '.', 'b'], ['c', 'e', 'a', 'b'], ['c', '.', 'a', '.']]));
+console.log(replace([['e', '.', 'h', '.', '.', '.'], ['.', '.', '.', '.', '.', 'a'], ['.', '.', 'h', '.', 'd', '.'], ['e', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'd', '.']]));
+console.log(replace([['.', 'c', '.', 'b'], ['.', 'c', 'h', 'b'], ['.', '.', 'h', 'b'], ['f', '.', 'h', '.']]));
+```
+
+
+###########################################################
+Result:
+solution: [['.', '.', '.', '.'], ['.', '.', 'h', 'b'], ['.', 'c', 'h', 'b'], ['f', 'c', 'h', 'b']]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.00796812749003984
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

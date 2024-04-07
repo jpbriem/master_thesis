@@ -1,0 +1,132 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [['.', '.', 'e', '.', '.', '.'], ['.', '.', '.', 'a', '.', '.'], ['f', '.', 'e', '.', '.', 'c'], ['.', 'b', '.', 'a', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'c']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', 'e', 'a', '.', 'c'], ['f', 'b', 'e', 'a', '.', 'c']]
+
+Example_2:
+input: [['.', '.', '.', '.', '.', 'i'], ['.', '.', '.', '.', '.', 'i'], ['.', '.', 'b', '.', '.', 'i'], ['c', '.', 'b', 'g', '.', '.'], ['c', '.', 'b', '.', '.', '.'], ['c', 'e', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['c', '.', 'b', '.', '.', 'i'], ['c', '.', 'b', '.', '.', 'i'], ['c', 'e', 'b', 'g', '.', 'i']]
+
+Example_3:
+input: [['.', '.', '.', '.'], ['.', '.', '.', 'i'], ['.', '.', '.', 'i'], ['.', '.', '.', '.']]
+output: [['.', '.', '.', '.'], ['.', '.', '.', '.'], ['.', '.', '.', 'i'], ['.', '.', '.', 'i']]
+
+Test case:
+input: [['c', '.', 'e', 'h'], ['.', 'f', 'e', 'h'], ['c', 'f', '.', 'h'], ['.', 'f', '.', '.']]
+
+###########################################################
+Sample Outputs:
+output: [['c', '.', '.', '.'], ['.', 'f', '.', '.'], ['.', 'f', '.', 'h'], ['c', 'f', 'e', 'h']]
+*/
+
+// Solution 1:
+class Solution {
+    public void moveWord(char[][] board, int r, int c) {
+        if (r < 0 || r >= board.length || c < 0 || c >= board[0].length) return;
+        char ch = board[r][c];
+        if (ch == '.' || ch == '#') return;
+        while (r + 1 < board.length && board[r+1][c]!= '#' && board[r+1][c] == ch) {
+            r++;
+        }
+        for (int i=0; i<r-1; i++) {
+            board[i][c] = '.';
+        }
+        board[r][c] = ch;
+    }
+
+    public List<List<String>> groupStrings(char[][] grid) {
+        List<List<String>> res = new ArrayList<>();
+        // Move words to the top of each column
+        for (int j=0; j<grid[0].length; j++) {
+            for (int i=0; i<grid.length; i++) {
+                moveWord(grid, i, j);
+            }
+        }
+        Set<String> set = new HashSet<>();
+        StringBuilder sb = new StringBuilder();
+        for (int i=0; i<grid.length; i++) {
+            for (int j=0; j<grid[0].length; j++) {
+                if (grid[i][j]!= '.') {
+                    sb.append(grid[i][j]);
+                } else break;
+            }
+            String str = sb.toString();
+            if (!set.contains(str)) {
+                set.add(str);
+                List<String> list = new ArrayList<>();
+                for (int k=0; k<grid[0].length; k++) {
+                    if (grid[i][k]!= '.') {
+                        list.add(new String(grid[i]));
+                    } else break;
+                }
+                res.add(list);
+            }
+            sb.setLength(0);
+        }
+        return res;
+    }
+}
+
+// Solution 2:
+class Solution {
+    private static final int[][] DIRS = {{0, -1}, {-1, 0}};
+
+    public void dfs(char[][] grid, int x, int y, StringBuilder path) {
+        if (x < 0 || x >= grid.length || y < 0 || y >= grid[0].length || grid[x][y] == '#' || grid[x][y] == '\u0000') {
+            return;
+        }
+        char curChar = grid[x][y];
+        grid[x][y] = '\u0000';
+        path.append(curChar);
+        for (int[] dir : DIRS) {
+            dfs(grid, x + dir[0], y + dir[1], path);
+        }
+    }
+
+    public List<List<String>> groupStrings(char[][] grid) {
+        List<List<String>> ans = new ArrayList<>();
+        Map<String, Integer> map = new HashMap<>();
+        for (int i = 0; i < grid.length; ++i) {
+            for (int j = 0; j < grid[0].length; ++j) {
+                if (grid[i][j]!= '#' && grid[i][j]!= '\u0000') {
+                    StringBuilder path = new StringBuilder();
+                    dfs(grid, i, j, path);
+                    String key = path.toString();
+                    if (map.containsKey(key)) {
+                        continue;
+                    }
+                    map.put(key, ans.size());
+                    List<String> temp = new ArrayList<>();
+                    for (int m = i; m < grid.length && grid[m][j]!= '#' && grid[m][j]!= '\u0000'; ++m) {
+                        temp.add(new String(grid[m]).substring(0, j));
+                    }
+                    ans.add(temp);
+                }
+            }
+        }
+        return ans;
+    }
+}
+
+
+###########################################################
+Result:
+solution: [['.', '.', '.', '.'], ['.', 'f', '.', 'h'], ['c', 'f', 'e', 'h'], ['c', 'f', 'e', 'h']]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.01079136690647482
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

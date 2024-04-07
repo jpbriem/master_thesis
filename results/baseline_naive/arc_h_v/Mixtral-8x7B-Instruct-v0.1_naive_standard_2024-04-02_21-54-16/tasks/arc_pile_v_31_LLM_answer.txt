@@ -1,0 +1,107 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [['.', 'e', 'a', '.', '.', '.'], ['.', '.', '.', '.', '.', 'g'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'g'], ['h', '.', '.', '.', 'd', '.'], ['.', '.', '.', '.', 'd', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'd', 'g'], ['h', 'e', 'a', '.', 'd', 'g']]
+
+Example_2:
+input: [['g', 'a', 'i', '.', '.'], ['.', '.', '.', '.', '.'], ['g', '.', 'i', 'h', '.'], ['.', '.', '.', '.', '.'], ['g', '.', 'i', '.', '.']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['g', '.', 'i', '.', '.'], ['g', '.', 'i', '.', '.'], ['g', 'a', 'i', 'h', '.']]
+
+Example_3:
+input: [['.', '.', '.', '.'], ['.', '.', '.', 'f'], ['i', '.', '.', 'f'], ['.', 'g', '.', 'f']]
+output: [['.', '.', '.', '.'], ['.', '.', '.', 'f'], ['.', '.', '.', 'f'], ['i', 'g', '.', 'f']]
+
+Test case:
+input: [['.', 'h', 'i', '.', '.'], ['.', 'h', '.', 'a', '.'], ['.', 'h', 'i', 'a', '.'], ['f', '.', 'i', 'a', 'b'], ['.', '.', '.', '.', '.']]
+
+###########################################################
+Sample Outputs:
+output: [[.,.,.,.,.], [., h, i, a, b], [., h, i, a, b], [f, h, i, a, b], [.,.,.,.,.]]
+*/
+
+// Solution 1:
+class Solution {
+    public List<List<String>> merge(List<List<String>> intervals) {
+        if (intervals.size() <= 1) return intervals;
+        Collections.sort(intervals, new Comparator<List<String>>(){
+            @Override
+            public int compare(List<String> o1, List<String> o2){
+                String s1 = o1.get(0);
+                String s2 = o2.get(0);
+                return Integer.parseInt(s1)-Integer.parseInt(s2);
+            }
+        });
+        for (int i=1; i<intervals.size(); i++){
+            List<String> curr = intervals.get(i);
+            List<String> prev = intervals.get(i-1);
+            if (!curr.get(0).equals(".")){
+                int j = Integer.parseInt(curr.get(0));
+                while (j < Integer.parseInt(prev.get(1)) && i+1 < intervals.size()){
+                    List<String> next = intervals.get(++i);
+                    if (!next.get(0).equals(".")){
+                        prev.set(1, Math.max(Integer.parseInt(next.get(1)), Integer.parseInt(prev.get(1)))+"");
+                    }
+                }
+            }
+        }
+        List<List<String>> res = new ArrayList<>();
+        for (List<String> interval : intervals){
+            if (!interval.get(0).equals(".")){
+                res.add(new ArrayList<>(interval));
+            }
+        }
+        return res;
+    }
+}
+
+// Solution 2:
+class Solution {
+    public List<List<String>> merge(List<List<String>> intervals) {
+        if (intervals.size() <= 1) return intervals;
+        Collections.sort(intervals, new Comparator<List<String>>(){
+            @Override
+            public int compare(List<String> o1, List<String> o2){
+                String s1 = o1.get(0);
+                String s2 = o2.get(0);
+                return Integer.parseInt(s1)-Integer.parseInt(s2);
+            }
+        });
+        List<List<String>> res = new ArrayList<>();
+        int start = Integer.parseInt(intervals.get(0).get(0));
+        int end = Integer.parseInt(intervals.get(0).get(1));
+        for (List<String> interval : intervals){
+            if (Integer.parseInt(interval.get(0)) > end){
+                res.add(Arrays.asList(start + "", end + ""));
+                start = Integer.parseInt(interval.get(0));
+                end = Integer.parseInt(interval.get(1));
+            } else {
+                end = Math.max(end, Integer.parseInt(interval.get(1)));
+            }
+        }
+        res.add(Arrays.asList(start + "", end + ""));
+        return res;
+    }
+}
+
+
+###########################################################
+Result:
+solution: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', 'h', 'i', 'a', '.'], ['.', 'h', 'i', 'a', '.'], ['f', 'h', 'i', 'a', 'b']]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.010869565217391304
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

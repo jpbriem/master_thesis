@@ -1,0 +1,115 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [['.', 'd', 'd', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', 'f', '.', '.', '.', '.'], ['h', '.', 'h', '.', '.', '.'], ['.', '.', 'e', 'e', '.', 'e'], ['.', '.', '.', '.', '.', '.']]
+output: [['d', 'd', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['f', '.', '.', '.', '.', '.'], ['h', 'h', '.', '.', '.', '.'], ['e', 'e', 'e', '.', '.', '.'], ['.', '.', '.', '.', '.', '.']]
+
+Example_2:
+input: [['.', '.', '.', '.'], ['b', 'b', 'b', '.'], ['.', 'g', '.', '.'], ['.', '.', '.', 'a']]
+output: [['.', '.', '.', '.'], ['b', 'b', 'b', '.'], ['g', '.', '.', '.'], ['a', '.', '.', '.']]
+
+Example_3:
+input: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', 'a', 'a'], ['i', '.', 'i', '.', 'i', '.'], ['.', '.', '.', 'g', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', 'b', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['a', 'a', '.', '.', '.', '.'], ['i', 'i', 'i', '.', '.', '.'], ['g', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['b', '.', '.', '.', '.', '.']]
+
+Test case:
+input: [['.', 'h', 'h', 'h'], ['c', 'c', 'c', '.'], ['d', 'd', 'd', '.'], ['.', '.', 'f', 'f']]
+
+###########################################################
+Sample Outputs:
+output: [['h', 'h', 'h', '.'], ['c', 'c', 'c', '.'], ['d', 'd', 'd', '.'], ['f', 'f', '.', '.']]
+*/
+
+// Solution 1:
+class Solution {
+    public char[][] pushDominoes(char[][] dominoes) {
+        int m = dominoes.length, n = dominoes[0].length;
+        for (int i = 0; i < m; ++i) {
+            if (dominoes[i][0]!= '.') {
+                dfs(dominoes, i, 0);
+            }
+            if (dominoes[i][n - 1]!= '.') {
+                dfs(dominoes, i, n - 1);
+            }
+        }
+        return dominoes;
+    }
+
+    private void dfs(char[][] dominoes, int x, int y) {
+        int m = dominoes.length, n = dominoes[0].length;
+        if (x < 0 || x >= m || y < 0 || y >= n) {
+            return;
+        }
+        if (dominoes[x][y] == '.' && (x > 0? dominoes[x - 1][y] == '.' : false)) {
+            return;
+        }
+        if (dominoes[x][y] == 'L' && (x + 1 < m? dominoes[x + 1][y] == 'R' : false)) {
+            return;
+        }
+        if (dominoes[x][y] == 'R' && (x - 1 >= 0? dominoes[x - 1][y] == 'L' : false)) {
+            return;
+        }
+        dominoes[x][y] = dominoes[x][y] == '.'? (x % 2 == 0? 'L' : 'R') : (dominoes[x][y] == 'L'? 'R' : 'L');
+        if (x > 0) {
+            dfs(dominoes, x - 1, y);
+        }
+        if (x + 1 < m) {
+            dfs(dominoes, x + 1, y);
+        }
+    }
+}
+
+// Solution 2:
+class Solution {
+    public char[][] pushDominoes(char[][] dominoes) {
+        int m = dominoes.length, n = dominoes[0].length;
+        for (int j = 0; j < n; ++j) {
+            boolean left = false, right = false;
+            for (int i = 0; i < m; ++i) {
+                if (dominoes[i][j] == 'L') {
+                    left = true;
+                } else if (dominoes[i][j] == 'R') {
+                    right = true;
+                    if (!left) {
+                        continue;
+                    }
+                }
+                if (left && right) {
+                    for (int k = i - 1; k >= 0; --k) {
+                        dominoes[k][j] = 'R';
+                    }
+                    left = false;
+                    right = false;
+                } else if (left) {
+                    for (int k = i - 1; k >= 0; --k) {
+                        dominoes[k][j] = 'L';
+                    }
+                    left = false;
+                }
+            }
+        }
+        return dominoes;
+    }
+}
+
+
+###########################################################
+Result:
+solution: [['h', 'h', 'h', '.'], ['c', 'c', 'c', '.'], ['d', 'd', 'd', '.'], ['f', 'f', '.', '.']]
+
+
+success: 1
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.008695652173913044
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.03333333333333333
+

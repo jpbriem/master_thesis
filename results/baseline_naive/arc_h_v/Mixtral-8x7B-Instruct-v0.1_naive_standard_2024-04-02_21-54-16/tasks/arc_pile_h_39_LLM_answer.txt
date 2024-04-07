@@ -1,0 +1,124 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [['.', '.', 'd', '.', '.'], ['b', '.', '.', 'b', 'b'], ['.', '.', 'f', '.', '.'], ['a', 'a', 'a', '.', '.'], ['.', '.', 'e', 'e', '.']]
+output: [['d', '.', '.', '.', '.'], ['b', 'b', 'b', '.', '.'], ['f', '.', '.', '.', '.'], ['a', 'a', 'a', '.', '.'], ['e', 'e', '.', '.', '.']]
+
+Example_2:
+input: [['.', 'b', '.', 'b'], ['.', 'a', '.', '.'], ['f', '.', '.', '.'], ['g', 'g', '.', '.']]
+output: [['b', 'b', '.', '.'], ['a', '.', '.', '.'], ['f', '.', '.', '.'], ['g', 'g', '.', '.']]
+
+Example_3:
+input: [['.', '.', '.', 'b', '.'], ['.', '.', '.', 'i', '.'], ['.', 'a', '.', '.', '.'], ['.', '.', 'd', 'd', 'd'], ['.', '.', '.', 'f', 'f']]
+output: [['b', '.', '.', '.', '.'], ['i', '.', '.', '.', '.'], ['a', '.', '.', '.', '.'], ['d', 'd', 'd', '.', '.'], ['f', 'f', '.', '.', '.']]
+
+Test case:
+input: [['.', '.', '.', 'h', 'h'], ['.', 'b', '.', '.', '.'], ['.', '.', 'i', 'i', '.'], ['a', '.', 'a', '.', 'a'], ['.', '.', '.', '.', 'd']]
+
+###########################################################
+Sample Outputs:
+output: [['h', '.', '.', '.', '.'], ['.', 'b', '.', '.', '.'], ['.', '.', 'i', 'i', '.'], ['a', '.', 'a', '.', 'a'], ['.', '.', '.', '.', 'd']]
+*/
+
+// Solution 1:
+class Solution {
+    public char[][] fill(char[][] image) {
+        if (image == null || image.length == 0 || image[0].length == 0) return image;
+
+        int m = image.length, n = image[0].length;
+        boolean[][] visited = new boolean[m][n];
+        Deque<int[]> queue = new ArrayDeque<>();
+
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (!visited[i][j] && image[i][j]!= '.') {
+                    // BFS
+                    queue.offerLast(new int[]{i, j});
+                    visited[i][j] = true;
+                    while (!queue.isEmpty()) {
+                        int[] cur = queue.pollFirst();
+                        int x = cur[0], y = cur[1];
+                        if (x - 1 >= 0 &&!visited[x-1][y] && image[x-1][y] == image[x][y]) {
+                            queue.offerLast(new int[]{x-1, y});
+                            visited[x-1][y] = true;
+                        }
+                        if (x + 1 < m &&!visited[x+1][y] && image[x+1][y] == image[x][y]) {
+                            queue.offerLast(new int[]{x+1, y});
+                            visited[x+1][y] = true;
+                        }
+                        if (y - 1 >= 0 &&!visited[x][y-1] && image[x][y-1] == image[x][y]) {
+                            queue.offerLast(new int[]{x, y-1});
+                            visited[x][y-1] = true;
+                        }
+                        if (y + 1 < n &&!visited[x][y+1] && image[x][y+1] == image[x][y]) {
+                            queue.offerLast(new int[]{x, y+1});
+                            visited[x][y+1] = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (visited[i][j]) image[i][j] = '#';
+            }
+        }
+
+        return image;
+    }
+}
+
+// Solution 2:
+class Solution {
+    public char[][] fill(char[][] image) {
+        if (image == null || image.length == 0 || image[0].length == 0) return image;
+
+        int m = image.length, n = image[0].length;
+        boolean[][] visited = new boolean[m][n];
+
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (!visited[i][j] && image[i][j]!= '.') {
+                    dfs(image, visited, i, j);
+                }
+            }
+        }
+
+        return image;
+    }
+
+    private void dfs(char[][] image, boolean[][] visited, int i, int j) {
+        if (i < 0 || i >= image.length || j < 0 || j >= image[0].length || visited[i][j] || image[i][j] == '.') return;
+
+        visited[i][j] = true;
+        image[i][j] = '#';
+
+        dfs(image, visited, i-1, j);
+        dfs(image, visited, i+1, j);
+        dfs(image, visited, i, j-1);
+        dfs(image, visited, i, j+1);
+    }
+}
+
+
+###########################################################
+Result:
+solution: [['h', 'h', '.', '.', '.'], ['b', '.', '.', '.', '.'], ['i', 'i', '.', '.', '.'], ['a', 'a', 'a', '.', '.'], ['d', '.', '.', '.', '.']]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.008547008547008548
+
+cat_success_cnt: 1
+
+cat_success_rate: 0.029411764705882353
+

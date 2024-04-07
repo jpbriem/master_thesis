@@ -1,0 +1,108 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [['.', 'f', '.', 'f', '.'], ['.', '.', '.', 'h', 'h'], ['.', '.', '.', '.', '.'], ['i', '.', 'i', 'i', '.'], ['.', '.', '.', 'e', 'e']]
+output: [['f', 'f', '.', '.', '.'], ['h', 'h', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['i', 'i', 'i', '.', '.'], ['e', 'e', '.', '.', '.']]
+
+Example_2:
+input: [['.', '.', '.', 'a'], ['.', 'h', 'h', '.'], ['b', '.', '.', '.'], ['f', '.', '.', '.']]
+output: [['a', '.', '.', '.'], ['h', 'h', '.', '.'], ['b', '.', '.', '.'], ['f', '.', '.', '.']]
+
+Example_3:
+input: [['.', '.', '.', '.', '.', '.'], ['.', '.', 'd', '.', 'd', 'd'], ['.', 'h', '.', '.', 'h', '.'], ['.', 'e', 'e', '.', '.', '.'], ['.', '.', '.', '.', '.', 'f'], ['.', 'g', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['d', 'd', 'd', '.', '.', '.'], ['h', 'h', '.', '.', '.', '.'], ['e', 'e', '.', '.', '.', '.'], ['f', '.', '.', '.', '.', '.'], ['g', '.', '.', '.', '.', '.']]
+
+Test case:
+input: [['g', 'g', '.', 'g'], ['b', '.', '.', '.'], ['.', 'c', 'c', '.'], ['e', 'e', '.', '.']]
+
+###########################################################
+Sample Outputs:
+output: [['g', 'g', '.', 'g'], ['b', '.', '.', '.'], ['.', 'c', 'c', '.'], ['e', 'e', '.', '.']]
+*/
+
+// Solution 1:
+class Solution {
+    public char[][] fill(char[][] image) {
+        if (image == null || image.length == 0 || image[0].length == 0) return image;
+        int m = image.length, n = image[0].length;
+        boolean[][] visited = new boolean[m][n];
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (!visited[i][j]) {
+                    dfs(image, visited, i, j, image[i][j]);
+                }
+            }
+        }
+        return image;
+    }
+
+    private void dfs(char[][] image, boolean[][] visited, int x, int y, char c) {
+        if (x < 0 || x >= image.length || y < 0 || y >= image[0].length || visited[x][y] || image[x][y]!= c) return;
+        visited[x][y] = true;
+        image[x][y] = c;
+        dfs(image, visited, x + 1, y, c);
+        dfs(image, visited, x - 1, y, c);
+        dfs(image, visited, x, y + 1, c);
+        dfs(image, visited, x, y - 1, c);
+    }
+}
+
+// Solution 2:
+class Solution {
+    public char[][] fill(char[][] image) {
+        if (image == null || image.length == 0 || image[0].length == 0) return image;
+        int m = image.length, n = image[0].length;
+        Deque<Integer> queue = new LinkedList<>();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if ((i == 0 || i == m - 1 || j == 0 || j == n - 1) && image[i][j] == '1') {
+                    queue.offerLast(i * n + j);
+                    image[i][j] = '0';
+                }
+            }
+        }
+        while (!queue.isEmpty()) {
+            int idx = queue.pollFirst();
+            int x = idx / n, y = idx % n;
+            if (x > 0 && image[x - 1][y] == '1') {
+                queue.offerLast((x - 1) * n + y);
+                image[x - 1][y] = '0';
+            }
+            if (x < m - 1 && image[x + 1][y] == '1') {
+                queue.offerLast((x + 1) * n + y);
+                image[x + 1][y] = '0';
+            }
+            if (y > 0 && image[x][y - 1] == '1') {
+                queue.offerLast(x * n + y - 1);
+                image[x][y - 1] = '0';
+            }
+            if (y < n - 1 && image[x][y + 1] == '1') {
+                queue.offerLast(x * n + y + 1);
+                image[x][y + 1] = '0';
+            }
+        }
+        return image;
+    }
+}
+
+
+###########################################################
+Result:
+solution: [['g', 'g', 'g', '.'], ['b', '.', '.', '.'], ['c', 'c', '.', '.'], ['e', 'e', '.', '.']]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.004784688995215311
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+

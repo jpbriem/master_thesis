@@ -1,0 +1,288 @@
+
+###########################################################
+New Step
+###########################################################
+prompt_log: Sample Prompt:
+Example_1:
+input: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'g'], ['h', 'd', 'a', '.', '.', '.'], ['.', 'd', '.', '.', 'b', '.'], ['.', 'd', '.', 'c', '.', 'g'], ['.', '.', '.', '.', '.', '.']]
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', 'd', '.', '.', '.', '.'], ['.', 'd', '.', '.', '.', 'g'], ['h', 'd', 'a', 'c', 'b', 'g']]
+
+Example_2:
+input: [['.', '.', '.', 'd'], ['.', 'i', '.', '.'], ['.', 'i', '.', 'd'], ['.', 'i', '.', 'd']]
+output: [['.', '.', '.', '.'], ['.', 'i', '.', 'd'], ['.', 'i', '.', 'd'], ['.', 'i', '.', 'd']]
+
+Example_3:
+input: [['.', 'f', '.', 'g', '.'], ['.', '.', 'h', '.', '.'], ['.', '.', 'h', '.', '.'], ['.', 'f', '.', 'g', '.'], ['.', '.', 'h', '.', '.']]
+output: [['.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.'], ['.', '.', 'h', '.', '.'], ['.', 'f', 'h', 'g', '.'], ['.', 'f', 'h', 'g', '.']]
+
+Test case:
+input: [['g', '.', 'b', '.', '.', '.'], ['g', 'c', '.', 'i', '.', '.'], ['.', 'c', '.', 'i', 'h', 'd'], ['.', '.', 'b', '.', '.', '.'], ['g', 'c', 'b', '.', '.', '.'], ['.', '.', '.', '.', '.', 'd']]
+
+###########################################################
+Sample Outputs:
+output: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', 'd']]
+*/
+
+// Solution 1:
+class Solution {
+    public void move(char[][] board, int r, int c) {
+        if (r < 0 || r >= board.length || c < 0 || c >= board[0].length || board[r][c] == '.') return;
+
+        char temp = board[r][c];
+        board[r][c] = '.';
+
+        // up
+        for (int i = r - 1; i >= 0 && board[i][c]!= '#' && board[i][c]!= 'd'; --i) {
+            board[i + 1][c] = board[i][c];
+        }
+        board[0][c] = temp;
+
+        // down
+        for (int i = r + 1; i < board.length && board[i][c]!= '#' && board[i][c]!= 'd'; ++i) {
+            board[i - 1][c] = board[i][c];
+        }
+        board[board.length - 1][c] = temp;
+    }
+
+    public void pushDiamond(char[][] board) {
+        for (int j = 0; j < board[0].length; ++j) {
+            if (board[0][j] == 'd') {
+                move(board, 0, j);
+                break;
+            }
+        }
+    }
+
+    public void dropGems(char[][] board) {
+        for (int j = 0; j < board[0].length; ++j) {
+            if (board[board.length - 1][j] == 'g') {
+                move(board, board.length - 1, j);
+                break;
+            }
+        }
+    }
+
+    public void fillHoles(char[][] board) {
+        for (int j = 0; j < board[0].length; ++j) {
+            if (board[0][j] == '.') {
+                move(board, 0, j);
+            }
+        }
+    }
+
+    public void removeCols(char[][] board, List<Integer> cols) {
+        for (int i = 0; i < board.length; ++i) {
+            for (int j : cols) {
+                board[i][j] = '.';
+            }
+        }
+    }
+
+    public void slideRows(char[][] board) {
+        for (int j = 0; j < board[0].length; ++j) {
+            boolean hasNonEmpty = false;
+            for (int i = board.length - 1; i >= 0; --i) {
+                if (board[i][j]!= '.') {
+                    if (!hasNonEmpty) {
+                        hasNonEmpty = true;
+                    } else {
+                        board[i + 1][j] = board[i][j];
+                        board[i][j] = '.';
+                    }
+                }
+            }
+        }
+    }
+
+    public void checkAndSlide(char[][] board) {
+        List<Integer> toRemove = new ArrayList<>();
+        for (int j = 0; j < board[0].length; ++j) {
+            if (board[board.length - 1][j] == '.') continue;
+
+            int count = 0;
+            for (int i = board.length - 1; i >= 0; --i) {
+                if (board[i][j]!= '.') {
+                    ++count;
+                }
+            }
+
+            if (count < 3) {
+                toRemove.add(j);
+            }
+        }
+
+        if (toRemove.size() > 0) {
+            removeCols(board, toRemove);
+            slideRows(board);
+        }
+    }
+
+    public void gameOfLife(char[][] board) {
+        while (true) {
+            pushDiamond(board);
+            dropGems(board);
+            fillHoles(board);
+            checkAndSlide(board);
+
+            boolean isFinished = true;
+            for (int j = 0; j < board[0].length; ++j) {
+                if (board[0][j] == 'd') {
+                    isFinished = false;
+                    break;
+                }
+            }
+
+            if (isFinished) {
+                break;
+            }
+        }
+    }
+
+    public char[][] updateBoard(char[][] board, int[][] moves) {
+        this.gameOfLife(board);
+        return board;
+    }
+}
+
+// Solution 2:
+class Solution {
+    private static final int[][] DIRS = {{0, 1}, {0, -1}};
+
+    public void move(char[][] board, int r, int c, int dir) {
+        if (r < 0 || r >= board.length || c < 0 || c >= board[0].length || board[r][c] == '#' || board[r][c] == 'd') return;
+
+        char temp = board[r][c];
+        board[r][c] = '.';
+
+        int nextR = r + DIRS[dir][0];
+        int nextC = c + DIRS[dir][1];
+        while (nextR >= 0 && nextR < board.length && nextC >= 0 && nextC < board[0].length && board[nextR][nextC]!= '#' && board[nextR][nextC]!= 'd') {
+            board[r][c] = board[nextR][nextC];
+            r = nextR;
+            c = nextC;
+
+            nextR += DIRS[dir][0];
+            nextC += DIRS[dir][1];
+        }
+
+        board[r][c] = temp;
+    }
+
+    public void pushDiamonds(char[][] board) {
+        for (int j = 0; j < board[0].length; ++j) {
+            if (board[0][j] == 'd') {
+                move(board, 0, j, 0);
+                break;
+            }
+        }
+    }
+
+    public void dropGems(char[][] board) {
+        for (int j = 0; j < board[0].length; ++j) {
+            if (board[board.length - 1][j] == 'g') {
+                move(board, board.length - 1, j, 1);
+                break;
+            }
+        }
+    }
+
+    public void fillHoles(char[][] board) {
+        for (int j = 0; j < board[0].length; ++j) {
+            if (board[0][j] == '.') {
+                move(board, 0, j, 0);
+            }
+        }
+    }
+
+    public void removeCols(char[][] board, List<Integer> cols) {
+        for (int i = 0; i < board.length; ++i) {
+            for (int j : cols) {
+                board[i][j] = '.';
+            }
+        }
+    }
+
+    public void slideRows(char[][] board) {
+        for (int j = 0; j < board[0].length; ++j) {
+            boolean hasNonEmpty = false;
+            for (int i = board.length - 1; i >= 0; --i) {
+                if (board[i][j]!= '.') {
+                    if (!hasNonEmpty) {
+                        hasNonEmpty = true;
+                    } else {
+                        board[i + 1][j] = board[i][j];
+                        board[i][j] = '.';
+                    }
+                }
+            }
+        }
+    }
+
+    public void checkAndSlide(char[][] board) {
+        List<Integer> toRemove = new ArrayList<>();
+        for (int j = 0; j < board[0].length; ++j) {
+            if (board[board.length - 1][j] == '.') continue;
+
+            int count = 0;
+            for (int i = board.length - 1; i >= 0; --i) {
+                if (board[i][j]!= '.') {
+                    ++count;
+                }
+            }
+
+            if (count < 3) {
+                toRemove.add(j);
+            }
+        }
+
+        if (toRemove.size() > 0) {
+            removeCols(board, toRemove);
+            slideRows(board);
+        }
+    }
+
+    public void gameOfLife(char[][] board) {
+        while (true) {
+            pushDiamonds(board);
+            dropGems(board);
+            fillHoles(board);
+            checkAndSlide(board);
+
+            boolean isFinished = true;
+            for (int j = 0; j < board[0].length; ++j) {
+                if (board[0][j] == 'd') {
+                    isFinished = false;
+                    break;
+                }
+            }
+
+            if (isFinished) {
+                break;
+            }
+        }
+    }
+
+    public char[][] updateBoard(char[][] board, int[][] moves) {
+        this.gameOfLife(board);
+        return board;
+    }
+}
+
+
+###########################################################
+Result:
+solution: [['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['g', 'c', 'b', '.', '.', '.'], ['g', 'c', 'b', 'i', '.', 'd'], ['g', 'c', 'b', 'i', 'h', 'd']]
+
+
+success: 0
+
+too_long_prompt: False
+
+tries: 1
+
+success_rate: 0.011857707509881422
+
+cat_success_cnt: 0
+
+cat_success_rate: 0.0
+
