@@ -1,10 +1,10 @@
 from langchain.prompts import PromptTemplate 
 
 #################### General ####################
-GPU = '5,6,7'
+GPU = '3,4,5'
 
 #################### Prompt ####################
-CHANGE_REPRESENTATION = True
+CHANGE_REPRESENTATION = False
 NEW_REPRESENTATION = [".", "a", "b", "c", "d", "e", "f", "g", "h", "i"]
 
 #################### Model ####################
@@ -52,10 +52,10 @@ REVISIONS = []
 # REVISIONS.append("gptq-4bit-32g-actorder_True")
 # MODEL_NAMES.append("TheBloke/Mistral-7B-Instruct-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
 # REVISIONS.append("main")
-MODEL_NAMES.append("mistralai/Mixtral-8x7B-v0.1")
-REVISIONS.append("main")
-# MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
+# MODEL_NAMES.append("mistralai/Mixtral-8x7B-v0.1")
 # REVISIONS.append("main")
+MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
+REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
 # REVISIONS.append("main") 
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-Instruct-v0.1-GPTQ") 
@@ -124,16 +124,16 @@ for model in MODEL_NAMES:
     elif "Mixtral".lower() in model.lower():
         config["max_token"] = 32768
         # TODO: für TOT Runs! 
-        # config["model_config"]["temperature"] = 0.7
+        config["model_config"]["temperature"] = 0.7
     MODEL_CONFIGS[model] = config
 
 DELIMITER = {
     "arc": {
-        "item": "', '", # TODO: add apostroph if needed
+        "item": ", ", # TODO: add apostroph if needed
         "grid_start": "[",
-        "grid_end": "']]\n", # include end of last row # TODO: add apostroph if needed
-        "row_start": "['", # TODO: add apostroph if needed
-        "row_end": "'], ", # except for last row # TODO: add apostroph if needed
+        "grid_end": "]]\n", # include end of last row # TODO: add apostroph if needed
+        "row_start": "[", # TODO: add apostroph if needed
+        "row_end": "], ", # except for last row # TODO: add apostroph if needed
         "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
         "example_end": "\n",
         "task_start": "Test case:\n",
@@ -144,10 +144,10 @@ DELIMITER = {
         "output_test": "",
     },
     "arc_1D": {
-        "item": "', '", # TODO: add apostroph if needed
+        "item": ", ", # TODO: add apostroph if needed
         "grid_start": "[",
-        "grid_end": "']\n", # include end of last row # TODO: add apostroph if needed
-        "row_start": "'", # TODO: add apostroph if needed
+        "grid_end": "]\n", # include end of last row # TODO: add apostroph if needed
+        "row_start": "", # TODO: add apostroph if needed
         "row_end": "", # except for last row
         "example_start": "Example_X", # If "Example_X" -> automatically adds example number and \n: 'Example_1\n'
         "example_end": "\n",

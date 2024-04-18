@@ -14,26 +14,26 @@ from tot.methods.arc_utils import check_model_selection
 
 ########## ARC ##########
 args = argparse.Namespace(
-    # continue_run="", # TODO: Bisher noch nicht für Object result infos!!!
+    continue_run="Mixtral-8x7B-Instruct-v0.1_object-representation_2024-03-30_11-57-57", # TODO: Bisher noch nicht für Object result infos!!!
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
-    use_api=True,                       # TODO: Use API?!
+    use_api=False,                       # TODO: Use API?!
     # task='arc',                       # TODO: Set task!
-    # task='arc_1D', 
-    task = 'arc_h_v',
-    input_representation = None,    # TODO: set input representation
-    # input_representation = 'objects',
-    naive_run=True,                    # TODO: Naive run? TODO: chang in prompts
+    task='arc_1D', 
+    # task = 'arc_h_v',
+    # input_representation = None,    # TODO: set input representation
+    input_representation = 'objects',
+    naive_run=False,                    # TODO: Naive run? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
-    prompt_sample='standard',                # TODO: Set prompt sample: cot - standard!
+    prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy',
     revision=False,                     # TODO: Revision?
-    n_generate_sample=1,                # TODO: Set tree search parameters!
-    n_evaluate_sample=1, 
-    n_select_sample=1)
+    n_generate_sample=4,                # TODO: Set tree search parameters!
+    n_evaluate_sample=2, 
+    n_select_sample=2)
 
 # get IDs of 50 ARC tasks to be tested # TODO: original ARC???
 # data = pd.read_csv('/work/jbriem/repos/master_thesis/ARC_datasets/1D-ARC/LLM4ARC/output-logs/direct-grid/ARC-subset/direct_grid_few_shot_number_3.5.csv')
@@ -47,10 +47,7 @@ def run(args):
     log, failure_log = [], ""
 
     if hasattr(args, 'continue_run'):
-        if args.naive_run:
-            current_datetime = datetime.datetime.strptime("_".join(args.continue_run.split("_")[3:]), '%Y-%m-%d_%H-%M-%S')
-        else:
-            current_datetime = datetime.datetime.strptime("_".join(args.continue_run.split("_")[1:]), '%Y-%m-%d_%H-%M-%S')
+        current_datetime = datetime.datetime.strptime("_".join(args.continue_run.split("_")[-2:]), '%Y-%m-%d_%H-%M-%S')
     else:
         current_datetime = datetime.datetime.now()
 

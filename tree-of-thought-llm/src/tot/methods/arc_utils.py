@@ -708,10 +708,23 @@ def extract_dicts_from_string(input_string):
     # Initialize an empty list to store the extracted dictionaries
     extracted_dicts = []
     
+    # check that all keys of dict have quotes
+    def format_keys_with_quotes(match):
+        # This regular expression pattern identifies keys that may or may not be wrapped in quotes.
+        # It captures:
+        # - Optional existing quote (' or ")
+        # - The key (sequence of word characters)
+        # - Another optional existing quote (matching the first)
+        # This is modified to ensure that any quotes around the keys are consistent single quotes.
+        formatted_match = re.sub(r'(?<!\S)(["\']?)(\w+)\1(?=\s*:)', r"'\2'", match)
+        return formatted_match
+    
     # Iterate over the matches and convert them to dictionaries
     for match in matches:
+        # check dict format
+        formatted_match = format_keys_with_quotes(match)
         # Use eval to convert the matched string to a dictionary
-        extracted_dict = eval('{' + match + '}')
+        extracted_dict = eval('{' + formatted_match + '}')
         if "color" in extracted_dict:
             if isinstance(extracted_dict["color"], str):
                 pattern = r'^\d$'
@@ -1186,7 +1199,7 @@ def grid_to_2D_nparray(grid):
         
         try:
             grid = ast.literal_eval(grid)
-            return np.array(grid)
+            return np.array(grid).astype(str)
         except:
             error = "Array found in string but error while converting string to array: " + str(grid)
             return error
