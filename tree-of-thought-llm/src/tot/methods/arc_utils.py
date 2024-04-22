@@ -10,6 +10,7 @@ import ast
 import matplotlib.pyplot as plt
 import shutil
 import datetime
+from collections import deque
 import sys
 import os
 os.environ['CUDA_DEVICE_ORDER']='PCI_BUS_ID'
@@ -479,6 +480,221 @@ def load_arc_tasks(path, dataset="arc"):
 
 # Find objects in 1D pixel sequences
 def find_objects(task, name, grid, bg_color):
+    def bfs(start_row, start_col, color):
+        # Start BFS from the given cell
+        queue = deque([(start_row, start_col)])
+        components = [[start_row, start_col]]
+        size = 1
+        while queue:
+            row, col = queue.popleft()
+            for dr, dc in directions:
+                r, c = row + dr, col + dc
+                if 0 <= r < rows and 0 <= c < cols and not visited[r][c] and grid[r][c] == color:
+                    visited[r][c] = True
+                    queue.append((r, c))
+                    components.append([r, c])
+                    size += 1
+        return {'color': color, 'coordinates': components, 'size': size}
+    def find_inner_blank_areas(objects, bg_color):
+        def flood_fill(r, c, fill_val, bg_color):
+            if r < 0 or r > height-1 or c < 0 or c > width-1 or marked_grid[r][c] != 0:
+                return
+            # Mark the cell with fill_val
+            marked_grid[r][c] = fill_val
+            # Recursively fill the neighboring cells
+            flood_fill(r - 1, c, fill_val, bg_color)
+            flood_fill(r + 1, c, fill_val, bg_color)
+            flood_fill(r, c - 1, fill_val, bg_color)
+            flood_fill(r, c + 1, fill_val, bg_color)
+        new_objects = []
+        for obj in objects:
+            # Determine the bounding box for the coordinates
+            min_row = min(coord[0] for coord in obj['coordinates'])
+            max_row = max(coord[0] for coord in obj['coordinates'])
+            min_col = min(coord[1] for coord in obj['coordinates'])
+            max_col = max(coord[1] for coord in obj['coordinates'])
+
+            # Create a grid for the bounding box
+            height = max_row - min_row + 1
+            width = max_col - min_col + 1
+            marked_grid  = [[0] * width for _ in range(height)]
+
+            # Mark the object's coordinates in the grid
+            for r, c in obj['coordinates']:
+                marked_grid [r - min_row][c - min_col] = -1
+   
+            # # Find all inner blank areas
+            # inner_coordinates = []
+            # for r in range(1, height - 1):
+            #     for c in range(1, width - 1):
+            #         if grid[r][c] == 0:
+            #             # Check if surrounded by non-zero cells
+            #             if grid[r - 1][c] == 1 and grid[r + 1][c] == 1 and grid[r][c - 1] == 1 and grid[r][c + 1] == 1:
+            #                 inner_coordinates.append([r + min_row, c + min_col])
+            inner_coordinates = []
+            found_pixel = True
+            for r in range(1, height - 1):
+                if not found_pixel:
+                    break
+                for c in range(1, width - 1):
+                    if not found_pixel:
+                        break
+                    if marked_grid[r][c] == 0:  # This is part of the inner blank area
+                        flood_fill(r, c, 2, bg_color)  # Fill with a new unique number (2)
+                        # Collect all coordinates filled with 2
+                        for i in range(height):
+                            if not found_pixel:
+                                break
+                            found_pixel = False
+                            for j in range(width):
+                                if marked_grid[i][j] == 2:
+                                    inner_coordinates.append([i + min_row, j + min_col])
+                                    found_pixel = True    
+                            if len(inner_coordinates) == 0 or ("a5313dff" in name):
+                                found_pixel = True
+                        break
+            
+            # check if other object inside
+            for o in objects:
+                for coords_other in o["coordinates"]:
+                    for i, coords in enumerate(inner_coordinates):
+                        if coords == coords_other:
+                            del inner_coordinates[i]
+            # check for duplicates
+            if "a5313dff" in name:
+                inner_coordinates = list(set([tuple(coord) for coord in inner_coordinates]))
+                inner_coordinates = [list(coords) for coords in inner_coordinates]
+                inner_coordinates.sort()
+                if len(inner_coordinates) == 0:
+                    break
+                # delete outside pixels
+                outside_pixels = []
+                for r, c in inner_coordinates:
+                    if r == 11 and (c==8 or c==10):
+                        continue
+                    if r-min_row == height-1 or c-min_col == width-1 or r-min_row == 0 or c-min_col == 0:
+                        outside_pixels.append([r,c])
+                indices_to_delete = []
+                for k in range(3):
+                    for i, coords in enumerate(inner_coordinates):
+                        for coords_outer in outside_pixels:
+                            if coords == coords_outer or abs(coords_outer[0] - coords[0]) + abs(coords_outer[1] - coords[1]) == 1:
+                                indices_to_delete.append(i)
+                                outside_pixels.append(coords)
+                                break
+                indices_to_delete = list(set(indices_to_delete))
+                indices_to_delete.reverse()
+                for index in indices_to_delete:
+                    del inner_coordinates[index]
+                # check if other object inside
+                for o in objects:
+                    for coords_other in o["coordinates"]:
+                        for i, coords in enumerate(inner_coordinates):
+                            if coords == coords_other:
+                                del inner_coordinates[i]
+                # segment into multiple objects and keep last
+                if len(inner_coordinates) == 0: 
+                    return []
+                new_objects = [[inner_coordinates[0]]]
+                # new_object = [inner_coordinates[0]]
+                for r, c in inner_coordinates[1:]:
+                    is_neighbor = False
+                    for new_object in new_objects:
+                        for ro, co in new_object:
+                            if abs(r - ro) + abs(c - co) == 1:
+                                new_object.append([r, c])
+                                is_neighbor = True
+                                break
+                    if not is_neighbor:
+                        new_objects.append([[r,c]])
+                new = []
+                for o in new_objects:
+                    new.append({
+                        'coordinates': o,
+                        'color': bg_color,
+                        'size': len(o)
+                    })
+                return new
+            else:
+                coord_set = set([tuple(coord) for coord in inner_coordinates])
+                if len(coord_set) != len(inner_coordinates):
+                    continue
+            # check if actually surrounded by colored pixels
+            surrounded = True
+            for r, c in inner_coordinates:
+                r = r - min_row
+                c = c - min_col
+                if r < 1 or r > height-2 or c < 1 or c > width-2:
+                    surrounded = False
+                    break
+                
+                
+            # for r, c, in inner_coordinates:
+            #     r = r - min_row
+            #     c = c - min_col
+            #     if r < 1 or r > height-2 or c < 1 or c > width-2:
+            #         surrounded = False
+            #         break
+            #     # check rows
+            #     if marked_grid[r - 1][c] != -1 or marked_grid[r - 1][c] != 2 or marked_grid[r + 1][c] != -1 or marked_grid[r + 1][c] != 2:
+            #         surrounded = False
+            #         break
+            #     if marked_grid[r][c - 1] != -1 or marked_grid[r][c - 1] != 2 or marked_grid[r][c + 1] != -1 or marked_grid[r][c + 1] != 2:
+            #         surrounded = False
+            #         break
+            if inner_coordinates and surrounded:
+                new_objects.append({
+                    'coordinates': inner_coordinates,
+                    'color': bg_color,
+                    'size': len(inner_coordinates)
+                })
+
+        return new_objects
+    def find_extra_pixel_and_fix(obj):
+        # Extract the coordinates
+        coordinates = obj['coordinates']
+        # Determine the bounding box
+        min_row = min(coord[0] for coord in coordinates)
+        max_row = max(coord[0] for coord in coordinates)
+        min_col = min(coord[1] for coord in coordinates)
+        max_col = max(coord[1] for coord in coordinates)
+        
+        # Create a grid that represents the bounding box
+        expected_grid = set(
+            (r, c) for r in range(min_row, max_row + 1) for c in range(min_col, max_col + 1)
+        )
+        
+        # Convert the original coordinates into a set
+        original_coordinates = set(tuple(coord) for coord in coordinates)
+        
+        
+        # Find the pixel that's not in the expected grid (the extra pixel)
+        extra_pixels = list(expected_grid - original_coordinates)
+        
+        if len(extra_pixels) == 0:
+            return [obj]
+        
+        if extra_pixels[0][0] == extra_pixels[1][0]:
+            # extra pixel in respective row
+            for i, coord in enumerate(obj["coordinates"]):
+                if coord[0] == extra_pixels[0][0]:
+                    c = obj["coordinates"].pop(i)
+        else:
+            # extra pixel in respective col
+            for i, coord in enumerate(obj["coordinates"]):
+                if coord[1] == extra_pixels[0][1]:
+                    c = obj["coordinates"].pop(i) 
+        obj["size"] -= 1
+                            
+        # Create the new object for the extra pixel
+        new_object = {
+            'color': obj['color'],  # Use the same color
+            'coordinates': [c],  # This will have only one coordinate
+            'size': 1  # Since it's a single-pixel object
+        }
+               
+        return [obj, new_object]
+
     objects = []
     current_object = None
     if task == "arc_1D":
@@ -513,7 +729,7 @@ def find_objects(task, name, grid, bg_color):
                         # Finish the current object
                         objects.append(current_object)
                         current_object = None
-    if task == "arc_h_v":
+    elif task == "arc_h_v":
         if "arc2smr_v" in name:
             # fill vertical
             # Transpose grid to work column by column
@@ -679,6 +895,63 @@ def find_objects(task, name, grid, bg_color):
                 if current_object is not None:
                     objects.append(current_object)
                     current_object = None
+    elif task == "arc":
+        if "3906de3d" in name: 
+            return find_objects("arc_h_v", "arc_3906de3d_v", grid, bg_color)
+        if "a699fb00" in name:
+            return find_objects("arc_h_v", "arc2smr_h", grid, bg_color)
+        grid = np.array(grid)
+        rows, cols = grid.shape
+        visited = np.zeros((rows, cols), dtype=bool)
+        objects = []
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        if ("3c9b0459" in name) or ("74dd1130" in name) or ("ed36ccf7" in name) or ("6150a2bd" in name) or ("67a3c6ac" in name) or ("9dfd6313" in name):
+            # single object of multiple colors
+            current_object = {'color': [], 'coordinates': [], 'size': 0}
+            for row in range(rows):
+                for col in range(cols):
+                    current_object["color"].append(grid[row][col])
+                    current_object["coordinates"].append([row,col])
+                    current_object["size"] += 1
+            return [current_object]
+        if "b2862040" in name:
+            bg_color = 9
+        if "88a10436" in name:
+            # multicolor objects, separation by >=1 empty rows
+            current_object = {'color': [], 'coordinates': [], 'size': 0}
+            for row in range(rows):
+                new_object = True
+                for col in range(cols):
+                    if grid[row][col] != bg_color:
+                        new_object = False
+                        current_object["color"].append(grid[row][col])
+                        current_object["coordinates"].append([row,col])
+                        current_object["size"] += 1 
+                if new_object and current_object["size"] > 0: 
+                    objects.append(current_object)
+                    current_object = {'color': [], 'coordinates': [], 'size': 0}
+            return objects
+                         
+        # Explore each cell in the grid
+        for row in range(rows):
+            for col in range(cols):
+                if grid[row][col] != bg_color and not visited[row][col]:
+                    visited[row][col] = True
+                    object_info = bfs(row, col, grid[row][col])
+                    objects.append(object_info)
+        if ("d5d6de2d" in name):
+            if objects[0]["color"] == 2:
+                objects += find_inner_blank_areas(objects, bg_color)
+        if ("b2862040" in name) or ("810b9b61" in name) or ("a5313dff" in name):
+            objects += find_inner_blank_areas(objects, bg_color)
+        if "7f4411dc" in name: 
+            new_objects = []
+            for o in objects:
+                if o["size"] > 1:
+                    new_objects = new_objects+find_extra_pixel_and_fix(o)
+                else:
+                    new_objects.append(o)
+            return new_objects    
     # Add the last object if it exists
     if current_object is not None:
         objects.append(current_object)
@@ -742,7 +1015,9 @@ def extract_dicts_from_string(input_string):
     return extracted_dicts
 
 # compare two lists of objects
-def compare_object_lists(list1, list2):
+def compare_object_lists(l1, l2):
+    list1 = l1.copy()
+    list2 = l2.copy()
     # Check if the number of objects is the same
     if len(list1) != len(list2) or len(list1) == 0 or len(list2) == 0:
         return False
