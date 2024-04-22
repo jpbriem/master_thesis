@@ -698,7 +698,14 @@ def extract_dicts_from_string(input_string):
         input_string = str(input_string)
     else:
         input_string = str(input_string)
-        
+    
+    # check if brackets are around objects
+    if "{" not in input_string:
+        # Insert "{" before "color:"
+        input_string = re.sub(r'(?=color:)', '{', input_string)
+        # Insert "}" after "size: [number]"
+        input_string = re.sub(r'(size: \d{1,4})', r'\1}', input_string)
+    
     # Define the pattern to match dictionaries within the string
     pattern = r'\{([^}]+)\}'
     
@@ -906,7 +913,7 @@ def get_context(task_name, task_json, delimiter, with_intro=True, use_object_rep
             text += delimiter["grid_end"]
         text += delimiter["output_train"]
         if use_object_representation:
-            text+= f"Dimension: {[len(sample['output']),len(sample['output'][0])]}, "
+            text+= f"Dimension: {[len(sample['output']),len(sample['output'][0])]}, Objects: "
             objects = find_objects(task=use_object_representation, name=task_name, grid=sample["output"], bg_color=bg_color)
             for i, o in enumerate(objects, 1):
                 text += "Object_" + str(i) + ": " + str(o) + ", "
@@ -938,7 +945,7 @@ def get_tasks(task_name, task_json, delimiter, use_object_representation=False):
                 bg_color = NEW_REPRESENTATION[0]
             else:
                 bg_color = 0
-            task += f"Dimension: {[len(sample['input']),len(sample['input'][0])]}, "
+            task += f"Dimension: {[len(sample['input']),len(sample['input'][0])]},  Objects: "
             objects = find_objects(task=use_object_representation, name=task_name, grid=sample["input"], bg_color=bg_color)
             for i, o in enumerate(objects, 1):
                 task += "Object_" + str(i) + ": " + str(o) + ", "

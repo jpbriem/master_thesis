@@ -14,10 +14,10 @@ from tot.methods.arc_utils import check_model_selection
 
 ########## ARC ##########
 args = argparse.Namespace(
-    continue_run="Mixtral-8x7B-Instruct-v0.1_object-representation_2024-03-30_11-57-57", # TODO: Bisher noch nicht für Object result infos!!!
+    # continue_run="", # TODO: Bisher noch nicht für Object result infos!!!
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
-    use_api=False,                       # TODO: Use API?!
+    use_api=True,                       # TODO: Use API?!
     # task='arc',                       # TODO: Set task!
     task='arc_1D', 
     # task = 'arc_h_v',

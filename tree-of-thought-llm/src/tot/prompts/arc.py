@@ -277,11 +277,13 @@ prompt_modules = {
 		'generation': {
         	"instruct_task": f'\n\nNext to a few example input-output pairs, you are given a new test case with a new input grid. Your task is to transform the test input grid into its test output grid.',
 			"output_format": {
-				'input_description': 'regarding the test input, describe the objects in the input, focusing on size, coordinates, and color.',
-               	'transformation': 'apply the transformation steps and describe in natural language how the objects should look like in the test output, focusing on size, coordinates, color',
+				#'input_description': 'regarding the test input, describe the objects in the input, focusing on size, coordinates, and color.',
+               	'test_case_input_objects': 'copy the objects of the test case input grid from the task',
+                'transformation': 'Describe in natural language how the transformed objects should look like in the test output grid, be specific and state new object sizes, coordinates, colors. Objects can not overlap!',
 				'output': {
-					'test_case_output_dimension': 'state the dimension of the test case output [rows, columns] as list of integers',
-					'transformed_objects': 'Describe the transformed objects for the test output by following the format in the test case input: "[Object_ID: {\'color\': \'object color\', \'coordinates\': [[row_1,col_1], [row_2,col_2], ..], \'size\': \'number of pixels\'}, ...]',
+					'test_case_output_dimension': 'state the dimension of the test case output grid [rows, columns] as list of integers',
+					'transformed_objects': 'Describe all objects after transformation for the test output grid by following the format in the test case input: : "[Object_ID: {\'color\': \'object color\', \'coordinates\': [[row_1,col_1], [row_2,col_2], ..], \'size\': \'number of pixels\'}, ...]"',
+     				#'transformed_objects': 'Describe the transformed objects for the test output by following the format in the test case input: "[Object_ID: {\'color\': \'object color\', \'coordinates\': [[row_1,col_1], [row_2,col_2], ..], \'size\': \'number of pixels\'}, ...]',
 					},
     
                 # 'input_description': 'describe the test input grid and identify all objects and pixel pattern', # in the input grid by following the format: [Object_ID: {color: \'object color\', coordinates: [[x_1,y_1], [x_2,y_2], ..], size: number of pixels}, ...]',
@@ -497,7 +499,7 @@ prompt_modules_naive = {
     			'overall_pattern': 'describe the input-output relationship valid for all input-output pairs', 
 				'instructions': 'describe the required transformation actions to transform a new input into its output, think step by step', 
 				'test_case_input_objects': 'copy the objects of the test case input grid from the task',
-				'transformation': 'Describe in natural language how the objects should look like in the test output grid, focusing on size, coordinates, color',
+				'transformation': 'Describe in natural language how the transformed objects should look like in the test output grid, focusing on size, coordinates, color',
 				'transformed_objects': 'Describe all objects after transformation for the test output sequence by following the format in the test case input.',
 				'test_case_output_dimension': 'state the dimension of the test case output sequence [rows, columns] as list of integers',
 				'test_case_output': 'Create the test case output pixel grid with the transformed objects as numpy array, e.g. \"[[0, 0, ...], [...]]\". Use zero-indexing [row_index, column_index] for the object positions and fill unoccupied cells with the background color!'

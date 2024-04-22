@@ -1,5 +1,5 @@
 ################## General Task Explanation ##################
-general_explanation = '''You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence of dimension [1, 5] with the following objects: [Object_1: {{color: 2, start_index: 1, end_index: 2, size: 2}}, Object_2: {{color: 3, start_index: 4, end_index: 4, size: 1}}], with zero-indexing for the position.\n'''
+general_explanation = '''You are confronted with a task in which a 1-dimensional input sequence of pixels should be transformed into a corresponding output sequence. The input and output sequences have values from 1 to 9 representing different pixel colors, and 0 representing the background color. Adjacent pixels of the same color are designated as objects. For example [0, 2, 2, 0, 3] represents a pixel sequence of dimension [1, 5] with the following objects: [Object_1: {{'color': 2, 'start_index': 1, 'end_index': 2, 'size': 2}}, Object_2: {{'color': 3, 'start_index': 4, 'end_index': 4, 'size': 1}}], with zero-indexing for the position.\n'''
 
 human_priors = '''\nThe transformation from input to output follows a certain pattern with logical rules that might refer to concepts as follows:
 - Objects: 
@@ -159,7 +159,7 @@ prompt_modules = {
 			"instruct_task": f'\n\nEvaluate the given test output sequence and analyze if the transformation was applied correctly to the test input sequence. Be as critical as possible with all details!',
 			"output_format": {
                 'test_output_analysis': 'consider each step of the transformation algorithm and analyze if the test input sequence was correctly transformed into its test output sequence.',
-                'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer.'
+                'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer. Return 0 if no test output sequence was given.'
                 }
    		 	},
      	'revision': {
@@ -268,7 +268,7 @@ prompt_modules = {
 			"instruct_task": f'\n\nEvaluate the given test output and analyze if the transformation was applied correctly to the test input. Be as critical as possible with all details!',
 			"output_format": {
                 'test_output_analysis': 'consider each step of the transformation instructions and analyze if the test input was correctly transformed into its test output.',
-                'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer.'
+                'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer. Return 0 if no test output was given.'
                 }
    		 	},
      	'revision': {

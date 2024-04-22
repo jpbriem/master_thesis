@@ -54,8 +54,8 @@ REVISIONS = []
 # REVISIONS.append("main")
 # MODEL_NAMES.append("mistralai/Mixtral-8x7B-v0.1")
 # REVISIONS.append("main")
-MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
-REVISIONS.append("main")
+# MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
+# REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
 # REVISIONS.append("main") 
 # MODEL_NAMES.append("TheBloke/Mixtral-8x7B-Instruct-v0.1-GPTQ") 
@@ -86,8 +86,8 @@ REVISIONS.append("main")
 # REVISIONS.append("main")
 
 ##### Proprietary #####
-# MODEL_NAMES.append('gpt-4-1106-preview')
-# REVISIONS.append('')
+MODEL_NAMES.append('gpt-4-1106-preview')
+REVISIONS.append('')
 # MODEL_NAMES.append('gpt-3.5-turbo-1106')
 # REVISIONS.append('')
 
