@@ -14,13 +14,13 @@ from tot.methods.arc_utils import check_model_selection
 
 ########## ARC ##########
 args = argparse.Namespace(
-    # continue_run="", # TODO: Bisher noch nicht für Object result infos!!!
+    continue_run="gpt-4-1106-preview_object-representation_2024-04-24_07-54-55", # TODO: Bisher noch nicht für Object result infos!!!
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
     use_api=True,                       # TODO: Use API?!
     # task='arc',                       # TODO: Set task!
-    task='arc_1D', 
-    # task = 'arc_h_v',
+    # task='arc_1D', 
+    task = 'arc_h_v',
     # input_representation = None,    # TODO: set input representation
     input_representation = 'objects',
     naive_run=False,                    # TODO: Naive run? TODO: chang in prompts
