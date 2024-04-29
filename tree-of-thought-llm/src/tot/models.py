@@ -18,10 +18,6 @@ import torch
 completion_tokens = prompt_tokens = 0
 model = tokenizer = llm = backend = prompt_sample = None
 naive_run = False
-responses = [] # TODO: Delete
-idx = 0 # TODO: Delete
-date = datetime.datetime.now() # TODO: Delete
-
 
 def initialize_model(args):
     global model, tokenizer, llm, backend, naive_run, prompt_sample
@@ -202,7 +198,7 @@ def gpt(messages, model="gpt-3.5-turbo-1106", temperature=0.7, response_format={
     return chatgpt(messages, model=model, temperature=temperature, response_format=response_format, max_tokens=max_tokens, n=n, stop=stop)
     
 def chatgpt(messages, model="gpt-3.5-turbo-1106", temperature=0.7, response_format={ "type": "json_object" }, max_tokens=2000, n=1, stop=None) -> list:
-    global completion_tokens, prompt_tokens, responses, idx, date  # TODO: Delete
+    global completion_tokens, prompt_tokens
     outputs = []
     while n > 0:
         cnt = min(n, 20)
