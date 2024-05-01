@@ -22,7 +22,8 @@ The ARC is detailed in [On the Measure of Intelligence by François Chollet (201
 ### Installation Guide
 1. Clone the repository.
 2. Insert your Huggingface and OpenAI credentials in `./credentials.py` and `tree-of-thought-llm/src/tot/methods/credentials.py`. Ensure these files are listed in `.gitignore`.
-3. Install required packages from `requirements.txt`.
+3. Create a new python environment: `conda create -n myenv python=3.11`
+4. Install required packages from `tree-of-thought-llm/requirements.txt`.
 
 ### Running Experiments
 1. Modify configurations in `tree-of-thought-llm/src/tot/methods/arc_config.py`:
