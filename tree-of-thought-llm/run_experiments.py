@@ -9,25 +9,21 @@ from tot.models import gpt_usage, reset_usage
 from tot.methods.arc_config import MODEL_NAMES, REVISIONS
 from tot.methods.arc_utils import check_model_selection
 
-########## ARC ##########
+########## Set Parameters for ARC Experiments ##########
 args = argparse.Namespace(
-    # continue_run="", 
+    # continue_run="",                  # TODO: Uncomment, if you dont want to continue a terminated run
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
     use_api=True,                       # TODO: Use API?!
-    # task='arc',                       # TODO: Set task!
-    # task='arc_1D', 
-    task = 'arc_h_v',
-    # input_representation = None,    # TODO: set object tool for ARC tasks
-    input_representation = 'objects',
+    task='arc',                         # TODO: Set task! ['arc', 'arc_1D', 'arc_h_v']
+    input_representation = 'objects',   # TODO: set object tool for ARC tasks! [None, 'objects']
     naive_run=False,                    # TODO: Naive run or AToT? TODO: chang in prompts
-    search_algo='bfs',                  # TODO: Set search algorithm!
-    #search_algo='dfs',
-    prompt_sample='cot',                # TODO: Set prompt sample: cot - standard?
+    search_algo='bfs',                  # TODO: Set search algorithm! ['bfs', 'dfs']
+    prompt_sample='cot',                # TODO: Set prompt sample: ['cot', 'standard']
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy',
-    revision=False,                     # TODO: Revision?
+    revision=False,                     # TODO: Revision of abstracted pattern?
     n_generate_sample=4,                # TODO: Set tree search parameters!
     n_evaluate_sample=2, 
     n_select_sample=2)
@@ -70,11 +66,10 @@ def run(args):
     log.append(summary)
 
     # solve the task
-    indices = list(range(0, len(task), 1))      # TODO: check if correct!
+    indices = list(range(0, len(task), 1))   
     if hasattr(args, 'continue_run'):
         intermediate_state = json.load(open(directory+'/all_tasks_log.json'))
         reset_usage(new_completion_tokens=intermediate_state[-1]["usage_so_far"]["completion_tokens"], new_prompt_tokens=intermediate_state[-1]["usage_so_far"]["prompt_tokens"])
-    
     for idx in indices:
         Node.reset_tree()
         task_name = task.names[idx].split(".json")[0]

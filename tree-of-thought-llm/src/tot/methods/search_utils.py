@@ -103,7 +103,7 @@ def get_votes(task, current_node, n_evaluate_sample):
         return "\n###########################################################\nNo Valuation - Only one candidate\n"
  
     # voting
-    vote_prompt = task.vote_prompt_wrap(current_node, task.steps) # TODO: add params to all calls
+    vote_prompt = task.vote_prompt_wrap(current_node, task.steps) 
     vote_prompt = prompt_preprocessing_for_model(vote_prompt)
     prompt_size_check, num_tokens, token_limit = check_prompt_size(vote_prompt)
     if not prompt_size_check: # prompt too large for model 
@@ -139,7 +139,7 @@ def get_samples(args, task, current_node, prompt_sample, stop):
     if prompt_sample == 'standard':
         prompt = task.standard_prompt_wrap(current_node)
     elif prompt_sample == 'cot':
-        prompt = task.cot_prompt_wrap(current_node, task.steps) # TODO: add params to all calls (old functions)
+        prompt = task.cot_prompt_wrap(current_node, task.steps) 
     else:
         raise ValueError(f'prompt_sample {prompt_sample} not recognized')
     if args.use_api:
@@ -285,7 +285,7 @@ def revise_abstraction(args, task, original_node):
         
         # apply abstraction to solve current example -> get child node
         revision_log += get_samples(args, task, node, prompt_sample=args.prompt_sample, stop=task.stops[node.level])
-        example_test_node = node.children[0] # TODO: use multiple children?
+        example_test_node = node.children[0] 
         
         # test the answer, which is in child 
         is_success = task.test_output(node=example_test_node, outputs=[example_test_node], is_revision=True)

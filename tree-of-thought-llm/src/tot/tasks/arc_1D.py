@@ -1,7 +1,6 @@
 import os
-import re
 from tot.tasks.base import Task, DATA_PATH
-from tot.prompts.arc_1D import * # TODO: use ARC prompts
+from tot.prompts.arc_1D import * 
 from tot.tasks.arc_full_plan import ARCTask
 from tot.methods.arc_utils import *
 from tot.methods.tree_nodes import Node

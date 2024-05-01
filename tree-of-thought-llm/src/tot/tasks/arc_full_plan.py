@@ -29,7 +29,7 @@ class ARCTask(Task):
         self.args = None
         self.data, self.names, self.categories = load_arc_tasks(self.path)
         self.steps = int(list(prompt_modules.keys())[-1])+1 # +1 bc. steps start at 0
-        self.stops = [None]*self.steps # TODO: adjust to prompt! 
+        self.stops = [None]*self.steps 
         self.success = {} # saves success rates for each task
         self.full_success = 0 # counts completely solved tasks
         self.cat_success, self.cat_failures = {}, {} # saves success cnt for each category
@@ -54,21 +54,15 @@ class ARCTask(Task):
         if input_representation == "objects":
             ARCTask.use_object_representation = task
     
-    
     def get_input(self, idx: int) -> str:
         task_json = self.data[idx]
-        # The above code is a comment in Python. It is not doing anything in terms of code execution.
-        # It is simply providing a description or explanation of what the code below it is intended to
-        # do.
-        
+
         # transform all grids into desired representation, e.g. numbers or letters
         if CHANGE_REPRESENTATION:
             task_json = change_color_representation(task_json, NEW_REPRESENTATION)
             self.data[idx] = task_json
             
         return task_json
-    
-
     
     def test_output(self, idx: int=0, outputs: list=[""], prompt_modules: dict=None, dataset: str="arc", is_revision: bool=False, node: Node=None):      
         if prompt_modules is None:
@@ -321,7 +315,7 @@ class ARCTask(Task):
         prompt["user"] = prompt["user"].format(context=task_context, test_input=task_input[0])
         return prompt
 
-    @staticmethod # TODO: distingusih between abstraction & application
+    @staticmethod 
     def cot_prompt_wrap(node, total_steps: int=1, cot_prompt: str=cot_prompt, prompt_modules: dict=None, few_shot_ex: dict=None, dataset: str="arc") -> str:
         if prompt_modules is None:
             prompt_modules = ARCTask.prompt_modules
@@ -340,15 +334,12 @@ class ARCTask(Task):
         # get output format for current step
         output_format = prompt_modules[str(current_step)]["generation"]["output_format"]
         if "{len}" in output_format[list(output_format.keys())[-1]]:
-            dimension = len(node.x["test"][0]["input"][0]) # TODO: geht nur für 1D
+            dimension = len(node.x["test"][0]["input"][0]) 
             output_format[list(output_format.keys())[-1]] = output_format[list(output_format.keys())[-1]].format(len=dimension)
         # get instructions for current step
         instruct = ""
         if total_steps == 1: # Naive run with COT prompt
             pass 
-        # elif current_step == total_steps-1: #  For application don't use description of examples # NOTE: treat all the same!
-        #     for i in range(current_step-2, current_step):
-        #         instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
         else:
             for i in range(current_step):
                 instruct += prompt_modules[str(i)]["evaluation"]["instruct_previous_thoughts"]
@@ -366,8 +357,6 @@ class ARCTask(Task):
             previous_thoughts = re.sub(r'Example \d+', incremental_replace, previous_thoughts)
             # get other previous thoughts
             previous_thoughts += "\n" + get_previous_thoughts(node, 2) # get thoughts except description of examples   
-        # elif current_step == total_steps-1: # NOTE: treat all the same! nod difference beteween abstraction & application phase
-        #     previous_thoughts = f'{get_previous_thoughts(node, 2)}' # For application just take thoughts of nodes until 2 layers above 
         else:
             previous_thoughts = f'{get_previous_thoughts(node)}' # tak thoughts of all nodes above
 
@@ -422,7 +411,6 @@ class ARCTask(Task):
             prompt_modules = ARCTask.prompt_modules
         final_value = 0
         cnt_outputs = 0 # counter for number of outputs w valid value
-        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["evaluation"], "output_format")
         output_format = prompt_modules[str(current_step)]["evaluation"]["output_format"]
         for value_output in value_outputs:
             value_output = get_json_from_text(value_output, output_format)
@@ -492,7 +480,6 @@ class ARCTask(Task):
         if prompt_modules is None:
             prompt_modules = ARCTask.prompt_modules
         current_step = node.level - 1 # -1 bc. node is the child of the node under revision
-        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["analysis"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
         thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
         thought_data = extract_json_value(output[0], output_format, thought_key)
@@ -533,7 +520,7 @@ class ARCTask(Task):
         previous_thoughts += "\n\n" + get_previous_thoughts(node.parent.parent, 2) # use thoughts of node under revision and higher except description of examples
 
         # add hypotheses regarding potential mistakes 
-        hypotheses = get_thought(node.LLM_answer, prompt_modules, current_step, isRevision=True) # TODO: Check why not only last part of LLM Answer used as Thought!
+        hypotheses = get_thought(node.LLM_answer, prompt_modules, current_step, isRevision=True)
         node.thought = hypotheses
         
         # get output format 
@@ -551,7 +538,6 @@ class ARCTask(Task):
         if prompt_modules is None:
             prompt_modules = ARCTask.prompt_modules
         current_step = node.level - 2 # -2 bc. node is the grand child of the node under revision
-        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
         thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
         thought_data = extract_json_value(output[0], output_format, thought_key)
@@ -575,7 +561,6 @@ class ARCTask(Task):
             prompt_modules = ARCTask.prompt_modules
         replacement_log = ""
         current_step = revision_node.level
-        #output_keys = extract_dict_keys(prompt_modules[str(current_step)]["revision"]["revision"], "output_format")   
         output_format = prompt_modules[str(current_step)]["revision"]["revision"]["output_format"]
         thought_key = list(output_format.keys())[-1] # new thought is always last item in dict
         thought_data = extract_json_value(node.LLM_answer, output_format, thought_key)
@@ -603,15 +588,6 @@ class ARCTask(Task):
         x["train"], x["test"] = context, test_case
         return x
     
-       
-            
-
-
-
-
-
-
-    # TODO: NEEDED?!
     @staticmethod
     def vote_prompt_wrap(node, total_steps: int=1, dataset: str="arc") -> str:
         task_context = get_context(node.task_name, node.x, DELIMITER[dataset], use_object_representation=ARCTask.use_object_representation)
@@ -640,7 +616,6 @@ Evaluate the given test outputs and analyze if they share the same input to outp
             """
             output_format = {
                 'description_analysis': {
-                    #'Choice_1': 'analyze if the first given description correctly describes similarities and differences between all inputs and respective outputs.',
                     'Choice_1': 'analyze if the first given description correctly describes the inputs and outputs of all examples.',
                     'Choice_2': '...'
                     },
@@ -648,8 +623,6 @@ Evaluate the given test outputs and analyze if they share the same input to outp
                 }
             instruct = '''\nMoreover, you are given multiple abstract descriptions about how an input grid and an output grid typically look like.
 Evaluate the given descriptions and analyze if they correctly describe the provided example input and output grids.\n'''
-#             instruct = '''\nMoreover, you are given multiple abstract descriptions about similarities and differences between the input and its respective output regarding all examples.
-# Evaluate the given descriptions and analyze if they correctly describe the provided training input and output pairs.\n'''   
             task_input = [""] # TODO: when changing to multiple test cases, change this!         
             
             voting_object = "description"
@@ -670,9 +643,6 @@ Evaluate the given patterns and analyze if they correctly describe the relation 
             instruct = '''\nMoreover, you are given an abstract description about how an input grid and an output grid typically look like.
 Moreover, you are given multiple overall patterns that might describe the relation between all input and output pairs.
 Evaluate the given patterns and analyze if they correctly describe the relation between all input and output pairs.\n''' 
-#             instruct = '''\nMoreover, you are given an abstract description for all examples about similarities and differences between the input and its respective output.
-# Moreover, you are given multiple overall patterns describing the relation between all input and output pairs.
-# Evaluate the given patterns and analyze if they correctly describe the relation between all input and output pairs.\n'''            
             previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.LLM_answer, json_keys, "description")) + '''\n'''
             task_input = [""] # TODO: when changing to multiple test cases, change this!   
             voting_object = "overall_pattern"
@@ -682,7 +652,6 @@ Evaluate the given patterns and analyze if they correctly describe the relation 
             """
             output_format = {
                 'instruction_analysis': {
-                    #'Choice_1': 'analyze if the first given instruction correctly describes the transformation for all input and output pairs.',
                     'Choice_1': 'analyze if the first given instruction correctly describes the transformation from input to output for all examples.',
                     'Choice_2': '...'
                     },
@@ -693,10 +662,6 @@ Moreover, you are given an overall pattern that might describe the relation betw
 Moreover, you are given multiple sets of instructions that might be general applicable to transform an input grid into its output grid.
 Evaluate the given sets of instructions and analyze if they correctly describe the transformation for all input and output examples.\n''' 
             
-#             instruct = '''\nMoreover, you are given an abstract description for all examples about similarities and differences between the input and its respective output.
-# Moreover, you are given an overall pattern describing the relation between all input and output pairs.
-# Moreover, you are given multiple sets of instructions describing the transformation for all input and output pairs.
-# Evaluate the given sets of instructions and analyze if they correctly describe the transformation for all input and output pairs.\n'''            
             previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.parent.LLM_answer, json_keys, "description")) + '''\n'''
             previous_thoughts += '''\nOverall pattern: ''' + str(extract_json_value(node.LLM_answer, json_keys, "overall_pattern")) + '''\n'''
             task_input = [""] # TODO: when changing to multiple test cases, change this!   
@@ -717,11 +682,6 @@ Moreover, you are given an overall pattern that might describe the relation betw
 Moreover, you are given step by step instructions that are general applicable to transform an input grid into its output grid.
 Moreover, you are given a test input grid and multiple potential test output grids.
 Evaluate the given test output grids and analyze if they fit to the given description, overall pattern, and instructions.\n'''   
-#             instruct = '''\nMoreover, you are given an abstract description for all examples about similarities and differences between the input and its respective output.
-# Moreover, you are given an overall pattern describing the relation between all input and output pairs.
-# Moreover, you are given step-by-step instructions that are general applicable to all input examples to create their outputs.
-# Moreover, you are given a test input and multiple potential test outputs.
-# Evaluate the given test outputs and analyze if they fit to the given description, overall pattern, and instructions.\n'''            
             previous_thoughts = '''\nDescription: ''' + str(extract_json_value(node.parent.parent.LLM_answer, json_keys, "description")) + '''\n'''
             previous_thoughts += '''\nOverall pattern: ''' + str(extract_json_value(node.parent.LLM_answer, json_keys, "overall_pattern")) + '''\n'''
             previous_thoughts += '''\nInstructions: ''' + str(extract_json_value(node.LLM_answer, json_keys, "instructions")) + '''\n'''
@@ -754,23 +714,3 @@ Evaluate the given test output grids and analyze if they fit to the given descri
             if (vote-1) in range(len(node.children)): # vote -1 bc. indexing starts at 0
                 values[vote-1] += 1
         return values
-    
-    
-    @staticmethod
-    def compare_prompt_wrap(x: str, ys: list) -> str:
-        assert len(ys) == 2, 'compare prompt only supports 2 candidates'
-        ys = [y.split('Passage:\n')[-1] for y in ys]
-        prompt = compare_prompt + f'Passage 1:\n{ys[0]}\n\nPassage 2:\n{ys[1]}\n'
-        return prompt
-    
-    @staticmethod
-    def compare_output_unwrap(compare_output: str):
-        if 'more coherent passage is 1' in compare_output:
-            return 0
-        elif 'more coherent passage is 2' in compare_output:
-            return 1
-        elif 'two passages are similarly coherent' in compare_output:
-            return 0.5
-        else:
-            print(f'-----------------compare no match: {[compare_output]}')
-            return -1

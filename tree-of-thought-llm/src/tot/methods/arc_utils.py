@@ -1,4 +1,3 @@
-
 from tot.methods.arc_config import * 
 from tot.methods.credentials import *
 import numpy as np
@@ -21,7 +20,6 @@ from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig, pipeline
 from langchain.llms import HuggingFacePipeline
 from auto_gptq import exllama_set_max_input_length, AutoGPTQForCausalLM
-import argparse
 import openai
 
 
@@ -339,6 +337,7 @@ def extract_json_value(string, json_format, keys):
             for next_key in key_path:
                 data = data[next_key]
             break
+    
     # Return the value for the given key or entire dictionar if not found
     if isinstance(data, str):
         # in case the model outputs the string "np.array" to indicate such an object
@@ -442,6 +441,7 @@ def get_prompts(dataset="arc"):
         "prompt_modules": prompts.prompt_modules
         }
     return arc_prompts
+
 # load tasks
 def load_arc_tasks(path, dataset="arc"):
     # load data 
@@ -1119,6 +1119,7 @@ def create_grid_from_objects(output_object_description, CHANGE_REPRESENTATION, N
             return grid      
     except:
         return None 
+
 # get context out of json
 def get_context(task_name, task_json, delimiter, with_intro=True, use_object_representation=None):
     if with_intro:

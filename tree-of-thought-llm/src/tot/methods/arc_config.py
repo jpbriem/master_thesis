@@ -12,17 +12,11 @@ MODEL_NAMES = []
 REVISIONS = []
 ##### Open-Source #####
 # Llama Chat
-# MODEL_NAMES.append("meta-llama/Llama-2-7b")
-# fine-tuned by meta 
 # MODEL_NAMES.append("TheBloke/Llama-2-70b-Chat-GPTQ")
 # REVISIONS.append("main")
-# MODEL_NAMES.append("TheBloke/Llama-2-13B-chat-GPTQ") # TODO: Run all tests)
+# MODEL_NAMES.append("TheBloke/Llama-2-13B-chat-GPTQ") 
 # REVISIONS.append("main")
-# MODEL_NAMES.append("NousResearch/Llama-2-7b-chat-hf") # TODO: TODO: Replace with Bloke's model & see if differences?!)
-# REVISIONS.append("main")
-# MODEL_NAMES.append("TheBloke/Llama-2-7B-chat-GPTQ") # TODO: Run all tests)
-# fine-tuned by others
-# MODEL_NAMES.append("TheBloke/Llama-2-7B-32K-Instruct-GPTQ") # TODO: Run all tests)
+# MODEL_NAMES.append("TheBloke/Llama-2-7B-chat-GPTQ") 
 
 # Llama pre-trained
 # MODEL_NAMES.append("TheBloke/Llama-2-70B-GPTQ") 
@@ -33,12 +27,9 @@ REVISIONS = []
 # REVISIONS.append("main")
 
 # Platypus2 
-# MODEL_NAMES.append("garage-bAInd/Platypus2-70B") --> dauert lange und braucht tausend GPUs?! liegt vielleicht an dem 16float oder so)
 # MODEL_NAMES.append("TheBloke/Platypus2-70B-GPTQ") 
 # REVISIONS.append("main")
 # MODEL_NAMES.append("TheBloke/Platypus2-13B-GPTQ") 
-# REVISIONS.append("main")
-# MODEL_NAMES.append("TheBloke/Camel-Platypus2-70B-GPTQ") 
 # REVISIONS.append("main")
 
 # Mistral
@@ -46,21 +37,11 @@ REVISIONS = []
 # REVISIONS.append("main")
 # MODEL_NAMES.append("mistralai/Mistral-7B-v0.1")
 # REVISIONS.append("main")
-# MODEL_NAMES.append("TheBloke/Mistral-7B-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
-# REVISIONS.append("main")
-# MODEL_NAMES.append("TheBloke/Mistral-7B-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
-# REVISIONS.append("gptq-4bit-32g-actorder_True")
-# MODEL_NAMES.append("TheBloke/Mistral-7B-Instruct-v0.1-GPTQ") # TODO: TODO: Replace with Bloke's model & see if differences?!)
-# REVISIONS.append("main")
+
+# Mixtral
 # MODEL_NAMES.append("mistralai/Mixtral-8x7B-v0.1")
 # REVISIONS.append("main")
 # MODEL_NAMES.append("mistralai/Mixtral-8x7B-Instruct-v0.1")
-# REVISIONS.append("main")
-# MODEL_NAMES.append("TheBloke/Mixtral-8x7B-v0.1-GPTQ")
-# REVISIONS.append("main") 
-# MODEL_NAMES.append("TheBloke/Mixtral-8x7B-Instruct-v0.1-GPTQ") 
-# REVISIONS.append("main")
-# MODEL_NAMES.append("TheBloke/Nous-Hermes-2-Mixtral-8x7B-DPO-GPTQ")
 # REVISIONS.append("main")
 
 # Vicuna
@@ -72,18 +53,8 @@ REVISIONS = []
 # Qwen 
 # MODEL_NAMES.append("Qwen/Qwen-7B-Chat-Int4")
 # REVISIONS.append("main") 
-# MODEL_NAMES.append("Qwen/Qwen-14B-Chat-Int4") # Too small context length
-# REVISIONS.append("main")
 # MODEL_NAMES.append("Qwen/Qwen-72B-Chat-Int4")
 # REVISIONS.append("main") 
-
-# Falcon 
-# MODEL_NAMES.append("TheBloke/Falcon-7B-Instruct-GPTQ") # TODO: Run all tests )
-# REVISIONS.append("model")
-# MODEL_NAMES.append("TheBloke/Falcon-40B-Instruct-GPTQ") # TODO: Run all tests )
-# REVISIONS.append("model")
-# MODEL_NAMES.append("TheBloke/Falcon-180B-Chat-GPTQ") # TODO: Run all tests )
-# REVISIONS.append("main")
 
 ##### Proprietary #####
 MODEL_NAMES.append('gpt-4-1106-preview')

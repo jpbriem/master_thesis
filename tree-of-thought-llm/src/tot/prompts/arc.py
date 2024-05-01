@@ -183,90 +183,90 @@ prompt_modules = {
    }
 
 # objects
-prompt_modules = {
- 	"0": {
-		# pattern
-		'spread': True,
-		'phase': 'abstraction',
-		'generation': {
-			"instruct_task": f'\n\nImagine you want to explain how to transform a new input without knowing its output yet. Your task is to infer the overall pattern that describes the relation between all input-output pairs.',
-			"output_format": {
-				'Example_1': {
-					'object_number': 'regarding the first example, analyze if and how the number of objects changed from input to output',
-					'object_analysis': 'regarding the first example, describe the differences between the input and output objects, be precise and say WHAT changed HOW, focus on color, coordinates, size',
-					'conditions': 'regarding the first example, why do certain objects change? Search for conditions in the input that determine the changes, focus on object colors, coordinates, and sizes!',					
-					},
-				'Example_2': {...},
-				'overall_pattern': {
-        			'conditions': 'regarding all examples, why do certain objects change? Search for conditions in the inputs that determine the changes, focus on object colors, positions, and sizes!',
-					'overall_pattern': 'define general rules to transform any input into its output based only on the input. Specify WHAT type of object changes, WHY it changes, and HOW. Be specific!',
-					},
-                },
-   		 	},
-		'evaluation': {
-			"instruct_previous_thoughts": f'\nMoreover, you are given an overall pattern that describes the relation between the input and output grids of all examples.',
-			"instruct_task": f'\n\nEvaluate the given pattern and analyze if it correctly describes the relation between the inputs and outputs of all examples. Be as critical as possible with all details!',
-			"output_format": {
-                'Example_1': {
-                    'conditions_analysis': 'Regarding the first example, analyze if the given conditions refer only to the input and are relevant to determine the changes.',
-                    'overall_pattern_analysis': 'Regarding the first example, analyze if the given overall pattern describes the transformation from input to output.',
-                    'precision_analysis': 'Regarding the first example, analyze if the given overall pattern is precise enough to transform a new input to its output.',
-                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the given pattern as integer.'
-                    },
-                'Example_2': {...},
-                }
-   		 	}
-     	},
-	"1": {
-		'spread': False,
-		'phase': 'abstraction',
-		'generation': {
-			"instruct_task": f'\n\nYour task is to give detailed transformation steps that are generally applicable to all examples to transform the input grid into its output grid.',
-			"output_format": {
-				'Example_1': {
-					'conditions': 'regarding the first example, list all relevant conditions regarding the input that determine the transformation, focusing on shape, size, coordinates, values, counts, symmetry',
-					'transformation': 'regarding the first example, describe the transformation steps needed to transform the input grid into its output grid, focus on conditions. Be specific!',
-					},
-				'Example_2': {...},
-				'transformation_steps': 'create a list of detailed transformation steps that are generally applicable to transform a given input grid into its output grid, focus on conditions. Be specific!',
-   		 		},
-			},
-		'evaluation': {
-			"instruct_previous_thoughts": f'\nMoreover, you are given a list of detailed transformation steps that transform an input grid into its output grid.',
-			"instruct_task": f'\n\nEvaluate the given transformation steps and analyze if they correctly describe the transformation for all examples. Be as critical as possible with all details!',
-			"output_format": {
-                'Example_1': {
-                    'transformation_analysis': 'Regarding the first example, analyze if the transformation steps correctly transform the input grid into its output grid.',
-                    'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the transformation steps as integer.'
-                    },
-                'Example_2': {...},
-                },
-   		 	},
-     	},
-	"2": {
-		'spread': True,
-		'phase': 'application',
-		'generation': {
-        	"instruct_task": f'\n\nNext to a few example input-output pairs, you are given a new test case with a new input grid. Your task is to transform the test input grid into its test output grid.',
-			"output_format": {
-               	'test_case_input_objects': 'copy the objects of the test case input grid from the task',
-                'transformation': 'Describe in natural language how the transformed objects should look like in the test output grid, be specific and state new object sizes, coordinates, colors. Objects can not overlap!',
-				'output': {
-					'test_case_output_dimension': 'state the dimension of the test case output grid [rows, columns] as list of integers',
-					'transformed_objects': 'Describe all objects after transformation for the test output grid by following the format in the test case input: : "[Object_ID: {\'color\': \'object color\', \'coordinates\': [[row_1,col_1], [row_2,col_2], ..], \'size\': \'number of pixels\'}, ...]"',
-					},
-                }
-   		 	},
-		'evaluation': {
-			"instruct_previous_thoughts": f'\nMoreover, you are given a test input grid and a potential test output grid.',
-			"instruct_task": f'\n\nEvaluate the given test output grid and analyze if the transformation steps were applied correctly to the test input grid. Be as critical as possible with all details!',
-			"output_format": {
-                'test_output_analysis': 'consider each transformation step and analyze if the test input grid was correctly transformed into its test output grid.',
-                'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer.'
-                }
-   		 	}
-     	},
-   }
+# prompt_modules = {
+#  	"0": {
+# 		# pattern
+# 		'spread': True,
+# 		'phase': 'abstraction',
+# 		'generation': {
+# 			"instruct_task": f'\n\nImagine you want to explain how to transform a new input without knowing its output yet. Your task is to infer the overall pattern that describes the relation between all input-output pairs.',
+# 			"output_format": {
+# 				'Example_1': {
+# 					'object_number': 'regarding the first example, analyze if and how the number of objects changed from input to output',
+# 					'object_analysis': 'regarding the first example, describe the differences between the input and output objects, be precise and say WHAT changed HOW, focus on color, coordinates, size',
+# 					'conditions': 'regarding the first example, why do certain objects change? Search for conditions in the input that determine the changes, focus on object colors, coordinates, and sizes!',					
+# 					},
+# 				'Example_2': {...},
+# 				'overall_pattern': {
+#         			'conditions': 'regarding all examples, why do certain objects change? Search for conditions in the inputs that determine the changes, focus on object colors, positions, and sizes!',
+# 					'overall_pattern': 'define general rules to transform any input into its output based only on the input. Specify WHAT type of object changes, WHY it changes, and HOW. Be specific!',
+# 					},
+#                 },
+#    		 	},
+# 		'evaluation': {
+# 			"instruct_previous_thoughts": f'\nMoreover, you are given an overall pattern that describes the relation between the input and output grids of all examples.',
+# 			"instruct_task": f'\n\nEvaluate the given pattern and analyze if it correctly describes the relation between the inputs and outputs of all examples. Be as critical as possible with all details!',
+# 			"output_format": {
+#                 'Example_1': {
+#                     'conditions_analysis': 'Regarding the first example, analyze if the given conditions refer only to the input and are relevant to determine the changes.',
+#                     'overall_pattern_analysis': 'Regarding the first example, analyze if the given overall pattern describes the transformation from input to output.',
+#                     'precision_analysis': 'Regarding the first example, analyze if the given overall pattern is precise enough to transform a new input to its output.',
+#                     'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the given pattern as integer.'
+#                     },
+#                 'Example_2': {...},
+#                 }
+#    		 	}
+#      	},
+# 	"1": {
+# 		'spread': False,
+# 		'phase': 'abstraction',
+# 		'generation': {
+# 			"instruct_task": f'\n\nYour task is to give detailed transformation steps that are generally applicable to all examples to transform the input grid into its output grid.',
+# 			"output_format": {
+# 				'Example_1': {
+# 					'conditions': 'regarding the first example, list all relevant conditions regarding the input that determine the transformation, focusing on shape, size, coordinates, values, counts, symmetry',
+# 					'transformation': 'regarding the first example, describe the transformation steps needed to transform the input grid into its output grid, focus on conditions. Be specific!',
+# 					},
+# 				'Example_2': {...},
+# 				'transformation_steps': 'create a list of detailed transformation steps that are generally applicable to transform a given input grid into its output grid, focus on conditions. Be specific!',
+#    		 		},
+# 			},
+# 		'evaluation': {
+# 			"instruct_previous_thoughts": f'\nMoreover, you are given a list of detailed transformation steps that transform an input grid into its output grid.',
+# 			"instruct_task": f'\n\nEvaluate the given transformation steps and analyze if they correctly describe the transformation for all examples. Be as critical as possible with all details!',
+# 			"output_format": {
+#                 'Example_1': {
+#                     'transformation_analysis': 'Regarding the first example, analyze if the transformation steps correctly transform the input grid into its output grid.',
+#                     'value': 'Based on your analysis regarding the first example, give a rating between 0 and 10 for the transformation steps as integer.'
+#                     },
+#                 'Example_2': {...},
+#                 },
+#    		 	},
+#      	},
+# 	"2": {
+# 		'spread': True,
+# 		'phase': 'application',
+# 		'generation': {
+#         	"instruct_task": f'\n\nNext to a few example input-output pairs, you are given a new test case with a new input grid. Your task is to transform the test input grid into its test output grid.',
+# 			"output_format": {
+#                	'test_case_input_objects': 'copy the objects of the test case input grid from the task',
+#                 'transformation': 'Describe in natural language how the transformed objects should look like in the test output grid, be specific and state new object sizes, coordinates, colors. Objects can not overlap!',
+# 				'output': {
+# 					'test_case_output_dimension': 'state the dimension of the test case output grid [rows, columns] as list of integers',
+# 					'transformed_objects': 'Describe all objects after transformation for the test output grid by following the format in the test case input: : "[Object_ID: {\'color\': \'object color\', \'coordinates\': [[row_1,col_1], [row_2,col_2], ..], \'size\': \'number of pixels\'}, ...]"',
+# 					},
+#                 }
+#    		 	},
+# 		'evaluation': {
+# 			"instruct_previous_thoughts": f'\nMoreover, you are given a test input grid and a potential test output grid.',
+# 			"instruct_task": f'\n\nEvaluate the given test output grid and analyze if the transformation steps were applied correctly to the test input grid. Be as critical as possible with all details!',
+# 			"output_format": {
+#                 'test_output_analysis': 'consider each transformation step and analyze if the test input grid was correctly transformed into its test output grid.',
+#                 'value': 'Based on your analysis, give a rating between 0 and 10 for the test output as integer.'
+#                 }
+#    		 	}
+#      	},
+#    }
 
 
 
@@ -297,27 +297,27 @@ prompt_modules_naive = {
 	}
 
 # for object detection
-prompt_modules_naive = {
-	"0": {
-		'generation': {
-			"instruct_task": f'\n\nYou are to infer the relation between inputs and outputs from the examples. Then, your task is to transform the test input grid into its test output grid.',
-			"output_format": {
-				'example_1_description': {
-					'object_number_changes': 'regarding the first example, does the number of objects change from input to output?',
-					'object_changes': 'regarding the first example, describe the changes between the input and output objects, focusing on color, size, coordinates ([row_index, column_index]), and shape', 
-					},
-				'example_2_description': {...},
-    			'overall_pattern': 'describe the input-output relationship valid for all input-output pairs', 
-				'instructions': 'describe the required transformation actions to transform a new input into its output, think step by step', 
-				'test_case_input_objects': 'copy the objects of the test case input grid from the task',
-				'transformation': 'Describe in natural language how the transformed objects should look like in the test output grid, focusing on size, coordinates, color',
-				'transformed_objects': 'Describe all objects after transformation for the test output sequence by following the format in the test case input.',
-				'test_case_output_dimension': 'state the dimension of the test case output sequence [rows, columns] as list of integers',
-				'test_case_output': 'Create the test case output pixel grid with the transformed objects as numpy array, e.g. \"[[0, 0, ...], [...]]\". Use zero-indexing [row_index, column_index] for the object positions and fill unoccupied cells with the background color!'
-             	},
-   		 	},
-		},
-	}
+# prompt_modules_naive = {
+# 	"0": {
+# 		'generation': {
+# 			"instruct_task": f'\n\nYou are to infer the relation between inputs and outputs from the examples. Then, your task is to transform the test input grid into its test output grid.',
+# 			"output_format": {
+# 				'example_1_description': {
+# 					'object_number_changes': 'regarding the first example, does the number of objects change from input to output?',
+# 					'object_changes': 'regarding the first example, describe the changes between the input and output objects, focusing on color, size, coordinates ([row_index, column_index]), and shape', 
+# 					},
+# 				'example_2_description': {...},
+#     			'overall_pattern': 'describe the input-output relationship valid for all input-output pairs', 
+# 				'instructions': 'describe the required transformation actions to transform a new input into its output, think step by step', 
+# 				'test_case_input_objects': 'copy the objects of the test case input grid from the task',
+# 				'transformation': 'Describe in natural language how the transformed objects should look like in the test output grid, focusing on size, coordinates, color',
+# 				'transformed_objects': 'Describe all objects after transformation for the test output sequence by following the format in the test case input.',
+# 				'test_case_output_dimension': 'state the dimension of the test case output sequence [rows, columns] as list of integers',
+# 				'test_case_output': 'Create the test case output pixel grid with the transformed objects as numpy array, e.g. \"[[0, 0, ...], [...]]\". Use zero-indexing [row_index, column_index] for the object positions and fill unoccupied cells with the background color!'
+#              	},
+#    		 	},
+# 		},
+# 	}
 
 
 ################## Few-Shot Examples ################

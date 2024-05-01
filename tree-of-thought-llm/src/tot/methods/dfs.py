@@ -8,7 +8,7 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
     if current_node.isLeaf:  # Leaf node
         return [current_node], best_abstraction_nodes, example_success, infos
     
-    # generation  # TODO: Rename? Generate children?
+    # generation  
     if args.method_generate == 'sample':
         # Sample: 1. Standard, 2. CoT, 3. Multiple CoT (w self-consistency)
         gen_prompts = search_utils.get_samples(args, task, current_node, prompt_sample=args.prompt_sample, stop=task.stops[step])
@@ -56,7 +56,7 @@ def depth_first_search_prioritized(args, task, current_node, step, best_leaf_nod
         # revise abstraction 
         if args.revision and child.phase == "application":
             revision_log, example_success = search_utils.revise_abstraction(args, task, child) 
-            # TODO: what is in log? Add to infos?
+            
             if all(example_success):
                 # abstraction is successfull on examples -> apply to all test cases    
                 leaf_nodes, best_abstraction_nodes, example_success, infos = depth_first_search_prioritized(args, task, child, step, best_leaf_nodes, best_abstraction_nodes, example_success, infos, to_print) 

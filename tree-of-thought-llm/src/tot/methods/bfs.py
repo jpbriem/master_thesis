@@ -6,7 +6,6 @@ from tot.methods.tree_nodes import Node
 from tot.methods import search_utils
 
 def solve(args, task, idx, to_print=True):
-    #search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature)
     if search_utils.model is None:
         search_utils.model = initialize_model(args)
     if search_utils.model is None:
@@ -17,7 +16,7 @@ def solve(args, task, idx, to_print=True):
     current_best_nodes = [Node(task_name, 0, x, n_generate_children=args.n_generate_sample, children=[])]
     infos = []
     for step in range(task.steps):
-        # generation  # TODO: Rename? Generate children?
+        # generation  
         if args.method_generate == 'sample':
             gen_prompts = [search_utils.get_samples(args, task, current_node, prompt_sample=args.prompt_sample, stop=task.stops[step]) for current_node in current_best_nodes]
             # Iterate over gen_prompts in reverse to maintain correct indices while removing items from current_best_nodes, if prompt was too large
@@ -37,7 +36,7 @@ def solve(args, task, idx, to_print=True):
         
         # evaluation
         if args.method_evaluate == 'vote':
-            # always vote for single best child, n_evalute_sample times
+            # always vote for single best child, n_evaluate_sample times
             eval_prompts = [search_utils.get_votes(task, current_node, args.n_evaluate_sample) for current_node in current_best_nodes]
         elif args.method_evaluate == 'value':
             eval_prompts = [search_utils.get_values(args, task, current_node) for current_node in current_best_nodes]
@@ -122,8 +121,6 @@ def solve(args, task, idx, to_print=True):
     
     
 def naive_solve(args, task, idx, to_print=True):
-    # search_utils.gpt = partial(gpt, model=args.backend, temperature=args.temperature, response_format={ "type": "text" })
-    # search_utils.model = partial(gpt, model=args.backend, temperature=args.temperature, response_format={ "type": "text" })
     if search_utils.model is None:
         search_utils.model = initialize_model(args)
     if search_utils.model is None:
