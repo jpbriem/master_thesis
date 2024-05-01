@@ -23,7 +23,8 @@ The ARC is detailed in [On the Measure of Intelligence by François Chollet (201
 1. Clone the repository.
 2. Insert your Huggingface and OpenAI credentials in `./credentials.py` and `tree-of-thought-llm/src/tot/methods/credentials.py`. Ensure these files are listed in `.gitignore`.
 3. Create a new python environment: `conda create -n myenv python=3.11`
-4. Install required packages from `tree-of-thought-llm/requirements.txt`.
+4. Install required packages from `pip install -r tree-of-thought-llm/requirements.txt`.
+5. Install AToT: `pip install -e .\tree-of-thought-llm\.`
 
 ### Running Experiments
 1. Modify configurations in `tree-of-thought-llm/src/tot/methods/arc_config.py`:
@@ -58,7 +59,7 @@ The ARC is detailed in [On the Measure of Intelligence by François Chollet (201
     - `n_generate_sample`: Specify the number of thoughts to be sampled at each reasoning step.
     - `n_evaluate_sample`: Set the number of evaluations per thought.
     - `n_select_sample`: Define the number of most-promising thoughts to be explored further.
-4. If you want to run only on a subset, change the directory in tree-of-thought-llm/src/tot/data. For the subsets of the 1D-ARC and 2D ARC variants with different object orientations simply switch the names of the directories.
+4. If you want to run only on a subset, change the directory in `tree-of-thought-llm/src/tot/data`. For the subsets of the 1D-ARC and 2D ARC variants with different object orientations simply switch the names of the directories. IF you want to run on the 50 ARC subset of the original benchmark, you must add an empty directory `tree-of-thought-llm/src/tot/data/arc/evaluation`, as an empty directory can not be commited.
 5. After adjustments, reinstall the package: `pip install -e tree-of-thought-llm/.`
 6. Run `tree-of-thought-llm/run_experiments.py` and verify your experimental settings in the output prompt before AToT begins solving tasks
 7. New results are usually stored in `Testing_none_official_result/`
