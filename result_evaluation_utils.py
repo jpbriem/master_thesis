@@ -358,7 +358,7 @@ def plot_model_performance_across_runs(dataframe, exp_column, score_column, run_
             if small_fig:
                 legend = plt.legend(title=title, loc='upper center', bbox_to_anchor=(0.45, -0.15), ncol=1)
             else:
-                legend = plt.legend(title=title, loc='upper left', bbox_to_anchor=(1, 0.8))
+                legend = plt.legend(title=title, loc='upper left', bbox_to_anchor=(1, 1.05))
 
     # Check if the input is a list of dataframes
     if isinstance(dataframe, list):
@@ -387,7 +387,6 @@ def plot_model_performance_across_runs(dataframe, exp_column, score_column, run_
 
     plt.tight_layout()
     plt.show()
-
 
 def plot_grouped_bar_chart(dataframe, group_by="model", group_col="success_cat", top_n_models=3, asc=True, SOTA=None, highlight_pretrained_models=False):
     # filter on top n models
@@ -443,7 +442,7 @@ def plot_grouped_bar_chart(dataframe, group_by="model", group_col="success_cat",
     # Fort sampled_thoughts and chosen_thoughts save model name and adjust legend labels
     if group_col == "steps":
         if "gpt4" in dataframe[group_by].iloc[0]:
-            model_name = "GPT-4"
+            model_name = "GPT-4 Turbo"
         elif "gpt3" in dataframe[group_by].iloc[0]:
             model_name = "GPT-3.5-Turbo"
         elif "mixtral" in dataframe[group_by].iloc[0]:
@@ -511,7 +510,7 @@ def plot_grouped_bar_chart(dataframe, group_by="model", group_col="success_cat",
         if len(models) == 1:
             pos = [p for p in index]
         else:
-            pos = [-bar_width*1.5 + p + bar_width * i for p in index]
+            pos = [-bar_width*(n_models/2) - bar_width/2 + bar_width + p + bar_width * i for p in index]
         
         # Plotting
         if (group_col == "str_cmp") or (group_col == "obj_cmp"):
@@ -527,27 +526,27 @@ def plot_grouped_bar_chart(dataframe, group_by="model", group_col="success_cat",
 
     if group_col == "success_cat":
         plt.xlabel('Categories')
-        plt.title('AToT -\nSuccess rate by model and category')
-        plt.xticks(index + bar_width / 2, [s.replace("cat_success_rate_", "") for s in success_columns], rotation=35, ha="right")
+        plt.title('Success rate by model and category')
+        plt.xticks(index, [s.replace("cat_success_rate_", "") for s in success_columns], rotation=35, ha="right")
         legend = plt.legend(title="Model", loc='upper left', bbox_to_anchor=(1, 0.7))
         #legend = plt.legend(title="Model", loc='upper center', bbox_to_anchor=(0.5, -0.5), ncol=2)
         plt.ylim(top=1.02)
     if (group_col == "str_cmp"):
         plt.xlabel('Model')
-        plt.title('ARC Variant: Object Orientation\nNaive Prompting - Success Rate based on Task Checking Method')
-        plt.xticks(index + bar_width / 2, [m for m in dataframe["model"]], rotation=35, ha="right")
+        plt.title('Naive Prompting - Success Rate based on Task Checking Method')
+        plt.xticks(index, [m for m in dataframe["model"]], rotation=35, ha="right")
         legend = plt.legend(title="Task checking method", loc='upper left', bbox_to_anchor=(1, 0.7))
     elif (group_col == "obj_cmp"):
         plt.xlabel('Model')
         plt.title('1D-ARC -\nSuccess Rate based on Output Grid Creation Method')
-        plt.xticks(index + bar_width / 2, [m for m in dataframe["model"]], rotation=35, ha="right")
+        plt.xticks(index, [m for m in dataframe["model"]], rotation=35, ha="right")
         legend = plt.legend(title="Based on the Transformed\nObjects, Output Grid Created by:", loc='upper left', bbox_to_anchor=(1, 0.7))
         # legend = plt.legend(title="Based on the Transformed Objects, Output Grid Created by:", loc='upper center', bbox_to_anchor=(0.5, -1.0), ncol=2)
     elif group_col == "dataset":
         plt.xlabel('Dataset')
         plt.title('Average Success Rate of all Models')
         # plt.xticks(index + bar_width / 2, [m.split("success_rate_")[-1] for m in success_columns], rotation=35, ha="right")
-        plt.xticks(index + bar_width / 2, [m.split("success_rate_")[-1] for m in success_columns])
+        plt.xticks(index, [m.split("success_rate_")[-1] for m in success_columns])
         legend = plt.legend(title="Pixel representation", loc='upper left', bbox_to_anchor=(1, 0.7))        
     elif (group_col == "both_sampled_fraction_of_n_tasks") | ( group_col == "steps"):
         plt.xlabel('Step in the reasoning chain')
@@ -557,15 +556,16 @@ def plot_grouped_bar_chart(dataframe, group_by="model", group_col="success_cat",
             legend = plt.legend(title="Thought selection", loc='upper left', bbox_to_anchor=(1, 0.7))
             #legend = plt.legend(title="Thought selection", loc='upper center', bbox_to_anchor=(0.5, -0.3), ncol=2)
         elif group_by == "sampled_thoughts":
-            #plt.title(f'{model_name}\nDistribution of Validity of Sampled Thoughts')
-            plt.title(f'{model_name}\n1D-ARC - Unsolved Tasks\nDistribution of Validity of Sampled Thoughts')
+            plt.title(f'{model_name}\nDistribution of Validity of Sampled Thoughts')
+            #plt.title(f'{model_name}\nUnsolved Tasks\nDistribution of Validity of Sampled Thoughts')
             legend = plt.legend(title="Sampled thoughts were:", loc='upper left', bbox_to_anchor=(1, 0.7))
             #legend = plt.legend(title="Sampled thoughts were:", loc='upper center', bbox_to_anchor=(0.5, -0.3), ncol=3)
             plt.ylim(top=1)
         else:
             plt.title('Correctly and Incorrectly Sampled Thoughts in Same Step') 
             legend = plt.legend(title="Run", loc='upper left', bbox_to_anchor=(1, 0.7))
-        plt.xticks(index + bar_width / 2, [f"Step {i}" for i in range(1,5)], rotation=35, ha="right")
+        labels = ["Description", "Pattern", "Instructions", "Transformation"]
+        plt.xticks(index, [f"Step {i+1}\n{l}" for i, l in enumerate(labels)], fontsize=9)#, rotation=35, ha="right")
  
     if highlight_pretrained_models:
         # Highlighting specific x-axis ticks
@@ -583,48 +583,6 @@ def plot_grouped_bar_chart(dataframe, group_by="model", group_col="success_cat",
     
     # Show the plot
     plt.show()
-
-
-# For Venn diagramm
-
-def get_overlapping_tasks(data):
-
-    data["solved_tasks"] = [[task[0] for task in tasks] for tasks in data["solved_tasks"]]
-
-    # Create a dictionary to store solved tasks for each model
-    model_tasks = {row['model']: set(row['solved_tasks']) for _, row in data.iterrows()}
-
-    result = {}
-
-    # Create combinations of models and find the overlapping tasks for triples
-    combinations_triples = list(combinations(data['model'], 3))
-
-    for combination in combinations_triples:
-        model1, model2, model3 = combination
-        overlapping_tasks = model_tasks[model1].intersection(model_tasks[model2], model_tasks[model3])
-        result[f'{model1}-{model2}-{model3}'] = list(overlapping_tasks)
-
-        # Remove overlapping tasks from individual models
-        for model in combination:
-            model_tasks[model] -= overlapping_tasks
-
-    # Create combinations of models and find the overlapping tasks for pairs
-    combinations_pairs = list(combinations(data['model'], 2))
-
-    for combination in combinations_pairs:
-        model1, model2 = combination
-        overlapping_tasks = model_tasks[model1].intersection(model_tasks[model2])
-        result[f'{model1}-{model2}'] = list(overlapping_tasks)
-
-        # Remove overlapping tasks from individual models
-        for model in combination:
-            model_tasks[model] -= overlapping_tasks
-
-    # For individual models
-    for model, tasks in model_tasks.items():
-        result[model] = list(tasks)
-
-    return result
 
 ##############################################
 # Task Analysis
