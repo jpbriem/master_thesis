@@ -100,6 +100,9 @@ Insert functions to initialize and call the new model in `tree-of-thought-llm/sr
 - `initialize_model()`: define how to load the model and its tokenizer and how to call it. You might want to add a model-specific loading and calling function.
 - `prompt_preprocessing_for_model()`: Add model specific prompt structure
 
+### Adding new tasks
+To add new tasks to the framework, create a task class in `tree-of-thought-llm/src/tot/tasks` with all required functions (see for example `tree-of-thought-llm/src/tot/tasks/arc_full_plan.py`)
+
 ## Evaluations of Previous Experiments
 The jupyter notebook `result_evaluation.ipynb` contains all relevant analyses of the conducted experiments.
 
@@ -107,4 +110,6 @@ All related log files can be found in `results/`
 
 
 ## Note regarding ARC
+For all three benchmarks, there exist a python class in `tree-of-thought-llm/src/tot/tasks` having all required functions to run the AToT framework. 
+
 All helper functions, including functionality of the object detection tool, can be found in `tree-of-thought-llm/src/tot/methods/arc_utils.py`.
