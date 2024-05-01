@@ -2,12 +2,10 @@
 from tot.methods.arc_config import * 
 from tot.methods.credentials import *
 import numpy as np
-import tkinter as tk
 import itertools
 import json
 import re
 import ast
-import matplotlib.pyplot as plt
 import shutil
 import datetime
 from collections import deque
@@ -19,13 +17,10 @@ os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
 from copy import deepcopy
 import torch
 import tiktoken
-from datasets import load_dataset, Dataset
-from transformers.pipelines.pt_utils import KeyDataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig, pipeline, logging
+from datasets import load_dataset
+from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig, pipeline
 from langchain.llms import HuggingFacePipeline
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts import PromptTemplate 
-from auto_gptq import exllama_set_max_input_length, AutoGPTQForCausalLM, BaseQuantizeConfig
+from auto_gptq import exllama_set_max_input_length, AutoGPTQForCausalLM
 import argparse
 import openai
 
@@ -66,7 +61,7 @@ def load_llama(model_name, revision, max_token, model_config):
         # batch_size=2, # Default=1, When the pipeline will use DataLoader [..] the size of the batch to use.
     )
 
-    # make pipeline compatbile with langchain and return
+    # make pipeline compatible with langchain and return
     hf_pipeline = HuggingFacePipeline(pipeline=text_pipeline) #, model_kwargs={"temperature": 0})
     return tokenizer, model, hf_pipeline
 
@@ -378,11 +373,7 @@ def get_int_from_dict_value(d, key):
         print(f'Key ({key}) not found in dict: {d}')
     return None
 
-
-    return value
-
 def get_thought(LLM_answer, prompt_modules, current_step, isRevision=False):
-    # all_json_keys = extract_dict_keys(prompt_modules, "output_format")
     if isRevision:
         output_format = prompt_modules[str(current_step)]["revision"]["analysis"]["output_format"]
     else:
@@ -413,7 +404,7 @@ def get_previous_thoughts(node, climbing_layers=-1):
     return thoughts
 
 # function to ensure correct Example numbering, when using abstraction revision on Examples
-current_number = 1  # Starting number for incrementation
+current_number = 1  # Starting number for incrimination
 def incremental_replace(match):
     global current_number
     result = f'Example {current_number}'
@@ -424,7 +415,7 @@ def incremental_replace(match):
 # read multi line user inputs 
 def read_multiline_input(query):
     lines = []
-    eos = "eee"
+    eos = "<end>"
     print(query)
     print(f'type {eos} after answer.')
 
@@ -478,7 +469,7 @@ def load_arc_tasks(path, dataset="arc"):
     print("Total number of tasks:", len(tasks_jsons))
     return tasks_jsons, tasks_names, subdirecotries
 
-# Find objects in 1D pixel sequences
+# Find objects in pixel grids
 def find_objects(task, name, grid, bg_color):
     def bfs(start_row, start_col, color):
         # Start BFS from the given cell
@@ -522,15 +513,7 @@ def find_objects(task, name, grid, bg_color):
             # Mark the object's coordinates in the grid
             for r, c in obj['coordinates']:
                 marked_grid [r - min_row][c - min_col] = -1
-   
-            # # Find all inner blank areas
-            # inner_coordinates = []
-            # for r in range(1, height - 1):
-            #     for c in range(1, width - 1):
-            #         if grid[r][c] == 0:
-            #             # Check if surrounded by non-zero cells
-            #             if grid[r - 1][c] == 1 and grid[r + 1][c] == 1 and grid[r][c - 1] == 1 and grid[r][c + 1] == 1:
-            #                 inner_coordinates.append([r + min_row, c + min_col])
+
             inner_coordinates = []
             found_pixel = True
             for r in range(1, height - 1):
@@ -627,21 +610,6 @@ def find_objects(task, name, grid, bg_color):
                 if r < 1 or r > height-2 or c < 1 or c > width-2:
                     surrounded = False
                     break
-                
-                
-            # for r, c, in inner_coordinates:
-            #     r = r - min_row
-            #     c = c - min_col
-            #     if r < 1 or r > height-2 or c < 1 or c > width-2:
-            #         surrounded = False
-            #         break
-            #     # check rows
-            #     if marked_grid[r - 1][c] != -1 or marked_grid[r - 1][c] != 2 or marked_grid[r + 1][c] != -1 or marked_grid[r + 1][c] != 2:
-            #         surrounded = False
-            #         break
-            #     if marked_grid[r][c - 1] != -1 or marked_grid[r][c - 1] != 2 or marked_grid[r][c + 1] != -1 or marked_grid[r][c + 1] != 2:
-            #         surrounded = False
-            #         break
             if inner_coordinates and surrounded:
                 new_objects.append({
                     'coordinates': inner_coordinates,
@@ -1241,16 +1209,6 @@ def get_tasks(task_name, task_json, delimiter, use_object_representation=False):
 
         solution = delimiter["grid_start"]
         for i, row in enumerate(sample["output"]):
-            # if use_object_representation:
-            #     if CHANGE_REPRESENTATION:
-            #         bg_color = NEW_REPRESENTATION[0]
-            #     else:
-            #         bg_color = 0
-            #     objects = find_objects(row, bg_color)
-            #     for i, o in enumerate(objects, 1):
-            #         solution += "Object_" + str(i) + ": " + str(o) + ", "
-            #     solution = solution[:-2] + "\n"
-            # else:
             solution += delimiter["row_start"]
             for j, value in enumerate(row):
                 solution += str(value)

@@ -1,10 +1,7 @@
 import os
-import random
 import datetime
 import json
-import numpy as np
 import argparse
-import pandas as pd
 from tot.methods import bfs, dfs, search_utils
 from tot.tasks import get_task
 from tot.methods.tree_nodes import Node
@@ -14,19 +11,19 @@ from tot.methods.arc_utils import check_model_selection
 
 ########## ARC ##########
 args = argparse.Namespace(
-    continue_run="gpt-4-1106-preview_object-representation_2024-04-24_07-54-55", # TODO: Bisher noch nicht für Object result infos!!!
+    # continue_run="", 
     backend=MODEL_NAMES,
     model_revision=REVISIONS,
     use_api=True,                       # TODO: Use API?!
     # task='arc',                       # TODO: Set task!
     # task='arc_1D', 
     task = 'arc_h_v',
-    # input_representation = None,    # TODO: set input representation
+    # input_representation = None,    # TODO: set object tool for ARC tasks
     input_representation = 'objects',
-    naive_run=False,                    # TODO: Naive run? TODO: chang in prompts
+    naive_run=False,                    # TODO: Naive run or AToT? TODO: chang in prompts
     search_algo='bfs',                  # TODO: Set search algorithm!
     #search_algo='dfs',
-    prompt_sample='cot',                # TODO: Set prompt sample: cot - standard!
+    prompt_sample='cot',                # TODO: Set prompt sample: cot - standard?
     method_generate='sample', 
     method_evaluate='value', 
     method_select='greedy',
@@ -34,14 +31,6 @@ args = argparse.Namespace(
     n_generate_sample=4,                # TODO: Set tree search parameters!
     n_evaluate_sample=2, 
     n_select_sample=2)
-
-# get IDs of 50 ARC tasks to be tested # TODO: original ARC???
-# data = pd.read_csv('/work/jbriem/repos/master_thesis/ARC_datasets/1D-ARC/LLM4ARC/output-logs/direct-grid/ARC-subset/direct_grid_few_shot_number_3.5.csv')
-# tasks = list(data["Task_ID"])
-# solved_gpt3 = ["25ff71a9.json", "6150a2bd.json", "74dd1130.json", "9dfd6313.json", "b1948b0a.json", "c8f0f002.json", "d037b0a7.json", "dc433765.json"]
-# solved_gpt3 = ['1d_move_1p_2.json', '1d_flip_30.json', '1d_move_1p_33.json', '1d_scale_dp_41.json', '1d_move_1p_27.json', '1d_flip_48.json', '1d_move_1p_12.json', '1d_scale_dp_20.json', '1d_move_1p_4.json', '1d_flip_8.json', '1d_scale_dp_12.json', '1d_flip_10.json', '1d_flip_36.json', '1d_move_1p_30.json', '1d_move_1p_20.json', '1d_scale_dp_11.json', '1d_move_1p_31.json', '1d_flip_33.json', '1d_move_1p_1.json', '1d_move_1p_25.json', '1d_scale_dp_44.json', '1d_flip_29.json', '1d_flip_0.json', '1d_scale_dp_39.json', '1d_move_1p_23.json', '1d_scale_dp_33.json', '1d_scale_dp_47.json', '1d_move_1p_16.json', '1d_scale_dp_22.json', '1d_flip_4.json', '1d_move_1p_39.json', '1d_flip_9.json', '1d_scale_dp_21.json', '1d_scale_dp_28.json', '1d_flip_40.json', '1d_move_1p_41.json', '1d_flip_3.json', '1d_scale_dp_50.json', '1d_move_1p_10.json', '1d_flip_43.json', '1d_flip_46.json', '1d_scale_dp_30.json', '1d_flip_47.json', '1d_move_1p_40.json', '1d_flip_34.json', '1d_scale_dp_10.json', '1d_move_1p_35.json', '1d_move_1p_19.json', '1d_scale_dp_49.json', '1d_move_1p_36.json']
-# multi_colour  = ["3c940459.json", "67a3c6ac.json", "88a10436.json", "6150a2bd.json", "74dd1130.json", "b2862040.json"]
-# solved_gpt4 = ['d037b0a7.json', '6150a2bd.json', 'a79310a0.json', '74dd1130.json', '25ff71a9.json', 'ce22a75a.json', 'aabf363d.json', 'c8f0f002.json', 'dc433765.json', 'b1948b0a.json']
 
 def run(args):   
     log, failure_log = [], ""
@@ -82,30 +71,9 @@ def run(args):
 
     # solve the task
     indices = list(range(0, len(task), 1))      # TODO: check if correct!
-    # random.seed(42)
-    # random.shuffle(indices)
-    # count = 0 # TODO: delete!!!
     if hasattr(args, 'continue_run'):
         intermediate_state = json.load(open(directory+'/all_tasks_log.json'))
         reset_usage(new_completion_tokens=intermediate_state[-1]["usage_so_far"]["completion_tokens"], new_prompt_tokens=intermediate_state[-1]["usage_so_far"]["prompt_tokens"])
-        # log = intermediate_state.copy()
-        # for t in intermediate_state:
-        #     if t["task"] not in task.success: # TODO: works currently only if we have just one try
-        #         task.success[t["task"]] = 0
-        #     if t["category"] not in task.cat_success:
-        #         task.cat_success[t["category"]] = 0
-        #         task.cat_failures[t["category"]] = 0
-        #     task.success[t["task"]] += int(t["result"]["success"]) 
-        #     if task.success[t["task"]] == 1:
-        #         task.full_success += 1
-        #         task.cat_success[t["category"]] += 1
-        #     else:
-        #         task.cat_failures[t["category"]] += 1
-
-        #     if task.success[t["task"]] > 0:
-        #         task.solved_tasks.append((t["task"], task.success[t["task"]]))
-        # idx = intermediate_state[-1]["idx"]
-        # indices = indices[idx+1:]
     
     for idx in indices:
         Node.reset_tree()
@@ -113,11 +81,6 @@ def run(args):
         task_category = task.categories[idx]
 
         print(f"Task: {task_name}\nTask {idx+1} of {len(task)}")
-        # count += 1 # TODO: delete!!!       
-        # if count == 2: # TODO: delete!!!
-        #     break
-        # if task_category == "move_h": # TODO: delete!!!
-        #     continue
         task_already_tried = False
         if hasattr(args, 'continue_run'):
             for old_log in intermediate_state:
@@ -145,22 +108,6 @@ def run(args):
                     old_log["result"].update({'success_rate': task.full_success / (idx+1-n_tasks_too_long_prompts-n_tasks_error) if (idx+1-n_tasks_too_long_prompts-n_tasks_error) > 0 else 0, 'cat_success_cnt': task.cat_success[task_category], 'cat_success_rate': task.cat_success[task_category] / (task.cat_success[task_category] + task.cat_failures[task_category]) if task.cat_success[task_category] + task.cat_failures[task_category] > 0 else 0})
                     infos = old_log.copy()
         
-                # t = task.data[idx]
-        # b = False
-        # for l in t["train"]:
-        #     if np.prod(np.array(l["input"]).shape) > 10:
-        #         b = True
-        # if b:
-        #     continue
-        # if np.prod(np.array(t["test"][0]["input"]).shape) < 10:
-        #     print(len(t["test"][0]["input"]))
-        # if 'pile_h' in task_name: # TODO: delete!!! 
-        # if "pcopy" in task_name or "recolor" in task_name: # TODO: delete!!!
-        #     count += 1 # TODO: delete!!!
-        # else:
-        #     continue
-        # if not task_name+".json" in solved_gpt4:#+multi_colour: # TODO delete!!!
-        #     continue
         if not task_already_tried:
             if args.search_algo == "bfs":
                 search_algo = bfs

@@ -6,7 +6,7 @@ model = None
 # read multi line user inputs 
 def read_multiline_input(query):
     lines = []
-    eos = "eee"
+    eos = "<end>"
     print(query)
     print(f'type {eos} after answer.')
 
