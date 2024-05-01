@@ -22,7 +22,8 @@ The ARC is detailed in [On the Measure of Intelligence by François Chollet (201
 ### Installation Guide
 1. Clone the repository.
 2. Insert your Huggingface and OpenAI credentials in `./credentials.py` and `tree-of-thought-llm/src/tot/methods/credentials.py`. Ensure these files are listed in `.gitignore`.
-3. Install required packages from `requirements.txt`.
+3. Create a new python environment: `conda create -n myenv python=3.11`
+4. Install required packages from `tree-of-thought-llm/requirements.txt`.
 
 ### Running Experiments
 1. Modify configurations in `tree-of-thought-llm/src/tot/methods/arc_config.py`:
@@ -71,17 +72,17 @@ Regarding the AToT framework, the template should be structured accordingly:
 ```json
 prompt_modules = {
     "0": { // step ID
-        "spread": [True/False], // Define whether this tree level should be broadly explored or not
-        "phase": ["abstraction" / "application"], // Specify the current phase: abstraction or application of transformation
+        "spread": [True, False], // Define whether this tree level should be broadly explored or not
+        "phase": ["abstraction", "application"], // Specify the current phase: abstraction or application of transformation
         "generation": {
-            "instruct_task": "Instruction about the thoughts to be sampled", // Details of the instruction
+            "instruct_task": "Instruction about the thoughts to be sampled",
             "output_format": {
                 // JSON output format of the model answer
             }
         },
         "evaluation": {
-            "instruct_previous_thoughts": "Instruction about what should be evaluated", // Details of the evaluation scope
-            "instruct_task": "Instruction about how it should be evaluated", // Details of the evaluation process
+            "instruct_previous_thoughts": "Instruction about what should be evaluated", 
+            "instruct_task": "Instruction about how it should be evaluated", // 
             "output_format": {
                 // JSON output format of the model answer
             }
